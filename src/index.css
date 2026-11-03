@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Tajawal', system-ui, sans-serif;
+  }
+  body {
+    @apply bg-cream text-ink antialiased;
+  }
+  :focus-visible {
+    outline-color: #8c2335;
+  }
+}
+
+/* Leaflet is LTR internally; keep its controls/tiles stable inside the RTL app. */
+.leaflet-container {
+  direction: ltr;
+  font-family: 'Tajawal', system-ui, sans-serif;
+  background: #ede5d8;
+}
+.leaflet-popup-content {
+  direction: rtl;
+  text-align: right;
+  margin: 10px 12px;
+  font-size: 13px;
+}
+.shahm-marker {
+  background: transparent;
+  border: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important; /* infinite loops would otherwise strobe */
+    transition-duration: 0.01ms !important;
+  }
+}

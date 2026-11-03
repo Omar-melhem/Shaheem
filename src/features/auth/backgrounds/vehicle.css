@@ -1,0 +1,54 @@
+/*
+ * SHAHM car pass for the login brand panel. One pass ≈ 9 s, then a ~5 s pause
+ * (14 s cycle). Only `transform` animates; the lane mask fades the car in and out
+ * at the panel edges. Reduced motion: the car is parked, wheels still.
+ */
+.vehicle-lane {
+  height: 80px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 15%, #000 85%, transparent);
+}
+.vehicle-road {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 6px;
+  height: 1px;
+  opacity: 0.5;
+  background: repeating-linear-gradient(to right, #a88866 0 18px, transparent 18px 30px);
+}
+.vehicle-track {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  animation: vehicle-pass 14s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+}
+.vehicle {
+  position: absolute;
+  bottom: 0;
+  left: 100%; /* starts just past the right edge */
+  width: 190px;
+  height: auto;
+  opacity: 0.95;
+}
+.vehicle-rim {
+  transform-box: view-box; /* origin set per wheel in SVG units */
+  animation: vehicle-wheel 0.9s linear infinite reverse; /* rolling leftwards */
+}
+@keyframes vehicle-pass {
+  0% { transform: translateX(0); }
+  65% { transform: translateX(calc(-100% - 190px)); } /* fully past the left edge */
+  100% { transform: translateX(calc(-100% - 190px)); } /* quiet pause */
+}
+@keyframes vehicle-wheel {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-track {
+    animation: none;
+    transform: translateX(calc(-30% - 190px)); /* parked, right of centre */
+  }
+  .vehicle-rim {
+    animation: none;
+  }
+}
