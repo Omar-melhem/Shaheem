@@ -1,11 +1,12 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Button, Field, Input, PasswordField, fieldMessageId } from '@/shared/components/ui';
+import { AlertCircle, LockKeyhole, UserRound } from 'lucide-react';
+import { Button, Field, INPUT_ICON_PAD, Input, InputIcon, PasswordField, fieldMessageId } from '@/shared/components/ui';
 import { useDemoSignIn } from '../hooks/useDemoSignIn';
+import { ForgotPasswordHelp } from './ForgotPasswordHelp';
 
 type Errors = { username?: string; password?: string; form?: string };
 
-/** Username + password sign-in. Role routing comes from the authenticated account, never a UI choice. */
+/** Username + password sign-in. Labels stay visible; placeholders are hints only. Role routing comes from the authenticated account, never a UI choice. */
 export function LoginForm() {
   const signInWith = useDemoSignIn();
   const [username, setUsername] = useState('');
@@ -48,22 +49,25 @@ export function LoginForm() {
         </p>
       )}
       <Field label="اسم المستخدم" htmlFor="login-username" error={errors.username}>
-        <Input
-          ref={usernameRef}
-          id="login-username"
-          name="username"
-          className="h-12"
-          dir="ltr"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          autoFocus
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          aria-invalid={!!errors.username || !!errors.form}
-          aria-describedby={describedBy('username')}
-          disabled={submitting}
-        />
+        <InputIcon icon={<UserRound />}>
+          <Input
+            ref={usernameRef}
+            id="login-username"
+            name="username"
+            className={`h-12 rtl:text-right ${INPUT_ICON_PAD}`}
+            dir="ltr"
+            placeholder="أدخل اسم المستخدم"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            autoFocus
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            aria-invalid={!!errors.username || !!errors.form}
+            aria-describedby={describedBy('username')}
+            disabled={submitting}
+          />
+        </InputIcon>
       </Field>
       <Field label="كلمة المرور" htmlFor="login-password" error={errors.password}>
         <PasswordField
@@ -71,6 +75,8 @@ export function LoginForm() {
           id="login-password"
           name="password"
           className="h-12"
+          icon={<LockKeyhole />}
+          placeholder="أدخل كلمة المرور"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -79,6 +85,9 @@ export function LoginForm() {
           disabled={submitting}
         />
       </Field>
+      <div className="-mt-2">
+        <ForgotPasswordHelp />
+      </div>
       <Button type="submit" size="lg" className="w-full" loading={submitting}>
         {submitting ? 'جارٍ الدخول…' : 'دخول'}
       </Button>

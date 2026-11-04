@@ -20,8 +20,9 @@ export function BaseMap({
   children?: ReactNode;
   label?: string;
 }) {
+  // `isolate` keeps Leaflet's internal z-indexes (controls use 800–1000) below drawers and dialogs.
   return (
-    <div className={cn('relative overflow-hidden rounded-2xl border border-cream-deep', className)} role="region" aria-label={label}>
+    <div className={cn('relative isolate overflow-hidden rounded-2xl border border-cream-deep', className)} role="region" aria-label={label}>
       <MapContainer center={[center.lat, center.lng]} zoom={zoom} scrollWheelZoom className="h-full w-full" attributionControl>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

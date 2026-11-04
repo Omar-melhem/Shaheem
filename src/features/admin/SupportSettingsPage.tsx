@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, Headphones, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { SupportChannel, SupportContact } from '@/domain/types';
-import { Badge, Button, Card, CardHeader, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, Select, Toggle } from '@/shared/components/ui';
+import { Badge, Button, Card, CardHeader, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, PhoneField, PHONE_HINT, Select, Toggle } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { CHANNEL_LABEL, SupportContactList } from '@/features/support/SupportContacts';
 
@@ -84,9 +84,15 @@ export function SupportSettingsPage() {
             <Field label="العنوان الظاهر" required>
               <Input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="مثال: خدمة العملاء" />
             </Field>
-            <Field label="بيانات التواصل" required hint="رقم الهاتف أو البريد أو الرابط الرسمي">
-              <Input value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} dir="ltr" />
-            </Field>
+            {draft.channel === 'phone' ? (
+              <Field label="رقم الهاتف" required hint={PHONE_HINT}>
+                <PhoneField value={draft.value} onChange={(v) => setDraft({ ...draft, value: v })} />
+              </Field>
+            ) : (
+              <Field label="بيانات التواصل" required hint="رقم واتساب أو البريد أو الرابط الرسمي">
+                <Input value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} dir="ltr" />
+              </Field>
+            )}
             <Toggle checked={draft.enabled} onChange={(v) => setDraft({ ...draft, enabled: v })} label="ظاهرة للتجار والكباتن" />
           </div>
         )}

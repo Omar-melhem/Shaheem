@@ -6,10 +6,11 @@ import { useCaptainViews, useNow } from '@/application/hooks';
 import type { Captain, VehicleType } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { describeReasons } from '@/domain/eligibility';
-import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, OpenDecision, PageHeader, Select, Textarea, Toggle, SearchField } from '@/shared/components/ui';
+import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, OpenDecision, PageHeader, PhoneField, PHONE_HINT, Select, Textarea, Toggle, SearchField } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { reportResult } from '@/shared/components/toast';
-import { formatDate, formatDateTime, formatRelative, isPlausiblePhone } from '@/shared/lib/format';
+import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { formatDate, formatDateTime, formatRelative } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 
 export const VEHICLE_LABEL: Record<VehicleType, string> = { motorcycle: 'دراجة نارية', car: 'سيارة', bicycle: 'دراجة هوائية' };
@@ -107,7 +108,8 @@ function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'new' | nu
   const submit = () => {
     const e: Record<string, string> = {};
     if (!form.fullName.trim()) e.fullName = 'الاسم الكامل مطلوب';
-    if (!isPlausiblePhone(form.phone)) e.phone = 'أدخل رقم هاتف صالحاً';
+    if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
+    else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
     if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
     if (form.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
     setErrors(e);
@@ -133,8 +135,8 @@ function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'new' | nu
         <Field label="الاسم الكامل" required error={errors.fullName}>
           <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} aria-invalid={!!errors.fullName} />
         </Field>
-        <Field label="رقم الهاتف" required error={errors.phone}>
-          <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" inputMode="tel" aria-invalid={!!errors.phone} />
+        <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
+          <PhoneField value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} aria-invalid={!!errors.phone} />
         </Field>
         <Field label="نوع المركبة" required>
           <Select value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value as VehicleType })}>

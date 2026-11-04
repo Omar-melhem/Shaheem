@@ -26,9 +26,3 @@ export function formatCountdown(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
-
-/** Lenient phone check — no single universal format is assumed. */
-export function isPlausiblePhone(raw: string): boolean {
-  const digits = raw.replace(/[\s\-()+]/g, '');
-  return /^\d{7,15}$/.test(digits);
-}

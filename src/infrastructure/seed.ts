@@ -14,7 +14,9 @@ import type {
   SupportContact,
   WalletTransaction,
   DispatchOffer,
+  DeliveryRoute,
 } from '@/domain/types';
+import { MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
 import { haversineMeters, polygonCentroid } from '@/domain/geo';
 import { jodToFils } from '@/domain/money';
 
@@ -25,6 +27,7 @@ export interface AppData {
   merchants: Merchant[];
   captains: Captain[];
   areas: ServiceArea[];
+  routes: DeliveryRoute[];
   prices: MerchantAreaPrice[];
   orders: DeliveryOrder[];
   offers: DispatchOffer[];
@@ -43,7 +46,7 @@ export const DEFAULT_DEMO_SETTINGS: DemoSettings = {
   walletThreshold: jodToFils(2),
   offerPolicy: 'group',
   groupSize: 3,
-  offerTimeoutSec: 90,
+  offerTimeoutSec: 60,
   staleAfterSec: 20,
   simSpeedMps: 60,
 };
@@ -68,7 +71,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     { id: 'a-sweifieh', name: 'الصويفية', aliases: ['Sweifieh', 'الصويفيه'], polygon: rect(31.948, 31.968, 35.845, 35.87) },
     { id: 'a-shmeisani', name: 'الشميساني', aliases: ['Shmeisani'], polygon: rect(31.96, 31.98, 35.89, 35.915) },
     { id: 'a-abdoun', name: 'عبدون', aliases: ['Abdoun'], polygon: rect(31.935, 31.952, 35.87, 35.9) },
-  ].map((a) => ({ ...a, status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
+  ].map((a) => ({ ...a, governorateId: 'amman', status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
 
   const merchantDefs: Array<Omit<Merchant, 'status' | 'createdAt' | 'username' | 'password'> & { status?: Merchant['status'] }> = [
     { id: 'm-sanabel', businessName: 'مطعم السنابل', category: 'restaurant', contactName: 'رامي حدّاد', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
@@ -195,8 +198,8 @@ export function createSeedData(now: number = Date.now()): AppData {
     } else if (d.status === 'cancelled') {
       push('cancelled', 4, ADMIN_ACTOR, 'إلغاء تجريبي قبل الإسناد');
     } else if (d.status === 'dispatch_expired') {
-      push('awaiting_captain', 0.2, SYSTEM_ACTOR, 'نشر للعموم');
-      push('dispatch_expired', 4, SYSTEM_ACTOR, 'لم يقبل أي كابتن مؤهل');
+      push('awaiting_captain', 0.2, SYSTEM_ACTOR, 'نشر للعموم — الجولة 1 من 3');
+      push('dispatch_expired', 3.2, SYSTEM_ACTOR, `${ROUNDS_EXHAUSTED_REASON} — أُعيد إلى طابور الإدارة`);
     }
     const last = history[history.length - 1];
     return {
@@ -215,6 +218,8 @@ export function createSeedData(now: number = Date.now()): AppData {
       captainId: d.captain,
       dispatchMode: d.captain || d.status === 'dispatch_expired' ? 'public' : undefined,
       dispatchRound: d.captain || d.status === 'dispatch_expired' ? 1 : 0,
+      dispatchAttempt: d.status === 'dispatch_expired' ? MAX_DISPATCH_ROUNDS : d.captain ? 1 : 0,
+      queueReason: d.status === 'dispatch_expired' ? ROUNDS_EXHAUSTED_REASON : undefined,
       status: d.status,
       createdAt,
       updatedAt: last.at,
@@ -232,6 +237,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     merchants,
     captains,
     areas,
+    routes: [],
     prices,
     orders,
     offers: [],
@@ -239,7 +245,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     // Official contact details are pending from the Product Owner (SRS §4.11) — start empty.
     supportContacts: [],
     alerts: [
-      { id: 'al-1', kind: 'no_candidate', message: `الطلب ${orders[11].reference} انتهى توزيعه دون قبول — بحاجة إلى إجراء`, at: orders[11].updatedAt, orderId: orders[11].id, read: false },
+      { id: 'al-1', kind: 'no_candidate', message: `الطلب ${orders[11].reference}: ${ROUNDS_EXHAUSTED_REASON} — بحاجة إلى إجراء من الإدارة`, at: orders[11].updatedAt, orderId: orders[11].id, read: false },
       { id: 'al-2', kind: 'new_order', message: `طلب جديد ${orders[13].reference} من ${merchants[3].businessName}`, at: orders[13].createdAt, orderId: orders[13].id, read: false },
     ],
     settings: { publicBroadcast: true },

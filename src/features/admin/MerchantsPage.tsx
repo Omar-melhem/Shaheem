@@ -6,12 +6,13 @@ import { useAppStore, type MerchantInput } from '@/application/store';
 import { MERCHANT_CATEGORIES, type LatLng, type Merchant, type MerchantCategory } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { isActiveDelivery } from '@/domain/orderStatus';
-import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, PageHeader, Select, Toggle, SearchField } from '@/shared/components/ui';
+import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, PageHeader, PhoneField, PHONE_HINT, Select, Toggle, SearchField } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { BaseMap } from '@/shared/components/map/BaseMap';
 import { merchantIcon } from '@/shared/components/map/markers';
 import { reportResult } from '@/shared/components/toast';
-import { formatDate, formatDateTime, isPlausiblePhone } from '@/shared/lib/format';
+import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { formatDate, formatDateTime } from '@/shared/lib/format';
 import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
 import { MerchantCategoryBadge } from '@/features/merchants/MerchantCategoryBadge';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
@@ -130,7 +131,8 @@ function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant | 'new' 
     if (!form.businessName.trim()) e.businessName = 'اسم النشاط التجاري مطلوب';
     if (!form.category) e.category = 'اختر فئة النشاط التجاري';
     if (!form.contactName.trim()) e.contactName = 'اسم جهة الاتصال مطلوب';
-    if (!isPlausiblePhone(form.phone)) e.phone = 'أدخل رقم هاتف صالحاً';
+    if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
+    else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
     if (!form.address.trim()) e.address = 'العنوان مطلوب';
     if (!form.pickup) e.pickup = 'حدد موقع الاستلام على الخريطة';
     if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
@@ -170,8 +172,8 @@ function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant | 'new' 
         <Field label="المالك / جهة الاتصال" required error={errors.contactName}>
           <Input value={form.contactName} onChange={(e) => set('contactName', e.target.value)} aria-invalid={!!errors.contactName} />
         </Field>
-        <Field label="رقم الهاتف" required error={errors.phone}>
-          <Input value={form.phone} onChange={(e) => set('phone', e.target.value)} dir="ltr" inputMode="tel" aria-invalid={!!errors.phone} />
+        <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
+          <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
         </Field>
         <Field label="العنوان" required error={errors.address} className="md:col-span-2">
           <Input value={form.address} onChange={(e) => set('address', e.target.value)} aria-invalid={!!errors.address} />

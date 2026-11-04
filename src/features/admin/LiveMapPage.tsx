@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Marker, Polygon, Polyline, Popup, Tooltip } from 'react-leaflet';
+import { Search } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useCaptainViews, useNow, OP_STATUS_LABEL, type CaptainView } from '@/application/hooks';
 import { isActiveDelivery } from '@/domain/orderStatus';
 import { FRESHNESS_LABEL } from '@/domain/location';
 import { formatMoney } from '@/domain/money';
-import { Card, OpenDecision, PageHeader, SimTag, Toggle, SearchField } from '@/shared/components/ui';
+import { Card, Input, OpenDecision, PageHeader, SimTag, Toggle } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { BaseMap } from '@/shared/components/map/BaseMap';
 import { MapLegend } from '@/shared/components/map/MapLegend';
@@ -86,28 +87,17 @@ export function LiveMapPage() {
                   </Popup>
                 </Marker>
               ))}
-            {activeOrders.map((o) =>
-              o.destination.position ? (
-                <Marker key={o.id} position={[o.destination.position.lat, o.destination.position.lng]} icon={destinationIcon()}>
-                  <Popup>
-                    <b dir="ltr">{o.reference}</b> — {o.areaName}
-                    <br />
-                    {o.destination.label}
-                    {o.destination.approximate && (
-                      <>
-                        <br />
-                        <span style={{ color: '#6E6A64' }}>موقع تقريبي (مركز المنطقة)</span>
-                      </>
-                    )}
-                  </Popup>
-                </Marker>
-              ) : null,
-            )}
+            {activeOrders.map((o) => (
+              <Marker key={o.id} position={[o.destination.position.lat, o.destination.position.lng]} icon={destinationIcon()}>
+                <Popup>
+                  <b dir="ltr">{o.reference}</b> — {o.destination.label}
+                </Popup>
+              </Marker>
+            ))}
             {activeOrders.map((o) => {
               const v = views.find((x) => x.captain.id === o.captainId);
               const from = v?.captain.lastLocation?.position ?? o.pickup.position;
               const to = o.status === 'accepted' || o.status === 'heading_to_pickup' ? o.pickup.position : o.destination.position;
-              if (!to) return null;
               return <Polyline key={`l-${o.id}`} positions={[[from.lat, from.lng], [to.lat, to.lng]]} pathOptions={{ color: '#8C2335', weight: 2, dashArray: '5 8' }} />;
             })}
             {visibleCaptains.map((v) => {
@@ -145,7 +135,10 @@ export function LiveMapPage() {
 
         <div className="space-y-4">
           <Card className="space-y-3 p-4">
-            <SearchField label="بحث في الخريطة" placeholder="ابحث عن كابتن أو تاجر" value={q} onChange={(e) => setQ(e.target.value)} />
+            <div className="relative">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+              <Input className="ps-9" placeholder="ابحث عن كابتن أو تاجر" value={q} onChange={(e) => setQ(e.target.value)} aria-label="بحث في الخريطة" />
+            </div>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="تصفية الكباتن حسب الحالة">
               {filters.map(([f, label]) => (
                 <button

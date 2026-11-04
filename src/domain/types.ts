@@ -80,11 +80,13 @@ export interface Captain extends DemoCredentials {
 
 /**
  * Central delivery zone, defined once and reused by every Merchant
- * (Zone-Based Pricing Spec §4). The boundary is optional and only used for
- * map display — pricing never depends on coordinates.
+ * (Zone-Based Pricing Spec §4). It belongs to a Governorate (FU-1.2 §7); its
+ * polygon is how a customer pin is matched to the zone (owner, 2026-11-02).
  */
 export interface ServiceArea {
   id: ID;
+  /** Governorate code from `GOVERNORATES` (domain/governorates). */
+  governorateId: string;
   name: string;
   aliases: string[];
   notes?: string;
@@ -92,6 +94,20 @@ export interface ServiceArea {
   status: AccountStatus;
   createdAt: number;
   updatedAt: number;
+}
+
+/**
+ * Origin area → destination area connection inside one Governorate (FU-1.2 §7.1).
+ * A separate record: it does not change the Merchant + destination-zone pricing.
+ * Whether routes are availability only or become a pricing key is open (FU-1.2 §14.5).
+ */
+export interface DeliveryRoute {
+  id: ID;
+  governorateId: string;
+  originAreaId: ID;
+  destinationAreaId: ID;
+  status: AccountStatus;
+  createdAt: number;
 }
 
 /** Merchant + zone → fixed full delivery fee. Unique per (merchantId, areaId). */
@@ -168,7 +184,12 @@ export interface DeliveryOrder {
   pricingSnapshotAt: number;
   captainId?: ID;
   dispatchMode?: DispatchMode;
+  /** Dispatch cycle counter (each public publish or private assignment starts one). */
   dispatchRound: number;
+  /** Public round within the current cycle, 1…MAX_DISPATCH_ROUNDS (0 = not offered yet). */
+  dispatchAttempt?: number;
+  /** Why the order is sitting in the Admin queue, shown to Admin. */
+  queueReason?: string;
   status: OrderStatus;
   createdAt: number;
   updatedAt: number;
@@ -185,6 +206,8 @@ export interface DispatchOffer {
   captainId: ID;
   mode: DispatchMode;
   round: number;
+  /** Public round number within the cycle (private offers have none). */
+  attempt?: number;
   status: OfferStatus;
   offeredAt: number;
   expiresAt: number;
@@ -247,7 +270,7 @@ export interface DemoSettings {
   /** O-005: sequential (one Captain at a time) or a group of nearest Captains. */
   offerPolicy: 'sequential' | 'group';
   groupSize: number;
-  /** O-006: seconds a Captain has to respond. */
+  /** O-006: seconds a Captain has to respond to a private offer. Public rounds are fixed at 60 s. */
   offerTimeoutSec: number;
   /** Seconds without a GPS update before a trip location is shown as stale. */
   staleAfterSec: number;

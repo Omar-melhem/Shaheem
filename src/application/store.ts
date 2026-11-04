@@ -3,11 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type {
   ActorRef,
-  AlertKind,
   Captain,
   DeliveryOrder,
   DemoSettings,
-  Destination,
   DispatchOffer,
   ID,
   LatLng,
@@ -19,9 +17,10 @@ import type {
 } from '@/domain/types';
 import { isMerchantCategory } from '@/domain/types';
 import { ADMIN_ACTOR, SYSTEM_ACTOR, createSeedData, type AppData } from '@/infrastructure/seed';
-import { evaluateEligibility, describeReasons } from '@/domain/eligibility';
-import { rankByProximity } from '@/domain/dispatch';
+import { describeReasons } from '@/domain/eligibility';
 import { isValidLatLng, moveTowards, haversineMeters } from '@/domain/geo';
+import { isGovernorateId } from '@/domain/governorates';
+import { PHONE_ERROR, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
   CAPTAIN_NEXT_STATUS,
@@ -30,8 +29,12 @@ import {
   isInQueue,
 } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
-import { isPlausiblePhone } from '@/shared/lib/format';
 import { resolveLocationFee } from './queries';
+import { captainActiveOrder, captainBalance, captainEligibility } from './captainQueries';
+import { pushAlert, transition, uid, withdrawPendingOffers } from './orderMutations';
+import { afterOfferResolved, startPublicDispatch } from './dispatchRounds';
+
+export { captainActiveOrder, captainBalance, captainEligibility };
 
 // Application layer: use cases operating on shared state. In the prototype this
 // stands in for the backend (source of truth); in production each action maps
@@ -49,105 +52,8 @@ const ok = <T,>(value: T): Result<T> => ({ ok: true, value });
 const done: Result = { ok: true, value: undefined };
 const fail = (error: string, extra?: Omit<Failure, 'ok' | 'error'>): Failure => ({ ok: false, error, ...extra });
 
-const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-
-// ---------- pure helpers over AppData (usable by selectors too) ----------
-
-export function captainBalance(data: AppData, captainId: ID): Money {
-  return data.walletTx.filter((t) => t.captainId === captainId).reduce((sum, t) => sum + t.amount, 0);
-}
-
-export function captainActiveOrder(data: AppData, captainId: ID): DeliveryOrder | undefined {
-  return data.orders.find((o) => o.captainId === captainId && isActiveDelivery(o.status));
-}
-
-export function captainEligibility(data: AppData, captain: Captain) {
-  return evaluateEligibility(captain, {
-    hasActiveDelivery: !!captainActiveOrder(data, captain.id),
-    balance: captainBalance(data, captain.id),
-    walletThreshold: data.demo.walletThreshold,
-  });
-}
-
 const captainActor = (c: Captain): ActorRef => ({ role: 'captain', id: c.id, name: c.fullName });
 const merchantActor = (m: Merchant): ActorRef => ({ role: 'merchant', id: m.id, name: m.businessName });
-
-function transition(order: DeliveryOrder, to: OrderStatus, actor: ActorRef, now: number, note?: string) {
-  order.history.push({ from: order.status, to, actor, at: now, note });
-  order.status = to;
-  order.updatedAt = now;
-}
-
-function pushAlert(data: AppData, kind: AlertKind, message: string, now: number, orderId?: ID) {
-  data.alerts.unshift({ id: uid('al'), kind, message, at: now, orderId, read: false });
-  if (data.alerts.length > 60) data.alerts.length = 60;
-}
-
-function withdrawPendingOffers(data: AppData, orderId: ID, now: number, exceptOfferId?: ID) {
-  for (const offer of data.offers) {
-    if (offer.orderId === orderId && offer.status === 'pending' && offer.id !== exceptOfferId) {
-      offer.status = 'withdrawn';
-      offer.respondedAt = now;
-    }
-  }
-}
-
-/**
- * Offers the order to the next batch of nearest eligible Captains not yet offered
- * in this dispatch round. Batch size follows the demo offer policy (O-005).
- */
-function offerNextBatch(data: AppData, order: DeliveryOrder, now: number) {
-  const alreadyOffered = new Set(
-    data.offers.filter((o) => o.orderId === order.id && o.round === order.dispatchRound).map((o) => o.captainId),
-  );
-  const eligible = data.captains.filter((c) => !alreadyOffered.has(c.id) && captainEligibility(data, c).eligible);
-  const ranked = rankByProximity(eligible, order.pickup.position);
-  const size = data.demo.offerPolicy === 'sequential' ? 1 : Math.max(1, data.demo.groupSize);
-  const batch = ranked.slice(0, size);
-
-  if (batch.length === 0) {
-    transition(order, 'dispatch_expired', SYSTEM_ACTOR, now, 'لا يوجد كابتن مؤهل متبقٍ — أُعيد إلى طابور الإدارة');
-    pushAlert(data, 'no_candidate', `الطلب ${order.reference}: لا يوجد كابتن مؤهل قبل العرض — بحاجة إلى إجراء من الإدارة`, now, order.id);
-    return;
-  }
-  const startRank = alreadyOffered.size;
-  batch.forEach((r, i) => {
-    data.offers.push({
-      id: uid('of'),
-      orderId: order.id,
-      captainId: r.captain.id,
-      mode: 'public',
-      round: order.dispatchRound,
-      status: 'pending',
-      offeredAt: now,
-      expiresAt: now + data.demo.offerTimeoutSec * 1000,
-      distanceMeters: r.distanceMeters,
-      rank: startRank + i + 1,
-    });
-  });
-}
-
-function startPublicDispatch(data: AppData, order: DeliveryOrder, actor: ActorRef, now: number) {
-  order.dispatchRound += 1;
-  order.dispatchMode = 'public';
-  transition(order, 'awaiting_captain', actor, now, 'نشر للعموم — ترتيب حسب القرب من التاجر');
-  offerNextBatch(data, order, now);
-}
-
-/** Called after an offer is rejected, expires or is withdrawn. */
-function afterOfferResolved(data: AppData, orderId: ID, now: number, reason: 'rejected' | 'expired' | 'withdrawn') {
-  const order = data.orders.find((o) => o.id === orderId);
-  if (!order) return;
-  const stillPending = data.offers.some((o) => o.orderId === orderId && o.status === 'pending');
-  if (stillPending) return;
-  if (order.status === 'offered_privately') {
-    const label = reason === 'rejected' ? 'رفض الكابتن العرض الخاص' : reason === 'expired' ? 'انتهت مهلة العرض الخاص' : 'سُحب العرض الخاص';
-    transition(order, 'pending_dispatch', SYSTEM_ACTOR, now, `${label} — أُعيد إلى طابور الإدارة`);
-    pushAlert(data, 'private_returned', `الطلب ${order.reference}: ${label}، وعاد إلى طابور الإدارة`, now, order.id);
-  } else if (order.status === 'awaiting_captain') {
-    offerNextBatch(data, order, now);
-  }
-}
 
 // ---------- store ----------
 
@@ -166,9 +72,16 @@ export interface CreateOrderInput {
 }
 
 export interface ZoneInput {
+  governorateId: string;
   name: string;
   aliases: string[];
   notes?: string;
+}
+
+export interface RouteInput {
+  governorateId: string;
+  originAreaId: ID;
+  destinationAreaId: ID;
 }
 
 export type Session = { role: 'admin'; id: 'admin' } | { role: 'merchant'; id: ID } | { role: 'captain'; id: ID };
@@ -221,6 +134,9 @@ interface Actions {
   updateZone: (id: ID, patch: Partial<ZoneInput> & { polygon?: LatLng[] }) => Result;
   setServiceAreaStatus: (id: ID, active: boolean) => Result;
 
+  createRoute: (input: RouteInput) => Result<ID>;
+  removeRoute: (id: ID) => Result;
+
   setMerchantAreaPrice: (merchantId: ID, areaId: ID, price: Money | null) => Result;
   setMerchantAreaPriceStatus: (merchantId: ID, areaId: ID, active: boolean) => Result;
 
@@ -251,8 +167,8 @@ interface Actions {
 
 export type AppState = AppData & Actions;
 
-// v2: zone-based pricing + demo credentials (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v3';
+// v4: governorates, delivery routes and 3 × 60 s dispatch rounds (older saved demo data is discarded).
+export const STORAGE_KEY = 'shahm-demo-v4';
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -331,11 +247,12 @@ export const useAppStore = create<AppState>()(
           run((d, now) => {
             if (!input.businessName.trim()) return fail('اسم النشاط التجاري مطلوب');
             if (!isMerchantCategory(input.category)) return fail('اختر فئة النشاط التجاري');
+            if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             if (!isValidLatLng(input.pickup)) return fail('حدد موقع الاستلام على الخريطة');
             const credErr = validateCredentials(d, input);
             if (credErr) return fail(credErr);
             const id = uid('m');
-            d.merchants.push({ ...input, id, status: 'active', createdAt: now });
+            d.merchants.push({ ...input, phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
             return ok(id);
           }),
         updateMerchant: (id, input) =>
@@ -344,10 +261,11 @@ export const useAppStore = create<AppState>()(
             if (!m) return fail('التاجر غير موجود');
             if (!input.businessName.trim()) return fail('اسم النشاط التجاري مطلوب');
             if (!isMerchantCategory(input.category)) return fail('اختر فئة النشاط التجاري');
+            if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             if (!isValidLatLng(input.pickup)) return fail('حدد موقع الاستلام على الخريطة');
             const credErr = validateCredentials(d, input, id);
             if (credErr) return fail(credErr);
-            Object.assign(m, input);
+            Object.assign(m, { ...input, phone: normalizePhone(input.phone) });
             return done;
           }),
         setMerchantStatus: (id, active) =>
@@ -363,10 +281,11 @@ export const useAppStore = create<AppState>()(
           run((d, now) => {
             if (!input.fullName.trim()) return fail('اسم الكابتن مطلوب');
             if (!input.phone.trim()) return fail('رقم هاتف الكابتن مطلوب');
+            if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             const credErr = validateCredentials(d, input);
             if (credErr) return fail(credErr);
             const id = uid('c');
-            d.captains.push({ ...input, id, status: 'active', availability: 'offline', gpsSignal: 'ok', createdAt: now });
+            d.captains.push({ ...input, phone: normalizePhone(input.phone), id, status: 'active', availability: 'offline', gpsSignal: 'ok', createdAt: now });
             return ok(id);
           }),
         updateCaptain: (id, input) =>
@@ -374,9 +293,10 @@ export const useAppStore = create<AppState>()(
             const c = d.captains.find((x) => x.id === id);
             if (!c) return fail('الكابتن غير موجود');
             if (!input.fullName.trim() || !input.phone.trim()) return fail('الاسم ورقم الهاتف مطلوبان');
+            if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             const credErr = validateCredentials(d, input, id);
             if (credErr) return fail(credErr);
-            Object.assign(c, input);
+            Object.assign(c, { ...input, phone: normalizePhone(input.phone) });
             return done;
           }),
         setCaptainStatus: (id, active) =>
@@ -408,12 +328,13 @@ export const useAppStore = create<AppState>()(
         // ----- Service areas -----
         createZone: (input) =>
           run((d, now) => {
+            if (!isGovernorateId(input.governorateId)) return fail('اختر المحافظة أولاً');
             if (!input.name.trim()) return fail('اسم المنطقة مطلوب');
             const aliases = input.aliases.map((a) => a.trim()).filter(Boolean);
             const dup = duplicateZone(d, { ...input, aliases });
             if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
             const id = uid('a');
-            d.areas.push({ id, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
+            d.areas.push({ id, governorateId: input.governorateId, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
             return ok(id);
           }),
         updateZone: (id, patch) =>
@@ -422,9 +343,14 @@ export const useAppStore = create<AppState>()(
             if (!a) return fail('المنطقة غير موجودة');
             if (patch.name !== undefined && !patch.name.trim()) return fail('اسم المنطقة مطلوب');
             if (patch.polygon && patch.polygon.length > 0 && patch.polygon.length < 3) return fail('ارسم ثلاث نقاط على الأقل');
-            const next: ZoneInput = { name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
+            if (patch.governorateId !== undefined && !isGovernorateId(patch.governorateId)) return fail('اختر المحافظة');
+            if (patch.governorateId && patch.governorateId !== a.governorateId && d.routes.some((r) => r.originAreaId === id || r.destinationAreaId === id)) {
+              return fail('لا يمكن نقل منطقة مرتبطة بمسارات توصيل إلى محافظة أخرى — احذف مساراتها أولاً');
+            }
+            const next: ZoneInput = { governorateId: patch.governorateId ?? a.governorateId, name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
             const dup = duplicateZone(d, next, id);
             if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
+            a.governorateId = next.governorateId;
             a.name = next.name.trim();
             a.aliases = next.aliases;
             if (patch.notes !== undefined) a.notes = patch.notes.trim() || undefined;
@@ -438,6 +364,33 @@ export const useAppStore = create<AppState>()(
             if (!a) return fail('المنطقة غير موجودة');
             a.status = active ? 'active' : 'inactive';
             a.updatedAt = now;
+            return done;
+          }),
+
+        // ----- Delivery routes (origin → destination; availability record only, no pricing effect) -----
+        createRoute: (input) =>
+          run((d, now) => {
+            if (!isGovernorateId(input.governorateId)) return fail('اختر المحافظة أولاً');
+            const origin = d.areas.find((a) => a.id === input.originAreaId);
+            const destination = d.areas.find((a) => a.id === input.destinationAreaId);
+            if (!origin) return fail('اختر منطقة الانطلاق');
+            if (!destination) return fail('اختر منطقة الوصول');
+            if (origin.governorateId !== input.governorateId || destination.governorateId !== input.governorateId) {
+              return fail('المنطقتان يجب أن تكونا ضمن المحافظة المختارة');
+            }
+            if (origin.id === destination.id) return fail('اختر منطقة وصول مختلفة عن منطقة الانطلاق');
+            if (d.routes.some((r) => r.originAreaId === origin.id && r.destinationAreaId === destination.id)) {
+              return fail(`المسار من «${origin.name}» إلى «${destination.name}» موجود مسبقاً`);
+            }
+            const id = uid('rt');
+            d.routes.push({ id, governorateId: input.governorateId, originAreaId: origin.id, destinationAreaId: destination.id, status: 'active', createdAt: now });
+            return ok(id);
+          }),
+        removeRoute: (id) =>
+          run((d) => {
+            const i = d.routes.findIndex((r) => r.id === id);
+            if (i < 0) return fail('المسار غير موجود');
+            d.routes.splice(i, 1);
             return done;
           }),
 
@@ -496,7 +449,8 @@ export const useAppStore = create<AppState>()(
             const m = d.merchants.find((x) => x.id === merchantId);
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
-            if (!isPlausiblePhone(input.customerPhone)) return fail('رقم هاتف العميل مطلوب ويجب أن يكون صالحاً');
+            if (!input.customerPhone.trim()) return fail('رقم هاتف العميل مطلوب');
+            if (!isValidPhone(input.customerPhone)) return fail(PHONE_ERROR);
             if (!input.addressDescription.trim()) return fail('وصف العنوان مطلوب لمساعدة الكابتن');
             if (!isValidLatLng(input.location)) return fail('حدّد موقع العميل على الخريطة', { code: 'no_location' });
             // Detect the zone from the pin and read the current fee at confirmation (Spec §8, §10).
@@ -519,7 +473,7 @@ export const useAppStore = create<AppState>()(
               merchantId,
               pickup: { position: m.pickup, address: m.address },
               customerName: input.customerName?.trim() || undefined,
-              customerPhone: input.customerPhone.trim(),
+              customerPhone: normalizePhone(input.customerPhone),
               destination: {
                 label: input.addressDescription.trim(),
                 address: [input.placeName?.trim(), `${zone.name}، عمّان`].filter(Boolean).join(' — '),
@@ -552,6 +506,7 @@ export const useAppStore = create<AppState>()(
               for (const order of d.orders) {
                 if (order.status !== 'awaiting_captain') continue;
                 withdrawPendingOffers(d, order.id, now);
+                order.queueReason = 'أُوقف البث العام';
                 transition(order, 'pending_dispatch', ADMIN_ACTOR, now, 'أُوقف البث العام — سُحبت العروض وأُعيد الطلب إلى الطابور');
               }
             }
@@ -579,6 +534,7 @@ export const useAppStore = create<AppState>()(
             if (!elig.eligible) return fail(`الكابتن غير مؤهل: ${describeReasons(elig.reasons, d.demo.walletThreshold)}`);
             order.dispatchRound += 1;
             order.dispatchMode = 'private';
+            order.queueReason = undefined;
             const distanceMeters = captain.lastLocation ? haversineMeters(captain.lastLocation.position, order.pickup.position) : undefined;
             d.offers.push({
               id: uid('of'),
@@ -693,6 +649,8 @@ export const useAppStore = create<AppState>()(
         saveSupportContact: (contact) =>
           run((d) => {
             if (!contact.label.trim() || !contact.value.trim()) return fail('العنوان وبيانات التواصل مطلوبة');
+            if (contact.channel === 'phone' && !isValidPhone(contact.value)) return fail(PHONE_ERROR);
+            if (contact.channel === 'phone') contact = { ...contact, value: normalizePhone(contact.value) };
             if (contact.id) {
               const existing = d.supportContacts.find((c) => c.id === contact.id);
               if (!existing) return fail('جهة التواصل غير موجودة');
@@ -748,8 +706,8 @@ export const useAppStore = create<AppState>()(
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => {
-        const { merchants, captains, areas, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
-        return { merchants, captains, areas, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
+        const { merchants, captains, areas, routes, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
+        return { merchants, captains, areas, routes, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
       },
     },
   ),

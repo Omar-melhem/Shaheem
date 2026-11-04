@@ -4,6 +4,7 @@ import { useNow } from '@/application/hooks';
 import { formatMoney } from '@/domain/money';
 import { formatDistance } from '@/domain/geo';
 import { isActiveDelivery } from '@/domain/orderStatus';
+import { MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
 import { locationFreshness } from '@/domain/location';
 import { Badge, Card, DetailRow, Drawer } from '@/shared/components/ui';
 import { FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
@@ -70,6 +71,9 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
 
       <Card className="px-4 py-2">
         <dl className="divide-y divide-cream-dark">
+          {order.queueReason && (order.status === 'dispatch_expired' || order.status === 'pending_dispatch') && (
+            <DetailRow label="سبب العودة للطابور"><span className="font-bold text-red-800">{order.queueReason}</span></DetailRow>
+          )}
           <DetailRow label="التاجر">{merchant?.businessName}</DetailRow>
           <DetailRow label="نقطة الاستلام">{order.pickup.address}</DetailRow>
           <DetailRow label="منطقة العميل">{order.areaName}</DetailRow>
@@ -110,7 +114,7 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
           <ul className="space-y-1.5 text-sm">
             {offers.map((o) => (
               <li key={o.id} className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-ink-muted">جولة {o.round}</span>
+                <span className="text-xs text-ink-muted">{o.attempt ? `جولة ${o.attempt} من ${MAX_DISPATCH_ROUNDS}` : `دورة ${o.round}`}</span>
                 <span className="flex-1 font-medium">{captains.find((c) => c.id === o.captainId)?.fullName}</span>
                 {o.distanceMeters !== undefined && <span className="text-xs text-ink-muted">{formatDistance(o.distanceMeters)}</span>}
                 <Badge tone={o.mode === 'private' ? 'info' : 'neutral'}>{o.mode === 'private' ? 'خاص' : 'عام'}</Badge>

@@ -25,7 +25,7 @@ function Wheel({ cx }: { cx: number }) {
  * CSS transform only; wheels turn while moving; parked under reduced motion.
  * Sits behind the watermark and all copy.
  */
-export function VehicleAnimation({ className = 'top-[67%]' }: { className?: string }) {
+export function VehicleAnimation({ className = 'top-[71%]' }: { className?: string }) {
   return (
     <div className={`vehicle-lane pointer-events-none absolute inset-x-0 ${className}`} aria-hidden="true">
       <div className="vehicle-road" />

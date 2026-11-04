@@ -5,6 +5,7 @@ import { version } from '../../../package.json';
 import { useAppStore, DEMO_ADMIN } from '@/application/store';
 import { MERCHANT_CATEGORIES } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
+import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
 import { Badge, Button, OpenDecision, PageHeader, SettingsRow, SettingsSection, Toggle } from '@/shared/components/ui';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
 import { useSignOut } from '@/features/auth/hooks/useSignOut';
@@ -47,7 +48,10 @@ export function AdminSettingsPage() {
           <SettingsRow label="سياسة إرسال العروض" readOnly>
             {demo.offerPolicy === 'group' ? `أقرب ${demo.groupSize} كباتن معاً` : 'كابتن واحد في كل مرة'}
           </SettingsRow>
-          <SettingsRow label="مهلة الرد على العرض" readOnly>
+          <SettingsRow label="جولات العرض العام" readOnly>
+            {MAX_DISPATCH_ROUNDS} جولات × {DISPATCH_ROUND_SEC} ثانية
+          </SettingsRow>
+          <SettingsRow label="مهلة العرض الخاص" readOnly>
             {demo.offerTimeoutSec} ثانية
           </SettingsRow>
           <SettingsRow label="الحد الأدنى لرصيد المحفظة" readOnly>

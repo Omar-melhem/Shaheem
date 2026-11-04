@@ -4,6 +4,7 @@ import { useAppStore } from '@/application/store';
 import { Button, ConfirmDialog, Drawer, Field, Input, OpenDecision, Select, SimTag, Toggle } from '@/shared/components/ui';
 import { reportResult, toast } from '@/shared/components/toast';
 import { formatMoney, parseJodInput, filsToJod } from '@/domain/money';
+import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
 
 /** Presenter-only controls (SRS §19.8). Never shown as production functionality. */
 export function DemoControlsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -48,11 +49,11 @@ export function DemoControlsDrawer({ open, onClose }: { open: boolean; onClose: 
           <Field label="حجم المجموعة">
             <Input type="number" min={1} max={8} value={s.demo.groupSize} disabled={s.demo.offerPolicy === 'sequential'} onChange={(e) => s.updateDemoSettings({ groupSize: Math.max(1, Math.min(8, Number(e.target.value) || 1)) })} />
           </Field>
-          <Field label="مهلة العرض (ثانية)">
-            <Input type="number" min={15} max={600} value={s.demo.offerTimeoutSec} onChange={(e) => s.updateDemoSettings({ offerTimeoutSec: Math.max(15, Math.min(600, Number(e.target.value) || 90)) })} />
+          <Field label="مهلة العرض الخاص (ثانية)" hint={`العرض العام ثابت: ${MAX_DISPATCH_ROUNDS} جولات × ${DISPATCH_ROUND_SEC} ث`}>
+            <Input type="number" min={15} max={600} value={s.demo.offerTimeoutSec} onChange={(e) => s.updateDemoSettings({ offerTimeoutSec: Math.max(15, Math.min(600, Number(e.target.value) || DISPATCH_ROUND_SEC)) })} />
           </Field>
         </div>
-        <OpenDecision id="O-005 / O-006">سياسة إرسال العروض ومهلتها قرارات مفتوحة؛ القيم هنا لأغراض العرض فقط.</OpenDecision>
+        <OpenDecision id="O-005 / O-006">اختيار الكباتن في كل جولة ومهلة العرض الخاص قرارات مفتوحة؛ القيم هنا لأغراض العرض فقط.</OpenDecision>
       </section>
 
       <section className="space-y-3 rounded-2xl bg-white p-4 shadow-card">

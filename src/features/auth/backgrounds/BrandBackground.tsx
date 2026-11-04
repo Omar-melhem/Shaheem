@@ -6,7 +6,7 @@ import { VehicleAnimation } from './VehicleAnimation';
 import type { BackgroundVariant } from './useBackgroundPreview';
 
 /**
- * Picks one brand-panel background. Default: delivery van passing behind the large
+ * Picks one brand-panel background. Default: SHAHM car passing behind the large
  * monochrome watermark (layer order: van, then watermark, then content).
  * The preview variants drop both so effects never stack.
  */

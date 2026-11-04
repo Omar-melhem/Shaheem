@@ -7,15 +7,15 @@ import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { HomeRedirect, RequireSession } from '@/features/auth/RequireSession';
 import { AdminLayout } from '@/features/admin/AdminLayout';
-import { DashboardPage } from '@/features/admin/DashboardPage';
-import { DispatchPage } from '@/features/admin/DispatchPage';
-import { LiveMapPage } from '@/features/admin/LiveMapPage';
+import { DashboardPage } from '@/features/admin/dashboard/DashboardPage';
+import { DispatchPage } from '@/features/admin/dispatch/DispatchPage';
+import { LiveMapPage } from '@/features/admin/live-map/LiveMapPage';
 import { OrdersPage } from '@/features/admin/OrdersPage';
 import { MerchantsPage } from '@/features/admin/MerchantsPage';
-import { MerchantZonesPage } from '@/features/admin/MerchantZonesPage';
 import { CaptainsPage } from '@/features/admin/CaptainsPage';
-import { ServiceAreasPage } from '@/features/admin/ServiceAreasPage';
-import { PricingPage } from '@/features/admin/PricingPage';
+import { ServiceAreasPage } from '@/features/admin/service-areas/ServiceAreasPage';
+import { MerchantPricingPage } from '@/features/admin/merchant-pricing/MerchantPricingPage';
+import { MerchantPricingDetails } from '@/features/admin/merchant-pricing/MerchantPricingDetails';
 import { WalletsPage } from '@/features/admin/WalletsPage';
 import { SupportSettingsPage } from '@/features/admin/SupportSettingsPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
@@ -45,10 +45,11 @@ export function App() {
           <Route path="map" element={<LiveMapPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="merchants" element={<MerchantsPage />} />
-          <Route path="merchants/:merchantId/zones" element={<MerchantZonesPage />} />
+          <Route path="merchants/:merchantId/zones" element={<MerchantPricingDetails backTo={{ path: '/admin/merchants', label: 'التجار' }} />} />
           <Route path="captains" element={<CaptainsPage />} />
           <Route path="areas" element={<ServiceAreasPage />} />
-          <Route path="pricing" element={<PricingPage />} />
+          <Route path="pricing" element={<MerchantPricingPage />} />
+          <Route path="pricing/:merchantId" element={<MerchantPricingDetails backTo={{ path: '/admin/pricing', label: 'أسعار التجار' }} />} />
           <Route path="wallets" element={<WalletsPage />} />
           <Route path="support" element={<SupportSettingsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />

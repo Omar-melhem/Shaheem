@@ -4,9 +4,9 @@ import { useAppStore } from '@/application/store';
 import { merchantZoneOptions, resolveLocationFee } from '@/application/queries';
 import type { Merchant } from '@/domain/types';
 import { formatMoney, parseJodInput } from '@/domain/money';
-import { Button, Card, Field, Input, Textarea } from '@/shared/components/ui';
+import { Button, Card, Field, Input, PhoneField, PHONE_HINT, Textarea } from '@/shared/components/ui';
 import { reportResult, toast } from '@/shared/components/toast';
-import { isPlausiblePhone } from '@/shared/lib/format';
+import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { CustomerLocationSection, OUTSIDE_MSG, UNAVAILABLE_MSG, type CustomerLocation } from './location/CustomerLocationSection';
 import { OrderReviewDialog, type ReviewState } from './OrderReviewDialog';
 
@@ -50,7 +50,7 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
   const validate = () => {
     const e: Errors = {};
     if (!form.customerPhone.trim()) e.customerPhone = 'رقم هاتف العميل مطلوب';
-    else if (!isPlausiblePhone(form.customerPhone)) e.customerPhone = 'رقم الهاتف غير صالح';
+    else if (!isValidPhone(form.customerPhone)) e.customerPhone = PHONE_ERROR;
     if (!form.location) e.location = 'حدّد موقع العميل بالبحث أو على الخريطة';
     else if (resolution?.kind !== 'ok') e.location = resolution?.kind === 'outside' ? OUTSIDE_MSG : UNAVAILABLE_MSG;
     if (!form.addressDescription.trim()) e.addressDescription = 'وصف العنوان مطلوب لمساعدة الكابتن';
@@ -116,8 +116,8 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
 
       <fieldset disabled={blocked} className="space-y-5 p-5 disabled:opacity-60">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="هاتف العميل" required error={errors.customerPhone}>
-            <Input value={form.customerPhone} onChange={(e) => set('customerPhone', e.target.value)} inputMode="tel" dir="ltr" autoComplete="off" aria-invalid={!!errors.customerPhone} placeholder="07XXXXXXXX" />
+          <Field label="هاتف العميل" required error={errors.customerPhone} hint={PHONE_HINT}>
+            <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
           </Field>
           <Field label="اسم العميل" optional>
             <Input value={form.customerName} onChange={(e) => set('customerName', e.target.value)} autoComplete="off" />
