@@ -9,6 +9,8 @@ official SHAHM logo and brand palette.
 
 ## Run
 
+Requires Node.js 20 or newer.
+
 ```bash
 npm install
 npm run dev        # http://localhost:5173
