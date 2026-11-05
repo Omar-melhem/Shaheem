@@ -18,9 +18,10 @@ import type {
 import { isMerchantCategory } from '@/domain/types';
 import { ADMIN_ACTOR, SYSTEM_ACTOR, createSeedData, type AppData } from '@/infrastructure/seed';
 import { describeReasons } from '@/domain/eligibility';
-import { isValidLatLng, moveTowards, haversineMeters } from '@/domain/geo';
+import { isValidLatLng, moveTowards, haversineMeters, polygonError } from '@/domain/geo';
 import { isGovernorateId } from '@/domain/governorates';
-import { PHONE_ERROR, isValidPhone, normalizePhone } from '@/domain/phone';
+import { cityName, isCityInGovernorate } from '@/domain/cities';
+import { PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
   CAPTAIN_NEXT_STATUS,
@@ -30,6 +31,8 @@ import {
 } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
 import { resolveLocationFee } from './queries';
+import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError } from './merchantLocation';
+import { previewPricingCopy, type PricingCopyMode } from './pricingCopy';
 import { captainActiveOrder, captainBalance, captainEligibility } from './captainQueries';
 import { pushAlert, transition, uid, withdrawPendingOffers } from './orderMutations';
 import { afterOfferResolved, startPublicDispatch } from './dispatchRounds';
@@ -58,21 +61,22 @@ const merchantActor = (m: Merchant): ActorRef => ({ role: 'merchant', id: m.id, 
 // ---------- store ----------
 
 export interface CreateOrderInput {
-  customerPhone: string;
+  /** Optional; when supplied it must be exactly 10 digits (CR v1.3 §8.4). */
+  customerPhone?: string;
   customerName?: string;
   /** Customer pin (search result or map tap). The zone and fee are derived from it here. */
   location: LatLng;
   /** Name of the searched place, if the pin came from search. */
   placeName?: string;
-  /** Building, floor, landmark — helps the Captain; does not affect the fee. */
-  addressDescription: string;
-  mealValue?: Money;
+  /** Order value in fils; required and strictly positive for new orders (CR v1.3 §8.3). */
+  mealValue: Money;
   /** Fee the Merchant saw; if the current fee differs, creation is refused with code 'fee_changed'. */
   expectedFee?: Money;
 }
 
 export interface ZoneInput {
   governorateId: string;
+  cityId: string;
   name: string;
   aliases: string[];
   notes?: string;
@@ -86,7 +90,8 @@ export interface RouteInput {
 
 export type Session = { role: 'admin'; id: 'admin' } | { role: 'merchant'; id: ID } | { role: 'captain'; id: ID };
 
-export type MerchantInput = Omit<Merchant, 'id' | 'createdAt' | 'status'>;
+/** The address label is derived from City + Area; it is not typed by Admin. */
+export type MerchantInput = Omit<Merchant, 'id' | 'createdAt' | 'status' | 'address'>;
 export type CaptainInput = Pick<Captain, 'fullName' | 'phone' | 'vehicleType' | 'vehicleDescription' | 'username' | 'password'>;
 
 export const DEMO_ADMIN = { username: 'admin', password: 'admin1234' };
@@ -139,6 +144,7 @@ interface Actions {
 
   setMerchantAreaPrice: (merchantId: ID, areaId: ID, price: Money | null) => Result;
   setMerchantAreaPriceStatus: (merchantId: ID, areaId: ID, active: boolean) => Result;
+  copyMerchantPricing: (sourceId: ID, targetId: ID, mode: PricingCopyMode) => Result<{ changed: number }>;
 
   rechargeWallet: (captainId: ID, amount: Money, reason: string) => Result;
 
@@ -167,8 +173,8 @@ interface Actions {
 
 export type AppState = AppData & Actions;
 
-// v4: governorates, delivery routes and 3 × 60 s dispatch rounds (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v4';
+// v5: cities, merchant City/Area IDs and the pricing-copy audit (older saved demo data is discarded).
+export const STORAGE_KEY = 'shahm-demo-v5';
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -248,11 +254,12 @@ export const useAppStore = create<AppState>()(
             if (!input.businessName.trim()) return fail('اسم النشاط التجاري مطلوب');
             if (!isMerchantCategory(input.category)) return fail('اختر فئة النشاط التجاري');
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
-            if (!isValidLatLng(input.pickup)) return fail('حدد موقع الاستلام على الخريطة');
+            const locErr = pickupLocationError(d.areas, input);
+            if (locErr) return fail(locErr);
             const credErr = validateCredentials(d, input);
             if (credErr) return fail(credErr);
             const id = uid('m');
-            d.merchants.push({ ...input, phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
+            d.merchants.push({ ...input, address: pickupAddressLabel(d.areas, undefined, input), phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
             return ok(id);
           }),
         updateMerchant: (id, input) =>
@@ -262,10 +269,13 @@ export const useAppStore = create<AppState>()(
             if (!input.businessName.trim()) return fail('اسم النشاط التجاري مطلوب');
             if (!isMerchantCategory(input.category)) return fail('اختر فئة النشاط التجاري');
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
-            if (!isValidLatLng(input.pickup)) return fail('حدد موقع الاستلام على الخريطة');
+            if (!isUnchangedLegacyLocation(m, input)) {
+              const locErr = pickupLocationError(d.areas, input);
+              if (locErr) return fail(locErr);
+            }
             const credErr = validateCredentials(d, input, id);
             if (credErr) return fail(credErr);
-            Object.assign(m, { ...input, phone: normalizePhone(input.phone) });
+            Object.assign(m, { ...input, address: pickupAddressLabel(d.areas, m, input), phone: normalizePhone(input.phone) });
             return done;
           }),
         setMerchantStatus: (id, active) =>
@@ -329,12 +339,13 @@ export const useAppStore = create<AppState>()(
         createZone: (input) =>
           run((d, now) => {
             if (!isGovernorateId(input.governorateId)) return fail('اختر المحافظة أولاً');
+            if (!isCityInGovernorate(input.cityId, input.governorateId)) return fail('اختر مدينة تابعة للمحافظة');
             if (!input.name.trim()) return fail('اسم المنطقة مطلوب');
             const aliases = input.aliases.map((a) => a.trim()).filter(Boolean);
             const dup = duplicateZone(d, { ...input, aliases });
             if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
             const id = uid('a');
-            d.areas.push({ id, governorateId: input.governorateId, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
+            d.areas.push({ id, governorateId: input.governorateId, cityId: input.cityId, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
             return ok(id);
           }),
         updateZone: (id, patch) =>
@@ -342,15 +353,22 @@ export const useAppStore = create<AppState>()(
             const a = d.areas.find((x) => x.id === id);
             if (!a) return fail('المنطقة غير موجودة');
             if (patch.name !== undefined && !patch.name.trim()) return fail('اسم المنطقة مطلوب');
-            if (patch.polygon && patch.polygon.length > 0 && patch.polygon.length < 3) return fail('ارسم ثلاث نقاط على الأقل');
+            if (patch.polygon) {
+              const geoErr = polygonError(patch.polygon);
+              if (geoErr) return fail(geoErr);
+            }
+            const nextCity = patch.cityId ?? a.cityId;
+            if (!isCityInGovernorate(nextCity, patch.governorateId ?? a.governorateId)) return fail('اختر مدينة تابعة للمحافظة');
+            if (nextCity !== a.cityId && d.merchants.some((m) => m.areaId === id)) return fail('لا يمكن نقل منطقة مرتبطة بمواقع تجار إلى مدينة أخرى');
             if (patch.governorateId !== undefined && !isGovernorateId(patch.governorateId)) return fail('اختر المحافظة');
             if (patch.governorateId && patch.governorateId !== a.governorateId && d.routes.some((r) => r.originAreaId === id || r.destinationAreaId === id)) {
               return fail('لا يمكن نقل منطقة مرتبطة بمسارات توصيل إلى محافظة أخرى — احذف مساراتها أولاً');
             }
-            const next: ZoneInput = { governorateId: patch.governorateId ?? a.governorateId, name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
+            const next: ZoneInput = { governorateId: patch.governorateId ?? a.governorateId, cityId: nextCity, name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
             const dup = duplicateZone(d, next, id);
             if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
             a.governorateId = next.governorateId;
+            a.cityId = next.cityId;
             a.name = next.name.trim();
             a.aliases = next.aliases;
             if (patch.notes !== undefined) a.notes = patch.notes.trim() || undefined;
@@ -424,6 +442,32 @@ export const useAppStore = create<AppState>()(
             return done;
           }),
 
+        // Applied in one store update: all rows change together or none do. Re-running changes nothing new.
+        copyMerchantPricing: (sourceId, targetId, mode) =>
+          run((d, now) => {
+            if (sourceId === targetId) return fail('لا يمكن نسخ تسعيرة المتجر إلى نفسه');
+            if (!d.merchants.some((m) => m.id === sourceId) || !d.merchants.some((m) => m.id === targetId)) return fail('التاجر غير موجود');
+            const preview = previewPricingCopy(d, sourceId, targetId, mode);
+            const rows = preview.rows.filter((r) => r.action === 'add' || r.action === 'update');
+            if (rows.some((r) => !Number.isInteger(r.sourcePrice) || r.sourcePrice <= 0)) return fail('توجد رسوم غير صالحة لدى المتجر المصدر');
+            if (rows.length === 0) return ok({ changed: 0 });
+            for (const r of rows) {
+              const existing = d.prices.find((p) => p.merchantId === targetId && p.areaId === r.areaId);
+              if (existing) Object.assign(existing, { price: r.sourcePrice, updatedAt: now, updatedBy: ADMIN_ACTOR.name });
+              else d.prices.push({ id: uid('pr'), merchantId: targetId, areaId: r.areaId, price: r.sourcePrice, status: 'active', updatedAt: now, updatedBy: ADMIN_ACTOR.name });
+            }
+            d.pricingAudit.unshift({
+              id: uid('pa'),
+              sourceMerchantId: sourceId,
+              targetMerchantId: targetId,
+              mode,
+              changes: rows.map((r) => ({ areaId: r.areaId, previous: r.targetPrice, next: r.sourcePrice })),
+              actor: ADMIN_ACTOR.name,
+              at: now,
+            });
+            return ok({ changed: rows.length });
+          }),
+
         // ----- Wallet (Admin only; recharge is simulated — SRS §4.10) -----
         rechargeWallet: (captainId, amount, reason) =>
           run((d, now) => {
@@ -449,9 +493,8 @@ export const useAppStore = create<AppState>()(
             const m = d.merchants.find((x) => x.id === merchantId);
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
-            if (!input.customerPhone.trim()) return fail('رقم هاتف العميل مطلوب');
-            if (!isValidPhone(input.customerPhone)) return fail(PHONE_ERROR);
-            if (!input.addressDescription.trim()) return fail('وصف العنوان مطلوب لمساعدة الكابتن');
+            if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
+            if (!Number.isInteger(input.mealValue) || input.mealValue <= 0) return fail('يرجى إدخال قيمة طلب صحيحة', { code: 'invalid_order_value' });
             if (!isValidLatLng(input.location)) return fail('حدّد موقع العميل على الخريطة', { code: 'no_location' });
             // Detect the zone from the pin and read the current fee at confirmation (Spec §8, §10).
             const resolution = resolveLocationFee(d, merchantId, input.location);
@@ -473,10 +516,10 @@ export const useAppStore = create<AppState>()(
               merchantId,
               pickup: { position: m.pickup, address: m.address },
               customerName: input.customerName?.trim() || undefined,
-              customerPhone: normalizePhone(input.customerPhone),
+              customerPhone: input.customerPhone?.trim() ? normalizePhone(input.customerPhone) : undefined,
               destination: {
-                label: input.addressDescription.trim(),
-                address: [input.placeName?.trim(), `${zone.name}، عمّان`].filter(Boolean).join(' — '),
+                label: input.placeName?.trim() || 'موقع محدد على الخريطة',
+                address: `${zone.name}، ${cityName(zone.cityId)}`,
                 position: input.location,
               },
               areaId: zone.id,
@@ -706,8 +749,8 @@ export const useAppStore = create<AppState>()(
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => {
-        const { merchants, captains, areas, routes, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
-        return { merchants, captains, areas, routes, prices, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
+        const { merchants, captains, areas, routes, prices, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
+        return { merchants, captains, areas, routes, prices, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
       },
     },
   ),

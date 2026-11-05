@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight, Copy, MapPin } from 'lucide-react';
 import { useAppStore } from '@/application/store';
-import { PageHeader } from '@/shared/components/ui';
+import { Button, PageHeader } from '@/shared/components/ui';
 import { MerchantAreaPriceTable } from './MerchantAreaPriceTable';
+import { CopyMerchantPricingDialog } from './CopyMerchantPricingDialog';
+import { PricingCopyHistory } from './PricingCopyHistory';
 
 /**
  * One Merchant's delivery-area prices (FU-1.2 §8.2), opened from the pricing cards
@@ -11,6 +14,7 @@ import { MerchantAreaPriceTable } from './MerchantAreaPriceTable';
 export function MerchantPricingDetails({ backTo }: { backTo: { path: string; label: string } }) {
   const { merchantId } = useParams();
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === merchantId));
+  const [copying, setCopying] = useState(false);
   if (!merchant) return <Navigate to={backTo.path} replace />;
   return (
     <>
@@ -24,8 +28,11 @@ export function MerchantPricingDetails({ backTo }: { backTo: { path: string; lab
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> موقع الاستلام: {merchant.address}
           </span>
         }
+        actions={<Button variant="outline" icon={<Copy className="h-4 w-4" />} onClick={() => setCopying(true)}>نسخ تسعيرة من متجر آخر</Button>}
       />
       <MerchantAreaPriceTable merchant={merchant} />
+      <PricingCopyHistory merchantId={merchant.id} />
+      <CopyMerchantPricingDialog target={merchant} open={copying} onClose={() => setCopying(false)} />
     </>
   );
 }

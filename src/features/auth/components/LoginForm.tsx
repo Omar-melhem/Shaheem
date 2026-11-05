@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { AlertCircle, LockKeyhole, UserRound } from 'lucide-react';
+import { useAppStore } from '@/application/store';
 import { Button, Field, INPUT_ICON_PAD, Input, InputIcon, PasswordField, fieldMessageId } from '@/shared/components/ui';
 import { useDemoSignIn } from '../hooks/useDemoSignIn';
 import { ForgotPasswordHelp } from './ForgotPasswordHelp';
@@ -9,6 +10,8 @@ type Errors = { username?: string; password?: string; form?: string };
 /** Username + password sign-in. Labels stay visible; placeholders are hints only. Role routing comes from the authenticated account, never a UI choice. */
 export function LoginForm() {
   const signInWith = useDemoSignIn();
+  // A genuine configured demo account only; never an invented one (CR v1.3 §2.2).
+  const demoUsername = useAppStore((s) => s.merchants[0]?.username);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Errors>({});
@@ -56,7 +59,7 @@ export function LoginForm() {
             name="username"
             className={`h-12 rtl:text-right ${INPUT_ICON_PAD}`}
             dir="ltr"
-            placeholder="أدخل اسم المستخدم"
+            placeholder={demoUsername ? `مثال: ${demoUsername}` : 'أدخل اسم المستخدم'}
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}

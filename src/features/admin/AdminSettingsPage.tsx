@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Headphones, Info, Languages, LogOut, RadioTower, Store, UserCog } from 'lucide-react';
+import { Headphones, Info, Languages, LogOut, Map as MapIcon, RadioTower, Store, UserCog, Wallet } from 'lucide-react';
 import { version } from '../../../package.json';
 import { useAppStore, DEMO_ADMIN } from '@/application/store';
 import { MERCHANT_CATEGORIES } from '@/domain/types';
-import { formatMoney } from '@/domain/money';
+import { formatMoney, formatMoneyExact } from '@/domain/money';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
+import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
 import { Badge, Button, OpenDecision, PageHeader, SettingsRow, SettingsSection, Toggle } from '@/shared/components/ui';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
 import { useSignOut } from '@/features/auth/hooks/useSignOut';
@@ -22,6 +23,8 @@ export function AdminSettingsPage() {
   const demo = useAppStore((s) => s.demo);
   const contacts = useAppStore((s) => s.supportContacts);
   const merchants = useAppStore((s) => s.merchants);
+  const areas = useAppStore((s) => s.areas);
+  const routes = useAppStore((s) => s.routes);
   const signOut = useSignOut();
   const [pendingBroadcast, setPendingBroadcast] = useState<boolean | null>(null);
 
@@ -36,7 +39,7 @@ export function AdminSettingsPage() {
     <div className="mx-auto max-w-4xl">
       <PageHeader title="الإعدادات" description="إعدادات المنصة وحساب الإدارة." />
       <div className="space-y-6">
-        <SettingsSection title="التوزيع" icon={<RadioTower className="h-5 w-5" />}>
+        <SettingsSection title="إعدادات التوزيع" icon={<RadioTower className="h-5 w-5" />}>
           <SettingsRow label="البث العام للطلبات" description="المفتاح نفسه الموجود في لوحة التحكم.">
             <div className="flex items-center gap-3 sm:justify-end">
               <Badge tone={broadcast ? 'success' : 'warning'} dot>
@@ -54,12 +57,49 @@ export function AdminSettingsPage() {
           <SettingsRow label="مهلة العرض الخاص" readOnly>
             {demo.offerTimeoutSec} ثانية
           </SettingsRow>
+          <div className="px-5 py-3">
+            <OpenDecision id="O-005 · O-006">قيم افتراضية للعرض وغير معتمدة. يغيّرها مقدّم العرض من «أدوات العرض» فقط.</OpenDecision>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="المحفظة والعمولات"
+          icon={<Wallet className="h-5 w-5" />}
+          actions={
+            <Link to="/admin/wallets" className={linkButton}>
+              محافظ الكباتن
+            </Link>
+          }
+        >
+          <SettingsRow label="عمولة شهم على الكابتن" description="تعديلها غير متاح: يحتاج خادماً يحفظ القيمة ويطبّقها على الطلبات الجديدة فقط." readOnly>
+            <span className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <span dir="ltr">{formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)}</span> / طلب مكتمل
+              <Badge tone="warning">مخطط — غير مفعّل</Badge>
+            </span>
+          </SettingsRow>
           <SettingsRow label="الحد الأدنى لرصيد المحفظة" readOnly>
             {formatMoney(demo.walletThreshold)}
           </SettingsRow>
           <div className="px-5 py-3">
-            <OpenDecision id="O-005 · O-006 · O-020">قيم افتراضية للعرض وغير معتمدة. يغيّرها مقدّم العرض من «أدوات العرض» فقط.</OpenDecision>
+            <OpenDecision id="O-020">الحد الأدنى قيمة تجريبية يغيّرها مقدّم العرض. لا تُخصم أي عمولة في هذا النموذج.</OpenDecision>
           </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="الخرائط والمناطق"
+          icon={<MapIcon className="h-5 w-5" />}
+          actions={
+            <Link to="/admin/areas" className={linkButton}>
+              إدارة المناطق
+            </Link>
+          }
+        >
+          <SettingsRow label="مناطق التوصيل النشطة" readOnly>
+            {areas.filter((a) => a.status === 'active').length} من {areas.length}
+          </SettingsRow>
+          <SettingsRow label="مسارات التوصيل" readOnly>
+            {routes.length}
+          </SettingsRow>
         </SettingsSection>
 
         <SettingsSection
@@ -115,7 +155,7 @@ export function AdminSettingsPage() {
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection title="اللغة والعرض" icon={<Languages className="h-5 w-5" />}>
+        <SettingsSection title="الإعدادات العامة" icon={<Languages className="h-5 w-5" />}>
           <SettingsRow label="لغة الواجهة" readOnly>
             العربية (من اليمين إلى اليسار)
           </SettingsRow>

@@ -4,22 +4,26 @@ import type { LatLng } from '@/domain/types';
 import { BaseMap, InvalidateSize, MapClickHandler } from '@/shared/components/map/BaseMap';
 import { destinationIcon, merchantIcon } from '@/shared/components/map/markers';
 
-/** Moves the view to the pin whenever it changes (e.g. after a search pick). */
-function FollowPin({ pin }: { pin: LatLng | null }) {
+/** Moves the view when the target changes (a search pick, or an area chosen from the list). */
+function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (pin) map.setView([pin.lat, pin.lng], Math.max(map.getZoom(), 16), { animate: true });
-  }, [pin, map]);
+    if (point) map.setView([point.lat, point.lng], Math.max(map.getZoom(), zoom), { animate: true });
+  }, [point, zoom, map]);
   return null;
 }
 
-/** Customer pin: tap the map or drag the pin to adjust, like a delivery app. Shows the pickup for reference. */
-export function DestinationMapPicker({ value, pickup, onChange }: { value: LatLng | null; pickup: LatLng; onChange: (p: LatLng) => void }) {
+/**
+ * Customer pin: tap the map or drag the pin to adjust, like a delivery app. Shows the
+ * pickup for reference. `focus` moves the map without placing a pin.
+ */
+export function DestinationMapPicker({ value, pickup, focus, onChange }: { value: LatLng | null; pickup: LatLng; focus?: LatLng | null; onChange: (p: LatLng) => void }) {
   return (
     <BaseMap className="h-60" center={value ?? pickup} zoom={value ? 16 : 13} label="حدّد موقع العميل على الخريطة">
       <InvalidateSize />
       <MapClickHandler onClick={onChange} />
-      <FollowPin pin={value} />
+      <FollowPoint point={focus ?? null} zoom={14} />
+      <FollowPoint point={value} zoom={16} />
       <Marker position={[pickup.lat, pickup.lng]} icon={merchantIcon()} interactive={false} />
       {value && (
         <Marker

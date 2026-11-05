@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Wallet, PlusCircle } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useCaptainViews, useNow, type CaptainView } from '@/application/hooks';
-import { formatMoney, parseJodInput } from '@/domain/money';
+import { formatMoney, formatMoneyExact, parseJodInput } from '@/domain/money';
+import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
 import { describeReasons } from '@/domain/eligibility';
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, OpenDecision, PageHeader, Select, SimTag } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
@@ -39,8 +40,11 @@ export function WalletsPage() {
         actions={<SimTag>الشحن محاكاة — ليس تحويلاً بنكياً</SimTag>}
       />
       <div className="mb-4 space-y-2">
-        <OpenDecision id="O-019 → O-028">
-          معنى المحفظة، المبلغ المطلوب للأهلية، وتوقيت الحجز أو الخصم قرارات مفتوحة. يطبق هذا النموذج حداً تجريبياً للأهلية قدره {formatMoney(threshold)} ولا يخصم أي مبلغ عند القبول أو التسليم.
+        <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+          <b>عمولة شهم {formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)} لكل طلب مكتمل معتمدة لكنها غير مفعّلة:</b> الخصم يحتاج خادماً يضمن خصماً واحداً لكل طلب، ولا يُنفَّذ من المتصفح. لن تُخصم أي عمولة في هذا النموذج.
+        </p>
+        <OpenDecision id="O-020">
+          يطبق هذا النموذج حداً تجريبياً للأهلية قدره {formatMoney(threshold)}. حجز العمولة عند القبول بانتظار تنفيذ الخادم وقرار مالك المنتج.
         </OpenDecision>
       </div>
 
@@ -166,7 +170,7 @@ function RechargeDialog({ view, onClose }: { view: CaptainView | null; onClose: 
       {step === 'form' ? (
         <div className="space-y-4">
           <Field label="المبلغ (د.أ)" required error={error}>
-            <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" dir="ltr" placeholder="5.00" aria-invalid={!!error} onKeyDown={(e) => e.key === 'Enter' && review()} />
+            <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" dir="ltr" placeholder="5.000" aria-invalid={!!error} onKeyDown={(e) => e.key === 'Enter' && review()} />
           </Field>
           <Field label="المرجع / السبب" optional>
             <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: إيصال نقدي رقم 1024" />
@@ -180,7 +184,7 @@ function RechargeDialog({ view, onClose }: { view: CaptainView | null; onClose: 
             <p>الرصيد بعد الشحن: <b>{formatMoney(view.balance + fils!)}</b></p>
             {view.balance + fils! >= threshold && view.balance < threshold && <p className="mt-2 text-secondary">سيصبح رصيد الكابتن كافياً للأهلية التجريبية.</p>}
           </div>
-          <p className="text-xs text-ink-muted">سيُسجَّل قيد شحن باسم المدير الحالي. هذه عملية محاكاة ولا تمثل تحويلاً مالياً حقيقياً.</p>
+          <p className="text-xs text-ink-muted">بالتأكيد أنت تُقرّ باستلام المبلغ من الكابتن خارج النظام. سيُسجَّل قيد شحن باسم المدير الحالي. هذه عملية محاكاة وليست تحويلاً إلكترونياً.</p>
         </div>
       )}
     </Dialog>

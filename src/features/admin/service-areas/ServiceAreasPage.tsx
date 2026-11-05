@@ -3,6 +3,7 @@ import { Pencil, PenTool, Plus, Route, Shapes } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { ServiceArea } from '@/domain/types';
 import { governorateName } from '@/domain/governorates';
+import { cityName } from '@/domain/cities';
 import { Badge, Button, Card, EmptyState, Field, OpenDecision, PageHeader, SearchField, Toggle } from '@/shared/components/ui';
 import { formatDate } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
@@ -11,13 +12,13 @@ import { ZoneDialog } from './ZoneDialog';
 import { ZoneStatusDialog } from './ZoneStatusDialog';
 import { DeliveryRouteDialog } from './DeliveryRouteDialog';
 import { DeliveryRoutesCard } from './DeliveryRoutesCard';
-import { ServiceAreaPolygonEditor } from './ServiceAreaPolygonEditor';
+import { ServiceAreaBoundaryEditor } from './ServiceAreaBoundaryEditor';
 
-const HEADERS = ['المنطقة', 'المحافظة', 'أسماء بديلة', 'الحدود', 'تجار مفعّلون', 'طلبات', 'الحالة', ''];
+const HEADERS = ['المنطقة', 'المحافظة', 'المدينة', 'أسماء بديلة', 'الحدود', 'تجار مفعّلون', 'طلبات', 'الحالة', ''];
 
 /**
- * Central delivery zones grouped by Governorate (FU-1.2 §7), their polygon boundaries
- * (used to match customer pins), and origin → destination delivery routes.
+ * Central delivery zones grouped by Governorate (FU-1.2 §7) and origin → destination routes.
+ * No map on this page: boundaries open in context, from «تعديل الحدود» or the From-Area step (CR v1.3 §5).
  */
 export function ServiceAreasPage() {
   const areas = useAppStore((s) => s.areas);
@@ -49,8 +50,7 @@ export function ServiceAreasPage() {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_440px]">
-        <div className="space-y-6">
+      <div className="space-y-6">
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-end gap-3 border-b border-cream-dark p-4">
               <Field label="المحافظة" htmlFor="areas-gov" className="w-48">
@@ -79,6 +79,7 @@ export function ServiceAreasPage() {
                           <p className="text-[11px] text-ink-muted">حُدّثت {formatDate(a.updatedAt)}</p>
                         </td>
                         <td className="px-4 py-3">{governorateName(a.governorateId)}</td>
+                        <td className="px-4 py-3">{cityName(a.cityId)}</td>
                         <td className="px-4 py-3 text-xs text-ink-soft">{a.aliases.join('، ') || '—'}</td>
                         <td className="px-4 py-3">{a.polygon.length >= 3 ? <Badge tone="success">مرسومة</Badge> : <Badge tone="warning">غير مرسومة</Badge>}</td>
                         <td className="px-4 py-3">{merchantsUsing(a.id)}</td>
@@ -92,7 +93,7 @@ export function ServiceAreasPage() {
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             <Button size="sm" variant="ghost" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditing(a)}>تعديل</Button>
-                            <Button size="sm" variant="ghost" icon={<PenTool className="h-3.5 w-3.5" />} onClick={() => setDrawingId(a.id)}>الحدود</Button>
+                            <Button size="sm" variant="ghost" icon={<PenTool className="h-3.5 w-3.5" />} onClick={() => setDrawingId(a.id)}>تعديل الحدود</Button>
                           </div>
                         </td>
                       </tr>
@@ -103,15 +104,13 @@ export function ServiceAreasPage() {
             )}
           </Card>
           <DeliveryRoutesCard governorateId={governorateId} />
-        </div>
-
         <div className="space-y-3">
-          <ServiceAreaPolygonEditor areas={inGovernorate} drawing={areas.find((a) => a.id === drawingId) ?? null} onDone={() => setDrawingId(null)} />
           <p className="text-xs text-ink-muted">يُطابق موقع العميل مع المنطقة من حدودها على الخريطة؛ المنطقة بلا حدود لا يمكن مطابقتها. الرسوم ثابتة لكل تاجر ومنطقة ولا تعتمد على المسافة.</p>
           <OpenDecision id="FU-14.7">قائمة المحافظات والمناطق المعتمدة وطريقة صيانة الحدود لم تُحدَّد بعد؛ المحافظات هنا هي محافظات الأردن الاثنتا عشرة.</OpenDecision>
         </div>
       </div>
 
+      <ServiceAreaBoundaryEditor area={areas.find((a) => a.id === drawingId) ?? null} onClose={() => setDrawingId(null)} />
       <ZoneDialog zone={editing} onClose={() => setEditing(null)} />
       <ZoneStatusDialog zone={toggling} onClose={() => setToggling(null)} />
       <DeliveryRouteDialog open={addingRoute} onClose={() => setAddingRoute(false)} />

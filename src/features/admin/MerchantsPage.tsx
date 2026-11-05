@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Marker } from 'react-leaflet';
 import { Plus, Store, Pencil, Tags } from 'lucide-react';
-import { useAppStore, type MerchantInput } from '@/application/store';
-import { MERCHANT_CATEGORIES, type LatLng, type Merchant, type MerchantCategory } from '@/domain/types';
+import { useAppStore } from '@/application/store';
+import { MERCHANT_CATEGORIES, type Merchant, type MerchantCategory } from '@/domain/types';
+import { cityName } from '@/domain/cities';
 import { formatMoney } from '@/domain/money';
 import { isActiveDelivery } from '@/domain/orderStatus';
-import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, PageHeader, PhoneField, PHONE_HINT, Select, Toggle, SearchField } from '@/shared/components/ui';
+import { Badge, Button, Card, ConfirmDialog, DetailRow, Drawer, EmptyState, PageHeader, Select, Toggle, SearchField } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { BaseMap } from '@/shared/components/map/BaseMap';
 import { merchantIcon } from '@/shared/components/map/markers';
 import { reportResult } from '@/shared/components/toast';
-import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { formatDate, formatDateTime } from '@/shared/lib/format';
-import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
 import { MerchantCategoryBadge } from '@/features/merchants/MerchantCategoryBadge';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
-import { LocationPicker } from './LocationPicker';
+import { MerchantFormDialog } from './merchants/MerchantFormDialog';
 
 export function MerchantsPage() {
   const merchants = useAppStore((s) => s.merchants);
@@ -105,98 +104,6 @@ export function MerchantsPage() {
   );
 }
 
-const EMPTY: MerchantInput = { businessName: '', category: null, contactName: '', phone: '', address: '', pickup: null as unknown as LatLng, username: '', password: '' };
-
-function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant | 'new' | null; onClose: () => void }) {
-  const createMerchant = useAppStore((s) => s.createMerchant);
-  const updateMerchant = useAppStore((s) => s.updateMerchant);
-  const [form, setForm] = useState<MerchantInput>(EMPTY);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (merchant === 'new') setForm(EMPTY);
-    else if (merchant) {
-      const { id: _id, createdAt: _c, status: _s, ...rest } = merchant;
-      setForm(rest);
-    }
-    setErrors({});
-  }, [merchant]);
-
-  const set = <K extends keyof MerchantInput>(k: K, v: MerchantInput[K]) => setForm((f) => ({ ...f, [k]: v }));
-
-  const submit = () => {
-    const e: Record<string, string> = {};
-    if (!form.businessName.trim()) e.businessName = 'اسم النشاط التجاري مطلوب';
-    if (!form.category) e.category = 'اختر فئة النشاط التجاري';
-    if (!form.contactName.trim()) e.contactName = 'اسم جهة الاتصال مطلوب';
-    if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
-    else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
-    if (!form.address.trim()) e.address = 'العنوان مطلوب';
-    if (!form.pickup) e.pickup = 'حدد موقع الاستلام على الخريطة';
-    if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (form.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
-    setErrors(e);
-    if (Object.keys(e).length) return;
-    setSubmitting(true);
-    const result = merchant === 'new' ? createMerchant(form) : updateMerchant((merchant as Merchant).id, form);
-    setSubmitting(false);
-    if (!reportResult(result, merchant === 'new' ? 'تم إنشاء التاجر — حدّد الآن مناطق التوصيل والأسعار' : 'تم حفظ بيانات التاجر')) return;
-    onClose();
-    // Spec §3: after registering a merchant, Admin configures its zones & pricing.
-    if (merchant === 'new' && result.ok && typeof result.value === 'string') navigate(`/admin/merchants/${result.value}/zones`);
-  };
-
-  return (
-    <Dialog
-      open={!!merchant}
-      onClose={onClose}
-      size="lg"
-      title={merchant === 'new' ? 'إضافة تاجر' : 'تعديل بيانات التاجر'}
-      description={merchant === 'new' ? 'في النسخة الإنتاجية تُرسل بيانات الدخول أو دعوة للتاجر — غير مفعّل في هذا النموذج.' : undefined}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit} loading={submitting}>{merchant === 'new' ? 'إنشاء التاجر' : 'حفظ'}</Button>
-        </>
-      }
-    >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="اسم النشاط التجاري" required error={errors.businessName}>
-          <Input value={form.businessName} onChange={(e) => set('businessName', e.target.value)} aria-invalid={!!errors.businessName} />
-        </Field>
-        <Field label="فئة النشاط التجاري" required error={errors.category} htmlFor="merchant-category">
-          <BusinessCategorySelect id="merchant-category" value={form.category} onChange={(c) => set('category', c)} aria-invalid={!!errors.category} />
-        </Field>
-        <Field label="المالك / جهة الاتصال" required error={errors.contactName}>
-          <Input value={form.contactName} onChange={(e) => set('contactName', e.target.value)} aria-invalid={!!errors.contactName} />
-        </Field>
-        <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
-          <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
-        </Field>
-        <Field label="العنوان" required error={errors.address} className="md:col-span-2">
-          <Input value={form.address} onChange={(e) => set('address', e.target.value)} aria-invalid={!!errors.address} />
-        </Field>
-        <Field label="موقع الاستلام" required error={errors.pickup} className="md:col-span-2">
-          <LocationPicker value={form.pickup ?? null} onChange={(p) => set('pickup', p)} />
-        </Field>
-        <div className="rounded-xl border border-dashed border-sand-dark/50 bg-sand-light/20 p-4 md:col-span-2">
-          <p className="mb-3 text-sm font-bold text-ink">بيانات الدخول (تجريبية)</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="اسم المستخدم" required error={errors.username}>
-              <Input value={form.username} onChange={(e) => set('username', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.username} />
-            </Field>
-            <Field label="كلمة المرور" required error={errors.password} hint="6 أحرف على الأقل">
-              <Input value={form.password} onChange={(e) => set('password', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.password} />
-            </Field>
-          </div>
-        </div>
-      </div>
-    </Dialog>
-  );
-}
-
 function MerchantDetailDrawer({ merchantId, onClose, onEdit }: { merchantId: string | null; onClose: () => void; onEdit: (m: Merchant) => void }) {
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === merchantId));
   const orders = useAppStore((s) => s.orders);
@@ -235,6 +142,7 @@ function MerchantDetailDrawer({ merchantId, onClose, onEdit }: { merchantId: str
           <DetailRow label="فئة النشاط"><MerchantCategoryBadge category={merchant.category} /></DetailRow>
           <DetailRow label="جهة الاتصال">{merchant.contactName}</DetailRow>
           <DetailRow label="الهاتف"><span dir="ltr">{merchant.phone}</span></DetailRow>
+          <DetailRow label="المدينة">{merchant.cityId ? cityName(merchant.cityId) : <span className="text-ink-muted">غير محددة (سجل قديم)</span>}</DetailRow>
           <DetailRow label="العنوان">{merchant.address}</DetailRow>
           <DetailRow label="تاريخ الإنشاء">{formatDate(merchant.createdAt)}</DetailRow>
           <DetailRow label="مناطق مفعّلة">{merchantPrices.filter((p) => p.status === 'active').length} من {areas.length}</DetailRow>

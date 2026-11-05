@@ -15,6 +15,7 @@ import type {
   WalletTransaction,
   DispatchOffer,
   DeliveryRoute,
+  PricingCopyAudit,
 } from '@/domain/types';
 import { MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
 import { haversineMeters, polygonCentroid } from '@/domain/geo';
@@ -29,6 +30,7 @@ export interface AppData {
   areas: ServiceArea[];
   routes: DeliveryRoute[];
   prices: MerchantAreaPrice[];
+  pricingAudit: PricingCopyAudit[];
   orders: DeliveryOrder[];
   offers: DispatchOffer[];
   walletTx: WalletTransaction[];
@@ -71,16 +73,16 @@ export function createSeedData(now: number = Date.now()): AppData {
     { id: 'a-sweifieh', name: 'الصويفية', aliases: ['Sweifieh', 'الصويفيه'], polygon: rect(31.948, 31.968, 35.845, 35.87) },
     { id: 'a-shmeisani', name: 'الشميساني', aliases: ['Shmeisani'], polygon: rect(31.96, 31.98, 35.89, 35.915) },
     { id: 'a-abdoun', name: 'عبدون', aliases: ['Abdoun'], polygon: rect(31.935, 31.952, 35.87, 35.9) },
-  ].map((a) => ({ ...a, governorateId: 'amman', status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
+  ].map((a) => ({ ...a, governorateId: 'amman', cityId: 'amman', status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
 
   const merchantDefs: Array<Omit<Merchant, 'status' | 'createdAt' | 'username' | 'password'> & { status?: Merchant['status'] }> = [
-    { id: 'm-sanabel', businessName: 'مطعم السنابل', category: 'restaurant', contactName: 'رامي حدّاد', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
-    { id: 'm-hail', businessName: 'مقهى الهيل', category: 'cafe', contactName: 'دانا السعدي', phone: '0790000202', address: 'خلدا، شارع عامر بن مالك', pickup: { lat: 31.996, lng: 35.828 } },
-    { id: 'm-taboon', businessName: 'مخبز الطابون', category: 'bakery', contactName: 'باسل قاسم', phone: '0790000203', address: 'تلاع العلي، قرب دوار الواحة', pickup: { lat: 31.998, lng: 35.855 } },
-    // Deliberately uncategorised: demonstrates a legacy record awaiting Admin classification (FR-MER-005).
-    { id: 'm-yasmine', businessName: 'حلويات الياسمين', category: null, contactName: 'هالة نصّار', phone: '0790000204', address: 'الصويفية، شارع الوكالات', pickup: { lat: 31.956, lng: 35.862 } },
-    { id: 'm-zahra', businessName: 'متجر زهرة البلد', category: 'retail', contactName: 'سليم عوّاد', phone: '0790000205', address: 'الشميساني، شارع الثقافة', pickup: { lat: 31.968, lng: 35.902 } },
-    { id: 'm-rayhan', businessName: 'صيدلية الريحان', category: 'pharmacy', contactName: 'نور الكردي', phone: '0790000206', address: 'عبدون، قرب جسر عبدون', pickup: { lat: 31.944, lng: 35.88 }, status: 'inactive' },
+    { id: 'm-sanabel', cityId: 'amman', areaId: 'a-jubaiha', businessName: 'مطعم السنابل', category: 'restaurant', contactName: 'رامي حدّاد', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
+    { id: 'm-hail', cityId: 'amman', areaId: 'a-khalda', businessName: 'مقهى الهيل', category: 'cafe', contactName: 'دانا السعدي', phone: '0790000202', address: 'خلدا، شارع عامر بن مالك', pickup: { lat: 31.996, lng: 35.828 } },
+    { id: 'm-taboon', cityId: 'amman', areaId: 'a-tla', businessName: 'مخبز الطابون', category: 'bakery', contactName: 'باسل قاسم', phone: '0790000203', address: 'تلاع العلي، قرب دوار الواحة', pickup: { lat: 31.998, lng: 35.855 } },
+    // Deliberately legacy: no category and a text-only address, awaiting Admin classification (FR-MER-005, CR v1.3 §3.2).
+    { id: 'm-yasmine', cityId: null, areaId: null, businessName: 'حلويات الياسمين', category: null, contactName: 'هالة نصّار', phone: '0790000204', address: 'الصويفية، شارع الوكالات', pickup: { lat: 31.956, lng: 35.862 } },
+    { id: 'm-zahra', cityId: 'amman', areaId: 'a-shmeisani', businessName: 'متجر زهرة البلد', category: 'retail', contactName: 'سليم عوّاد', phone: '0790000205', address: 'الشميساني، شارع الثقافة', pickup: { lat: 31.968, lng: 35.902 } },
+    { id: 'm-rayhan', cityId: 'amman', areaId: 'a-abdoun', businessName: 'صيدلية الريحان', category: 'pharmacy', contactName: 'نور الكردي', phone: '0790000206', address: 'عبدون، قرب جسر عبدون', pickup: { lat: 31.944, lng: 35.88 }, status: 'inactive' },
   ];
   const merchants: Merchant[] = merchantDefs.map((m, i) => ({
     ...m,
@@ -239,6 +241,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     areas,
     routes: [],
     prices,
+    pricingAudit: [],
     orders,
     offers: [],
     walletTx,

@@ -4,9 +4,9 @@ import { useAppStore } from '@/application/store';
 import { merchantZoneOptions, resolveLocationFee } from '@/application/queries';
 import type { Merchant } from '@/domain/types';
 import { formatMoney, parseJodInput } from '@/domain/money';
-import { Button, Card, Field, Input, PhoneField, PHONE_HINT, Textarea } from '@/shared/components/ui';
+import { Button, Card, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult, toast } from '@/shared/components/toast';
-import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
 import { CustomerLocationSection, OUTSIDE_MSG, UNAVAILABLE_MSG, type CustomerLocation } from './location/CustomerLocationSection';
 import { OrderReviewDialog, type ReviewState } from './OrderReviewDialog';
 
@@ -14,11 +14,10 @@ interface FormState {
   customerPhone: string;
   customerName: string;
   location: CustomerLocation | null;
-  addressDescription: string;
   mealValue: string;
 }
 type Errors = Partial<Record<keyof FormState, string>>;
-const EMPTY_FORM: FormState = { customerPhone: '', customerName: '', location: null, addressDescription: '', mealValue: '' };
+const EMPTY_FORM: FormState = { customerPhone: '', customerName: '', location: null, mealValue: '' };
 
 /**
  * Merchant "Request Captain" form. The Merchant pins the customer like in a delivery
@@ -34,7 +33,9 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
   const [review, setReview] = useState<ReviewState | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const hasZones = useMemo(() => merchantZoneOptions({ areas, prices }, merchant.id).length > 0, [areas, prices, merchant.id]);
+  const zoneOptions = useMemo(() => merchantZoneOptions({ areas, prices }, merchant.id), [areas, prices, merchant.id]);
+  const hasZones = zoneOptions.length > 0;
+  const searchableAreas = useMemo(() => zoneOptions.map((o) => o.area).filter((a) => a.polygon.length >= 3), [zoneOptions]);
   const resolution = useMemo(
     () => (form.location ? resolveLocationFee({ areas, prices }, merchant.id, form.location.position) : null),
     [areas, prices, merchant.id, form.location],
@@ -49,12 +50,11 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
 
   const validate = () => {
     const e: Errors = {};
-    if (!form.customerPhone.trim()) e.customerPhone = 'رقم هاتف العميل مطلوب';
-    else if (!isValidPhone(form.customerPhone)) e.customerPhone = PHONE_ERROR;
+    if (!isValidOptionalPhone(form.customerPhone)) e.customerPhone = PHONE_ERROR;
     if (!form.location) e.location = 'حدّد موقع العميل بالبحث أو على الخريطة';
     else if (resolution?.kind !== 'ok') e.location = resolution?.kind === 'outside' ? OUTSIDE_MSG : UNAVAILABLE_MSG;
-    if (!form.addressDescription.trim()) e.addressDescription = 'وصف العنوان مطلوب لمساعدة الكابتن';
-    if (form.mealValue.trim() && mealValue === null) e.mealValue = 'أدخل قيمة رقمية مثل 12.5';
+    if (!form.mealValue.trim()) e.mealValue = 'قيمة الطلب مطلوبة';
+    else if (mealValue === null || mealValue <= 0) e.mealValue = 'يرجى إدخال قيمة طلب صحيحة';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -64,15 +64,14 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
   };
 
   const confirm = () => {
-    if (!review || submitting || !form.location) return;
+    if (!review || submitting || !form.location || mealValue === null) return;
     setSubmitting(true);
     const result = createOrder(merchant.id, {
       customerPhone: form.customerPhone,
       customerName: form.customerName,
       location: form.location.position,
       placeName: form.location.placeName,
-      addressDescription: form.addressDescription,
-      mealValue: mealValue ?? undefined,
+      mealValue,
       expectedFee: review.fee,
     });
     setSubmitting(false);
@@ -91,11 +90,10 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
 
   const reviewRows: Array<[string, ReactNode]> = [
     ['الاستلام من', merchant.businessName],
-    ['هاتف العميل', <span dir="ltr">{form.customerPhone}</span>],
+    ...(form.customerPhone.trim() ? [['هاتف العميل', <span dir="ltr">{form.customerPhone}</span>] as [string, ReactNode]] : []),
     ...(form.customerName.trim() ? [['اسم العميل', form.customerName] as [string, ReactNode]] : []),
     ['المنطقة', resolution?.kind === 'ok' ? resolution.area.name : '—'],
     ...(form.location?.placeName ? [['المكان', form.location.placeName] as [string, ReactNode]] : []),
-    ['وصف العنوان', form.addressDescription],
     ...(mealValue !== null ? [['قيمة الطلب', formatMoney(mealValue)] as [string, ReactNode]] : []),
   ];
 
@@ -116,7 +114,7 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
 
       <fieldset disabled={blocked} className="space-y-5 p-5 disabled:opacity-60">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="هاتف العميل" required error={errors.customerPhone} hint={PHONE_HINT}>
+          <Field label="هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
             <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
           </Field>
           <Field label="اسم العميل" optional>
@@ -124,14 +122,10 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
           </Field>
         </div>
 
-        <CustomerLocationSection value={form.location} pickup={merchant.pickup} resolution={resolution} error={errors.location} onChange={(loc) => set('location', loc)} />
+        <CustomerLocationSection value={form.location} pickup={merchant.pickup} areas={searchableAreas} resolution={resolution} error={errors.location} onChange={(loc) => set('location', loc)} />
 
-        <Field label="وصف العنوان" required error={errors.addressDescription} hint="رقم العمارة، الطابق، معلم قريب — يساعد الكابتن على الوصول.">
-          <Textarea value={form.addressDescription} onChange={(e) => set('addressDescription', e.target.value)} placeholder="مثال: عمارة 12، الطابق الثالث، بجانب سوبرماركت الخالد" aria-invalid={!!errors.addressDescription} />
-        </Field>
-
-        <Field label="قيمة الطلب (د.أ)" optional error={errors.mealValue} className="sm:max-w-[50%]">
-          <Input value={form.mealValue} onChange={(e) => set('mealValue', e.target.value)} inputMode="decimal" dir="ltr" placeholder="0.00" aria-invalid={!!errors.mealValue} />
+        <Field label="قيمة الطلب *" error={errors.mealValue} hint="بالدينار الأردني، حتى ثلاث خانات عشرية." className="sm:max-w-[50%]">
+          <Input value={form.mealValue} onChange={(e) => set('mealValue', e.target.value)} inputMode="decimal" dir="ltr" className="rtl:text-right" placeholder="مثال: 12.500" required aria-invalid={!!errors.mealValue} />
         </Field>
 
         <div className="rounded-xl bg-cream px-4 py-3">

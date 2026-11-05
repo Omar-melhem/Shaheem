@@ -37,7 +37,11 @@ export interface Merchant extends DemoCredentials {
   category: MerchantCategory | null;
   contactName: string;
   phone: string;
+  /** Display label. Legacy Merchants have only this (cityId/areaId null) until Admin sets City → Area. */
   address: string;
+  cityId: string | null;
+  areaId: ID | null;
+  /** Exact pickup coordinates chosen on the map, never derived from an Area centroid. */
   pickup: LatLng;
   status: AccountStatus;
   createdAt: number;
@@ -87,6 +91,8 @@ export interface ServiceArea {
   id: ID;
   /** Governorate code from `GOVERNORATES` (domain/governorates). */
   governorateId: string;
+  /** City code from `CITIES` (domain/cities). */
+  cityId: string;
   name: string;
   aliases: string[];
   notes?: string;
@@ -121,6 +127,17 @@ export interface MerchantAreaPrice {
   updatedBy: string;
 }
 
+/** One Admin price-copy operation, with before/after values per Area (CR v1.3 §4.2). */
+export interface PricingCopyAudit {
+  id: ID;
+  sourceMerchantId: ID;
+  targetMerchantId: ID;
+  mode: 'fill_missing' | 'overwrite';
+  changes: Array<{ areaId: ID; previous?: Money; next: Money }>;
+  actor: string;
+  at: number;
+}
+
 export type OrderStatus =
   | 'pending_dispatch'
   | 'awaiting_captain'
@@ -149,7 +166,7 @@ export interface ActorRef {
  * used for map display and the demo simulation.
  */
 export interface Destination {
-  /** Address description: street, landmark, building. */
+  /** Searched place name or map-pin label. Older orders hold a typed address description here. */
   label: string;
   /** Zone context, e.g. "خلدا، عمّان". */
   address: string;

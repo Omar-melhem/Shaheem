@@ -3,9 +3,10 @@ import { History, Wallet } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { CaptainView } from '@/application/hooks';
 import type { Captain } from '@/domain/types';
-import { formatMoney } from '@/domain/money';
+import { formatMoney, formatMoneyExact } from '@/domain/money';
 import { FINAL_STATUSES } from '@/domain/orderStatus';
-import { EmptyState, OpenDecision, SimTag, Tabs } from '@/shared/components/ui';
+import { EmptyState, SimTag, Tabs } from '@/shared/components/ui';
+import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatDateTime } from '@/shared/lib/format';
 import { SupportContactList } from '@/features/support/SupportContacts';
@@ -81,7 +82,7 @@ export function WalletTab({ view }: { view: CaptainView }) {
         </ul>
       )}
       <div className="flex justify-center"><SimTag>حركات المحفظة محاكاة</SimTag></div>
-      <OpenDecision id="O-019">معنى المحفظة وقواعد الخصم غير معتمدة؛ لا يتم خصم أي مبلغ في هذا النموذج.</OpenDecision>
+      <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">عمولة شهم {formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)} تُخصم بعد تأكيد تسليم كل طلب عند تفعيلها من الخادم. لا يتم خصم أي مبلغ في هذا النموذج.</p>
     </div>
   );
 }

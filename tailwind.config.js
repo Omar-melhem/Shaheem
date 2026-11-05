@@ -23,6 +23,15 @@ export default {
       fontFamily: {
         sans: ['Tajawal', 'system-ui', 'sans-serif'],
       },
+      // One-time entrance motion (login). Elements stay usable during it; disabled under reduced motion.
+      keyframes: {
+        rise: { from: { opacity: '0', transform: 'translateY(10px)' }, to: { opacity: '1', transform: 'none' } },
+        fade: { from: { opacity: '0' }, to: { opacity: '1' } },
+      },
+      animation: {
+        rise: 'rise 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        fade: 'fade 600ms ease-out both',
+      },
       boxShadow: {
         card: '0 1px 2px rgba(36,36,36,0.06), 0 1px 3px rgba(36,36,36,0.08)',
         pop: '0 10px 30px rgba(36,36,36,0.18)',

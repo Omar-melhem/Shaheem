@@ -97,7 +97,7 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
         {order.customerName && <p className="text-sm">العميل: {order.customerName}</p>}
         <div className="flex gap-2">
           {order.customerPhone && <a href={`tel:${order.customerPhone}`} className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><Phone className="h-3.5 w-3.5" /> اتصال بالعميل</a>}
-          <a href={mapsSearch(`${order.destination.label}، ${order.destination.address}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><ExternalLink className="h-3.5 w-3.5" /> الاتجاهات</a>
+          <a href={order.destination.position && !order.destination.approximate ? mapsLink(order.destination.position.lat, order.destination.position.lng) : mapsSearch(`${order.destination.label}، ${order.destination.address}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><ExternalLink className="h-3.5 w-3.5" /> الاتجاهات</a>
         </div>
       </section>
 

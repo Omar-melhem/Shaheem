@@ -14,6 +14,13 @@ export function formatMoney(fils: Money): string {
   return `${formatter.format(filsToJod(fils))} د.أ`;
 }
 
+const exactFormatter = new Intl.NumberFormat('ar-JO-u-nu-latn', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+/** Always three decimals (fils), for rates such as the commission: "0.200 د.أ". */
+export function formatMoneyExact(fils: Money): string {
+  return `${exactFormatter.format(filsToJod(fils))} د.أ`;
+}
+
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 
 /** Parses a user-entered JOD amount ("2", "1.5", "١٫٥") into fils, or null. */

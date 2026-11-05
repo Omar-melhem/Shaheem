@@ -1,15 +1,32 @@
-import { Marker } from 'react-leaflet';
+import { useEffect } from 'react';
+import { Marker, Polygon, useMap } from 'react-leaflet';
 import type { LatLng } from '@/domain/types';
 import { BaseMap, MapClickHandler, InvalidateSize } from '@/shared/components/map/BaseMap';
 import { merchantIcon } from '@/shared/components/map/markers';
 
-/** Click-to-place pickup location picker for Merchant profiles. */
-export function LocationPicker({ value, onChange }: { value: LatLng | null; onChange: (p: LatLng) => void }) {
+function MoveTo({ point }: { point: LatLng | null | undefined }) {
+  const map = useMap();
+  useEffect(() => {
+    if (point) map.setView([point.lat, point.lng], Math.max(map.getZoom(), 14), { animate: true });
+  }, [point, map]);
+  return null;
+}
+
+/**
+ * Pickup pin for Merchant profiles: tap to place, drag to adjust. `focus` moves the map
+ * without placing a pin; `boundary` outlines the selected Area for reference.
+ */
+export function LocationPicker({ value, onChange, focus, boundary }: { value: LatLng | null; onChange: (p: LatLng) => void; focus?: LatLng | null; boundary?: LatLng[] }) {
   return (
     <div className="space-y-1">
-      <BaseMap className="h-64" center={value ?? undefined} zoom={value ? 15 : 12} label="اختر موقع الاستلام">
+      <BaseMap className="h-64" center={value ?? undefined} zoom={value ? 15 : 12} label="تحديد موقع المتجر على الخريطة">
         <InvalidateSize />
         <MapClickHandler onClick={onChange} />
+        <MoveTo point={focus} />
+        <MoveTo point={value} />
+        {boundary && boundary.length >= 3 && (
+          <Polygon positions={boundary.map((p) => [p.lat, p.lng] as [number, number])} interactive={false} pathOptions={{ color: '#263D34', weight: 2, fillOpacity: 0.08 }} />
+        )}
         {value && (
           <Marker
             position={[value.lat, value.lng]}
