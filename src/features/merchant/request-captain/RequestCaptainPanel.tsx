@@ -1,101 +1,34 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, Lock, Send } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { merchantZoneOptions, resolveLocationFee } from '@/application/queries';
+import { PINNED_LOCATION_LABEL } from '@/domain/destination';
 import type { Merchant } from '@/domain/types';
-import { formatMoney, parseJodInput } from '@/domain/money';
+import { formatMoney } from '@/domain/money';
 import { Button, Card, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
-import { reportResult, toast } from '@/shared/components/toast';
-import { PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
-import { CustomerLocationSection, OUTSIDE_MSG, UNAVAILABLE_MSG, type CustomerLocation } from './location/CustomerLocationSection';
-import { OrderReviewDialog, type ReviewState } from './OrderReviewDialog';
-
-interface FormState {
-  customerPhone: string;
-  customerName: string;
-  location: CustomerLocation | null;
-  mealValue: string;
-}
-type Errors = Partial<Record<keyof FormState, string>>;
-const EMPTY_FORM: FormState = { customerPhone: '', customerName: '', location: null, mealValue: '' };
+import { CustomerLocationSection } from '../location/CustomerLocationSection';
+import { OrderReviewDialog } from './OrderReviewDialog';
+import { OrderValueField } from './OrderValueField';
+import { useRequestCaptainForm } from './useRequestCaptainForm';
 
 /**
- * Merchant "Request Captain" form. The Merchant pins the customer like in a delivery
- * app (search or map); the zone and the read-only fee are derived from the pin by the
- * application layer and re-checked at confirmation.
+ * Merchant "Request Captain" form. The Merchant chooses a delivery area from the list and
+ * may add an exact pin. The read-only fee comes from Merchant + area in the application
+ * layer and is re-checked at confirmation.
  */
-export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchant; onCreated: (reference: string) => void }) {
-  const areas = useAppStore((s) => s.areas);
-  const prices = useAppStore((s) => s.prices);
-  const createOrder = useAppStore((s) => s.createOrder);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Errors>({});
-  const [review, setReview] = useState<ReviewState | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
+  const request = useRequestCaptainForm(merchant);
+  const { form, errors, set, resolution } = request;
+  const hasAreas = request.areaOptions.length > 0;
+  const blocked = merchant.status !== 'active' || !hasAreas;
 
-  const zoneOptions = useMemo(() => merchantZoneOptions({ areas, prices }, merchant.id), [areas, prices, merchant.id]);
-  const hasZones = zoneOptions.length > 0;
-  const searchableAreas = useMemo(() => zoneOptions.map((o) => o.area).filter((a) => a.polygon.length >= 3), [zoneOptions]);
-  const resolution = useMemo(
-    () => (form.location ? resolveLocationFee({ areas, prices }, merchant.id, form.location.position) : null),
-    [areas, prices, merchant.id, form.location],
-  );
-  const mealValue = form.mealValue.trim() ? parseJodInput(form.mealValue) : null;
-  const blocked = merchant.status !== 'active' || !hasZones;
+  const fieldsRef = useRef<HTMLFieldSetElement>(null);
+  const [invalidAttempts, setInvalidAttempts] = useState(0);
+  useEffect(() => {
+    if (invalidAttempts > 0) fieldsRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid="true"]')?.focus();
+  }, [invalidAttempts]);
 
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
-    setForm((f) => ({ ...f, [k]: v }));
-    setErrors((e) => ({ ...e, [k]: undefined }));
+  const requestCaptain = () => {
+    if (!request.openReview()) setInvalidAttempts((n) => n + 1);
   };
-
-  const validate = () => {
-    const e: Errors = {};
-    if (!isValidOptionalPhone(form.customerPhone)) e.customerPhone = PHONE_ERROR;
-    if (!form.location) e.location = 'حدّد موقع العميل بالبحث أو على الخريطة';
-    else if (resolution?.kind !== 'ok') e.location = resolution?.kind === 'outside' ? OUTSIDE_MSG : UNAVAILABLE_MSG;
-    if (!form.mealValue.trim()) e.mealValue = 'قيمة الطلب مطلوبة';
-    else if (mealValue === null || mealValue <= 0) e.mealValue = 'يرجى إدخال قيمة طلب صحيحة';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const openReview = () => {
-    if (validate() && resolution?.kind === 'ok') setReview({ fee: resolution.price });
-  };
-
-  const confirm = () => {
-    if (!review || submitting || !form.location || mealValue === null) return;
-    setSubmitting(true);
-    const result = createOrder(merchant.id, {
-      customerPhone: form.customerPhone,
-      customerName: form.customerName,
-      location: form.location.position,
-      placeName: form.location.placeName,
-      mealValue,
-      expectedFee: review.fee,
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success(`تم إرسال الطلب ${result.value.reference}`);
-      setReview(null);
-      setForm(EMPTY_FORM);
-      onCreated(result.value.reference);
-    } else if (result.code === 'fee_changed' && result.currentFee !== undefined) {
-      setReview({ fee: result.currentFee, changedFrom: review.fee }); // re-confirm the new fee (Spec §10)
-    } else {
-      reportResult(result);
-      setReview(null);
-    }
-  };
-
-  const reviewRows: Array<[string, ReactNode]> = [
-    ['الاستلام من', merchant.businessName],
-    ...(form.customerPhone.trim() ? [['هاتف العميل', <span dir="ltr">{form.customerPhone}</span>] as [string, ReactNode]] : []),
-    ...(form.customerName.trim() ? [['اسم العميل', form.customerName] as [string, ReactNode]] : []),
-    ['المنطقة', resolution?.kind === 'ok' ? resolution.area.name : '—'],
-    ...(form.location?.placeName ? [['المكان', form.location.placeName] as [string, ReactNode]] : []),
-    ...(mealValue !== null ? [['قيمة الطلب', formatMoney(mealValue)] as [string, ReactNode]] : []),
-  ];
 
   return (
     <Card className="overflow-visible">
@@ -108,11 +41,11 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
 
       {merchant.status !== 'active' ? (
         <BlockedNotice>حسابك غير مفعّل حالياً. يرجى التواصل مع إدارة شهم.</BlockedNotice>
-      ) : !hasZones ? (
+      ) : !hasAreas ? (
         <BlockedNotice>لا توجد مناطق توصيل مفعّلة لحسابك بعد. يرجى التواصل مع إدارة شهم لإعداد المناطق والأسعار.</BlockedNotice>
       ) : null}
 
-      <fieldset disabled={blocked} className="space-y-5 p-5 disabled:opacity-60">
+      <fieldset ref={fieldsRef} disabled={blocked} className="space-y-5 p-5 disabled:opacity-60">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
             <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
@@ -122,11 +55,21 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
           </Field>
         </div>
 
-        <CustomerLocationSection value={form.location} pickup={merchant.pickup} areas={searchableAreas} resolution={resolution} error={errors.location} onChange={(loc) => set('location', loc)} />
+        <CustomerLocationSection
+          key={request.resetCount}
+          options={request.areaOptions}
+          areaId={form.areaId}
+          area={request.selectedArea}
+          areaError={request.areaError}
+          location={form.location}
+          pinError={request.pinError}
+          pinNotice={request.pinNotice}
+          pickup={merchant.pickup}
+          onSelectArea={request.selectArea}
+          onPinChange={request.setPin}
+        />
 
-        <Field label="قيمة الطلب *" error={errors.mealValue} hint="بالدينار الأردني، حتى ثلاث خانات عشرية." className="sm:max-w-[50%]">
-          <Input value={form.mealValue} onChange={(e) => set('mealValue', e.target.value)} inputMode="decimal" dir="ltr" className="rtl:text-right" placeholder="مثال: 12.500" required aria-invalid={!!errors.mealValue} />
-        </Field>
+        <OrderValueField value={form.mealValue} error={errors.mealValue} onChange={(v) => set('mealValue', v)} onBlur={request.normalizeOrderValue} />
 
         <div className="rounded-xl bg-cream px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -138,13 +81,27 @@ export function RequestCaptainPanel({ merchant, onCreated }: { merchant: Merchan
                 {resolution?.kind === 'ok' ? formatMoney(resolution.price) : '—'}
               </p>
             </div>
-            <Button size="lg" onClick={openReview}>مراجعة الطلب</Button>
+            <Button size="lg" onClick={requestCaptain}>طلب كابتن</Button>
           </div>
-          <p className="mt-1 text-xs text-ink-muted">تُحدَّد رسوم التوصيل تلقائياً من شهم حسب موقع العميل.</p>
+          <p className="mt-1 text-xs text-ink-muted">تُحدَّد رسوم التوصيل تلقائياً من شهم حسب منطقة التوصيل.</p>
         </div>
       </fieldset>
 
-      <OrderReviewDialog review={review} rows={reviewRows} submitting={submitting} onClose={() => setReview(null)} onConfirm={confirm} />
+      <OrderReviewDialog
+        review={request.review}
+        details={{
+          pickupName: merchant.businessName,
+          pickupAddress: merchant.address,
+          areaName: request.selectedArea?.name ?? '',
+          exactLocation: form.location ? form.location.placeName ?? PINNED_LOCATION_LABEL : null,
+          customerName: form.customerName.trim() || undefined,
+          customerPhone: form.customerPhone.trim() || undefined,
+        }}
+        submitting={request.submitting}
+        error={request.submitError}
+        onClose={request.closeReview}
+        onConfirm={request.confirm}
+      />
     </Card>
   );
 }

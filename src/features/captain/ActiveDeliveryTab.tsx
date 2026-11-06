@@ -14,6 +14,7 @@ import { BaseMap, FitBounds } from '@/shared/components/map/BaseMap';
 import { captainIcon, destinationIcon, merchantIcon } from '@/shared/components/map/markers';
 import { reportResult } from '@/shared/components/toast';
 import { formatRelative } from '@/shared/lib/format';
+import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
 
 const mapsLink = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 /** Customer location is a text description (no GPS), so directions use a text search. */
@@ -32,6 +33,7 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
 
   const toPickup = order.status === 'accepted' || order.status === 'heading_to_pickup';
   const dest = order.destination.position;
+  const areaOnly = isAreaOnly(order.destination);
   const target = toPickup ? order.pickup.position : dest;
   const loc = captain.lastLocation?.position;
   const nextLabel = CAPTAIN_NEXT_ACTION_LABEL[order.status];
@@ -74,7 +76,7 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
       </BaseMap>
       {loc && target && (
         <p className="text-center text-[11px] text-ink-muted">
-          ≈ {formatDistance(haversineMeters(loc, target))} إلى {toPickup ? 'التاجر' : 'مركز منطقة العميل (تقريبي)'} · خط مستقيم · موقع محاكى
+          ≈ {formatDistance(haversineMeters(loc, target))} إلى {toPickup ? 'التاجر' : order.destination.approximate ? 'مركز منطقة العميل (تقريبي)' : 'موقع العميل'} · خط مستقيم · موقع محاكى
         </p>
       )}
 
@@ -92,12 +94,13 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
         <p className="flex items-center gap-2 text-xs font-bold text-ink-muted"><MapPin className="h-4 w-4" /> التسليم</p>
         <p className="text-sm font-bold text-primary">منطقة {order.areaName}</p>
         <p className="font-bold">{order.destination.label}</p>
+        {areaOnly && <p className="text-sm font-medium text-amber-800">{NO_EXACT_LOCATION}. الوجهة معروفة على مستوى المنطقة فقط.</p>}
         {order.destination.note && <p className="text-sm text-ink-soft">ملاحظة: {order.destination.note}</p>}
         {order.deliveryInstructions && <p className="text-sm text-ink-soft">تعليمات: {order.deliveryInstructions}</p>}
         {order.customerName && <p className="text-sm">العميل: {order.customerName}</p>}
         <div className="flex gap-2">
           {order.customerPhone && <a href={`tel:${order.customerPhone}`} className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><Phone className="h-3.5 w-3.5" /> اتصال بالعميل</a>}
-          <a href={order.destination.position && !order.destination.approximate ? mapsLink(order.destination.position.lat, order.destination.position.lng) : mapsSearch(`${order.destination.label}، ${order.destination.address}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><ExternalLink className="h-3.5 w-3.5" /> الاتجاهات</a>
+          <a href={order.destination.position && !order.destination.approximate ? mapsLink(order.destination.position.lat, order.destination.position.lng) : mapsSearch(`${order.destination.label}، ${order.destination.address}`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-cream px-3 py-1.5 text-xs font-bold"><ExternalLink className="h-3.5 w-3.5" /> {areaOnly ? 'البحث عن المنطقة' : 'الاتجاهات'}</a>
         </div>
       </section>
 

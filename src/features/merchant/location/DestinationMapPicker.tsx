@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Marker, useMap } from 'react-leaflet';
-import type { LatLng } from '@/domain/types';
-import { BaseMap, InvalidateSize, MapClickHandler } from '@/shared/components/map/BaseMap';
+import { Marker, Polygon, useMap } from 'react-leaflet';
+import { hasAreaBoundary } from '@/domain/destination';
+import type { LatLng, ServiceArea } from '@/domain/types';
+import { BaseMap, FitBounds, InvalidateSize, MapClickHandler } from '@/shared/components/map/BaseMap';
 import { destinationIcon, merchantIcon } from '@/shared/components/map/markers';
 
-/** Moves the view when the target changes (a search pick, or an area chosen from the list). */
+/** Moves the view when the pin changes (a search pick or a map tap). */
 function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
   const map = useMap();
   useEffect(() => {
@@ -14,15 +15,22 @@ function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
 }
 
 /**
- * Customer pin: tap the map or drag the pin to adjust, like a delivery app. Shows the
- * pickup for reference. `focus` moves the map without placing a pin.
+ * Shows the chosen delivery area's boundary and frames it; no pin is ever placed for the
+ * Merchant. Inside an area with a boundary, tapping the map or dragging the pin sets the
+ * optional exact location. Shows the pickup for reference.
  */
-export function DestinationMapPicker({ value, pickup, focus, onChange }: { value: LatLng | null; pickup: LatLng; focus?: LatLng | null; onChange: (p: LatLng) => void }) {
+export function DestinationMapPicker({ value, pickup, area, onChange }: { value: LatLng | null; pickup: LatLng; area: ServiceArea | null; onChange: (p: LatLng) => void }) {
+  const boundary = area && hasAreaBoundary(area) ? area.polygon : null;
   return (
-    <BaseMap className="h-60" center={value ?? pickup} zoom={value ? 16 : 13} label="حدّد موقع العميل على الخريطة">
+    <BaseMap className="h-60" center={value ?? pickup} zoom={value ? 16 : 13} label="خريطة منطقة التوصيل">
       <InvalidateSize />
-      <MapClickHandler onClick={onChange} />
-      <FollowPoint point={focus ?? null} zoom={14} />
+      {boundary && (
+        <>
+          <MapClickHandler onClick={onChange} />
+          <Polygon positions={boundary.map((p) => [p.lat, p.lng] as [number, number])} interactive={false} pathOptions={{ color: '#8C2335', weight: 2, fillOpacity: 0.12 }} />
+          <FitBounds points={boundary} fitKey={area!.id} />
+        </>
+      )}
       <FollowPoint point={value} zoom={16} />
       <Marker position={[pickup.lat, pickup.lng]} icon={merchantIcon()} interactive={false} />
       {value && (

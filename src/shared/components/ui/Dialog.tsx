@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { Button, type ButtonVariant } from './Button';
-import { useEscape, useFocusOnOpen } from './overlay';
+import { trapTabKey, useEscape, useFocusOnOpen } from './overlay';
 
 export function Dialog({
   open,
@@ -36,6 +36,7 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        onKeyDown={trapTabKey}
         className={cn('relative flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-pop focus:outline-none sm:rounded-2xl', widths[size])}
       >
         <div className="flex items-start justify-between gap-4 border-b border-cream-dark px-5 py-4">

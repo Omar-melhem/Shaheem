@@ -30,7 +30,9 @@ import {
   isInQueue,
 } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
-import { resolveLocationFee } from './queries';
+import { ORDER_VALUE_INVALID } from '@/domain/orderValue';
+import { AREA_REQUIRED, AREA_UNAVAILABLE, PINNED_LOCATION_LABEL, destinationPinError } from '@/domain/destination';
+import { resolveZoneFee } from './queries';
 import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError } from './merchantLocation';
 import { previewPricingCopy, type PricingCopyMode } from './pricingCopy';
 import { captainActiveOrder, captainBalance, captainEligibility } from './captainQueries';
@@ -64,8 +66,10 @@ export interface CreateOrderInput {
   /** Optional; when supplied it must be exactly 10 digits (CR v1.3 §8.4). */
   customerPhone?: string;
   customerName?: string;
-  /** Customer pin (search result or map tap). The zone and fee are derived from it here. */
-  location: LatLng;
+  /** Required delivery area chosen from the list. The fee comes from Merchant + this area. */
+  areaId: ID;
+  /** Optional exact customer pin; it must lie inside the area and never affects the fee. */
+  location?: LatLng | null;
   /** Name of the searched place, if the pin came from search. */
   placeName?: string;
   /** Order value in fils; required and strictly positive for new orders (CR v1.3 §8.3). */
@@ -494,14 +498,17 @@ export const useAppStore = create<AppState>()(
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
             if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
-            if (!Number.isInteger(input.mealValue) || input.mealValue <= 0) return fail('يرجى إدخال قيمة طلب صحيحة', { code: 'invalid_order_value' });
-            if (!isValidLatLng(input.location)) return fail('حدّد موقع العميل على الخريطة', { code: 'no_location' });
-            // Detect the zone from the pin and read the current fee at confirmation (Spec §8, §10).
-            const resolution = resolveLocationFee(d, merchantId, input.location);
-            if (resolution.kind === 'outside' || resolution.kind === 'zone_unavailable') {
-              return fail('موقع العميل خارج مناطق التوصيل المتاحة لحسابك.', { code: 'outside' });
+            if (!Number.isInteger(input.mealValue) || input.mealValue <= 0) return fail(ORDER_VALUE_INVALID, { code: 'invalid_order_value' });
+            if (!input.areaId) return fail(AREA_REQUIRED, { code: 'no_area' });
+            // Read the current fee for Merchant + chosen area at confirmation (Spec §8, §10).
+            const resolution = resolveZoneFee(d, merchantId, input.areaId);
+            if (resolution.kind !== 'ok') return fail(AREA_UNAVAILABLE, { code: resolution.kind });
+            const pin = input.location ?? undefined;
+            if (pin) {
+              if (!isValidLatLng(pin)) return fail('الموقع الدقيق غير صالح. حرّك الدبوس أو أزله.', { code: 'invalid_pin' });
+              const pinError = destinationPinError(resolution.area, pin);
+              if (pinError) return fail(pinError, { code: 'pin_outside_area' });
             }
-            if (resolution.kind === 'no_price') return fail('التوصيل إلى هذه المنطقة غير متاح حالياً. يرجى التواصل مع إدارة شهم.', { code: 'no_price' });
             if (input.expectedFee !== undefined && input.expectedFee !== resolution.price) {
               return fail(`تغيّرت رسوم التوصيل لهذه المنطقة إلى ${formatMoney(resolution.price)}. راجع الرسوم الجديدة وأكّد مرة أخرى.`, {
                 code: 'fee_changed',
@@ -518,9 +525,9 @@ export const useAppStore = create<AppState>()(
               customerName: input.customerName?.trim() || undefined,
               customerPhone: input.customerPhone?.trim() ? normalizePhone(input.customerPhone) : undefined,
               destination: {
-                label: input.placeName?.trim() || 'موقع محدد على الخريطة',
+                label: pin ? input.placeName?.trim() || PINNED_LOCATION_LABEL : `منطقة ${zone.name}`,
                 address: `${zone.name}، ${cityName(zone.cityId)}`,
-                position: input.location,
+                position: pin,
               },
               areaId: zone.id,
               areaName: zone.name,

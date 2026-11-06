@@ -161,9 +161,9 @@ export interface ActorRef {
 }
 
 /**
- * Customer destination. The address description is free text for the Captain;
- * no customer GPS is required. `position` is only an approximate zone centre
- * used for map display and the demo simulation.
+ * Customer destination. The required delivery area lives on the order (`areaId`).
+ * `position` is the Merchant's optional exact pin, absent for an area-only order;
+ * on older demo orders it is a zone centre marked `approximate`.
  */
 export interface Destination {
   /** Searched place name or map-pin label. Older orders hold a typed address description here. */

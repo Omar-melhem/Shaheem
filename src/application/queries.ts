@@ -1,5 +1,4 @@
-import type { ID, LatLng, Money, ServiceArea } from '@/domain/types';
-import { areasContaining } from '@/domain/geo';
+import type { ID, Money, ServiceArea } from '@/domain/types';
 import type { AppData } from '@/infrastructure/seed';
 
 type PricingData = Pick<AppData, 'areas' | 'prices'>;
@@ -19,24 +18,6 @@ export function resolveZoneFee(data: PricingData, merchantId: ID, zoneId: ID): Z
   const price = data.prices.find((p) => p.merchantId === merchantId && p.areaId === zoneId);
   if (!price || price.status !== 'active' || !(price.price > 0)) return { kind: 'no_price', area };
   return { kind: 'ok', area, price: price.price };
-}
-
-export type LocationFeeResolution = ZoneFeeResolution | { kind: 'outside' };
-
-/**
- * Customer pin → the active zone whose boundary contains it → the Merchant's fixed
- * fee for that zone. Owner decision (2026-11-02): the Merchant pins the customer like
- * in a delivery app and the zone is detected from the pin. Only zones with a drawn
- * boundary can match; if zones overlap, the first one this Merchant serves wins.
- */
-export function resolveLocationFee(data: PricingData, merchantId: ID, point: LatLng): LocationFeeResolution {
-  const candidates = areasContaining(point, data.areas.filter((a) => a.status === 'active'));
-  if (candidates.length === 0) return { kind: 'outside' };
-  for (const area of candidates) {
-    const r = resolveZoneFee(data, merchantId, area.id);
-    if (r.kind === 'ok') return r;
-  }
-  return { kind: 'no_price', area: candidates[0] };
 }
 
 export interface MerchantZoneOption {

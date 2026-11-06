@@ -39,10 +39,6 @@ export function pointInPolygon(p: LatLng, polygon: LatLng[]): boolean {
   return inside;
 }
 
-export function areasContaining(p: LatLng, areas: ServiceArea[]): ServiceArea[] {
-  return areas.filter((a) => a.status === 'active' && a.polygon.length >= 3 && pointInPolygon(p, a.polygon));
-}
-
 const cross = (o: LatLng, a: LatLng, b: LatLng) => (a.lng - o.lng) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lng - o.lng);
 const segmentsCross = (a: LatLng, b: LatLng, c: LatLng, d: LatLng) =>
   cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0;

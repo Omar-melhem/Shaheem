@@ -7,22 +7,27 @@ interface Toast {
   id: number;
   kind: ToastKind;
   message: string;
+  description?: string;
+}
+interface ToastOptions {
+  description?: string;
+  durationMs?: number;
 }
 
-const useToastStore = create<{ toasts: Toast[]; push: (kind: ToastKind, message: string) => void; dismiss: (id: number) => void }>((set) => ({
+const useToastStore = create<{ toasts: Toast[]; push: (kind: ToastKind, message: string, options?: ToastOptions) => void; dismiss: (id: number) => void }>((set) => ({
   toasts: [],
-  push: (kind, message) => {
+  push: (kind, message, options) => {
     const id = Date.now() + Math.random();
-    set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, message }] }));
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), kind === 'error' ? 6000 : 3500);
+    set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, message, description: options?.description }] }));
+    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), options?.durationMs ?? (kind === 'error' ? 6000 : 3500));
   },
   dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }));
 
 export const toast = {
-  success: (m: string) => useToastStore.getState().push('success', m),
-  error: (m: string) => useToastStore.getState().push('error', m),
-  info: (m: string) => useToastStore.getState().push('info', m),
+  success: (m: string, options?: ToastOptions) => useToastStore.getState().push('success', m, options),
+  error: (m: string, options?: ToastOptions) => useToastStore.getState().push('error', m, options),
+  info: (m: string, options?: ToastOptions) => useToastStore.getState().push('info', m, options),
 };
 
 /** Shows a toast for a use-case Result and returns whether it succeeded. */
@@ -45,13 +50,16 @@ const tones = {
 export function Toaster() {
   const { toasts, dismiss } = useToastStore();
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[2000] flex flex-col items-center gap-2 px-4" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-[2000] flex flex-col items-start gap-2 px-4" aria-live="polite">
       {toasts.map((t) => {
         const Icon = icons[t.kind];
         return (
-          <div key={t.id} role="status" className={cn('pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border px-4 py-3 shadow-pop', tones[t.kind])}>
+          <div key={t.id} role="status" className={cn('pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border px-4 py-3 shadow-pop motion-safe:animate-rise', tones[t.kind])}>
             <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-            <p className="flex-1 text-sm font-medium text-ink">{t.message}</p>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-ink">{t.message}</p>
+              {t.description && <p className="mt-0.5 text-xs text-ink-soft">{t.description}</p>}
+            </div>
             <button onClick={() => dismiss(t.id)} className="text-ink-muted hover:text-ink" aria-label="إغلاق التنبيه">
               <X className="h-4 w-4" />
             </button>

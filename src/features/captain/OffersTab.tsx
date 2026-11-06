@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
 import { BellOff, Check, MapPin, Store, Timer, X, AlertCircle, Lock } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { CaptainView } from '@/application/hooks';
@@ -90,6 +91,7 @@ export function OffersTab({ view, now }: { view: CaptainView; now: number }) {
                     <div>
                       <p className="font-bold">{order.destination.label}</p>
                       <p className="text-xs text-ink-muted">{order.destination.address} · منطقة {order.areaName}</p>
+                      {isAreaOnly(order.destination) && <p className="text-xs font-medium text-amber-800">{NO_EXACT_LOCATION}</p>}
                       {order.destination.note && <p className="text-xs text-ink-soft">{order.destination.note}</p>}
                     </div>
                   </li>
