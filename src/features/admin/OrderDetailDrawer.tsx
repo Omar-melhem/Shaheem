@@ -92,7 +92,6 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
             {formatMoney(order.deliveryPrice)}
             <span className="block text-xs text-ink-muted">حُفظت {formatDateTime(order.pricingSnapshotAt)}</span>
           </DetailRow>
-          <DetailRow label="اسم العميل">{order.customerName ?? <span className="text-ink-muted">غير مُدخل</span>}</DetailRow>
           <DetailRow label="هاتف العميل">{order.customerPhone ? <span dir="ltr">{order.customerPhone}</span> : <span className="text-ink-muted">غير مُدخل</span>}</DetailRow>
           <DetailRow label="قيمة الطلب">{order.mealValue !== undefined ? formatMoney(order.mealValue) : <span className="text-ink-muted">غير مُدخلة</span>}</DetailRow>
           <DetailRow label="الكابتن">

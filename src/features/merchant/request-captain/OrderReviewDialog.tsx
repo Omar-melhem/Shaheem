@@ -21,7 +21,6 @@ export interface ReviewDetails {
   areaName: string;
   /** Place name or pin label; null for an area-only order. */
   exactLocation: string | null;
-  customerName?: string;
   customerPhone?: string;
 }
 
@@ -95,7 +94,6 @@ export function OrderReviewDialog({
             <DetailRow label="الموقع الدقيق">
               {details.exactLocation ?? <span className="text-amber-800">{NO_EXACT_LOCATION}</span>}
             </DetailRow>
-            {details.customerName && <DetailRow label="اسم العميل">{details.customerName}</DetailRow>}
             {details.customerPhone && <DetailRow label="هاتف العميل"><span dir="ltr">{details.customerPhone}</span></DetailRow>}
           </dl>
           <dl className="mt-3 divide-y divide-cream-deep rounded-xl bg-cream px-3 text-sm">

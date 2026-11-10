@@ -67,7 +67,6 @@ const merchantActor = (m: Merchant): ActorRef => ({ role: 'merchant', id: m.id, 
 export interface CreateOrderInput {
   /** Optional; when supplied it must be exactly 10 digits (CR v1.3 §8.4). */
   customerPhone?: string;
-  customerName?: string;
   /** Required delivery area chosen from the list. The fee comes from Merchant + this area. */
   areaId: ID;
   /** Optional exact customer pin; it must lie inside the area and never affects the fee. */
@@ -205,8 +204,8 @@ interface Actions {
 
 export type AppState = AppData & Actions;
 
-// v7: merchants without a contact person, captains without vehicle data (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v7';
+// v8: no merchant contact person, no captain vehicle data, no customer name on orders (older saved demo data is discarded).
+export const STORAGE_KEY = 'shahm-demo-v8';
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -606,7 +605,6 @@ export const useAppStore = create<AppState>()(
               reference,
               merchantId,
               pickup: { position: m.pickup, address: m.address },
-              customerName: input.customerName?.trim() || undefined,
               customerPhone: input.customerPhone?.trim() ? normalizePhone(input.customerPhone) : undefined,
               destination: {
                 label: pin ? input.placeName?.trim() || PINNED_LOCATION_LABEL : `منطقة ${zone.name}`,

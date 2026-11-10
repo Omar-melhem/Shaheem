@@ -3,7 +3,7 @@ import { AlertTriangle, Lock, Send } from 'lucide-react';
 import { PINNED_LOCATION_LABEL } from '@/domain/destination';
 import type { Merchant } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
-import { Button, Card, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
+import { Button, Card, Field, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { CustomerLocationSection } from '../location/CustomerLocationSection';
 import { OrderReviewDialog } from './OrderReviewDialog';
 import { RequestTypeSelector } from './RequestTypeSelector';
@@ -52,14 +52,9 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
           <ScheduleFields date={form.scheduleDate} time={form.scheduleTime} minDate={request.minScheduleDate} error={errors.schedule} onChange={request.setSchedule} />
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
-            <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
-          </Field>
-          <Field label="اسم العميل" optional>
-            <Input value={form.customerName} onChange={(e) => set('customerName', e.target.value)} autoComplete="off" />
-          </Field>
-        </div>
+        <Field label="هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT} className="sm:max-w-sm">
+          <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
+        </Field>
 
         <CustomerLocationSection
           key={request.resetCount}
@@ -98,7 +93,6 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
           pickupAddress: merchant.address,
           areaName: request.areaOptions.find((o) => o.area.id === form.areaId)?.label ?? request.selectedArea?.name ?? '',
           exactLocation: form.location ? form.location.placeName ?? PINNED_LOCATION_LABEL : null,
-          customerName: form.customerName.trim() || undefined,
           customerPhone: form.customerPhone.trim() || undefined,
         }}
         submitting={request.submitting}

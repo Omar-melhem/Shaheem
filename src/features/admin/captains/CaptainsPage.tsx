@@ -25,7 +25,7 @@ const AVAILABILITY_LABEL = { available: 'متاح', busy: 'في توصيل', off
 
 const HEADERS = ['الكابتن', 'الحساب', 'التوفر', 'الأهلية للعروض', 'آخر موقع', 'المحفظة', 'التقييم', 'المكتملة'];
 const LEGEND = [
-  { icon: <Eye />, label: 'عرض التفاصيل' },
+  { icon: <Eye />, label: 'التفاصيل وسجل التوصيلات' },
   { icon: <Pencil />, label: 'تعديل البيانات' },
   { icon: <Wallet />, label: 'شحن المحفظة' },
   { icon: <Star />, label: 'تقييم الكابتن' },

@@ -14,13 +14,12 @@ interface FormState {
   scheduleDate: string;
   scheduleTime: string;
   customerPhone: string;
-  customerName: string;
   areaId: ID | null;
   location: CustomerLocation | null;
 }
 type Errors = Partial<Record<keyof FormState | 'schedule', string>>;
 
-const EMPTY_FORM: FormState = { requestType: 'immediate', scheduleDate: '', scheduleTime: '', customerPhone: '', customerName: '', areaId: null, location: null };
+const EMPTY_FORM: FormState = { requestType: 'immediate', scheduleDate: '', scheduleTime: '', customerPhone: '', areaId: null, location: null };
 /** Stands in for the network round-trip so the progress state is real to the user (demo, no backend). */
 const SUBMIT_PAUSE_MS = 400;
 
@@ -119,7 +118,6 @@ export function useRequestCaptainForm(merchant: Merchant) {
     submitTimer.current = window.setTimeout(() => {
       const result = createOrder(merchant.id, {
         customerPhone: form.customerPhone,
-        customerName: form.customerName,
         areaId,
         location: location?.position,
         placeName: location?.placeName,

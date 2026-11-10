@@ -57,6 +57,7 @@ check(o1.ok, 'order to Khalda from pin');
 const order1 = S().orders.find((o) => o1.ok && o.id === o1.value.id)!;
 check(order1.deliveryPrice === 2000 && order1.areaName === 'خلدا', 'order stores JOD 2.00');
 check(!!order1.pricingSnapshotAt, 'pricing snapshot timestamp');
+check(!('customerName' in order1) && S().orders.every((o) => !('customerName' in o)), 'orders carry no customer name (Master Prompt §13)');
 check(order1.destination.position?.lat === at('a-khalda').lat && !order1.destination.approximate, 'order stores the exact customer pin');
 check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: 31.5, lng: 36.5 } }).ok, 'pin outside every zone rejected');
 check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: NaN, lng: 0 } }).ok, 'missing/invalid pin rejected');

@@ -100,9 +100,9 @@ export function OffersTab({ view, now }: { view: CaptainView; now: number }) {
                     </div>
                   </li>
                 </ol>
-                {(order.customerName || order.customerPhone) && (
+                {order.customerPhone && (
                   <p className="text-xs text-ink-muted">
-                    العميل: {order.customerName ?? '—'} {order.customerPhone && <span dir="ltr">· {order.customerPhone}</span>}
+                    هاتف العميل: <span dir="ltr">{order.customerPhone}</span>
                   </p>
                 )}
 

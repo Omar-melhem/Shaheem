@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marker } from 'react-leaflet';
-import { Eye, Plus, Power, Store, Pencil, Tags } from 'lucide-react';
+import { Eye, History, Plus, Power, Store, Pencil, Tags } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { MERCHANT_CATEGORIES, type Merchant, type MerchantCategory } from '@/domain/types';
 import { cityName } from '@/domain/cities';
@@ -21,6 +21,7 @@ const HEADERS = ['النشاط التجاري', 'الفئة', 'الهاتف', '�
 const LEGEND = [
   { icon: <Eye />, label: 'عرض التفاصيل' },
   { icon: <Tags />, label: 'مناطق التوصيل والأسعار' },
+  { icon: <History />, label: 'طلبات التاجر' },
   { icon: <Pencil />, label: 'تعديل البيانات' },
   { icon: <Power />, label: 'تفعيل / إيقاف الحساب' },
 ];
@@ -84,6 +85,7 @@ export function MerchantsPage() {
                 <RowActions>
                   <IconAction icon={<Eye />} label="عرض التفاصيل" onClick={() => setDetailId(m.id)} />
                   <IconAction icon={<Tags />} label="المناطق والأسعار" tone="primary" to={`/admin/merchants/${m.id}/zones`} />
+                  <IconAction icon={<History />} label="طلبات التاجر" to={`/admin/orders?merchant=${m.id}`} />
                   <IconAction icon={<Pencil />} label="تعديل البيانات" onClick={() => setEditing(m)} />
                   <IconAction icon={<Power />} label={m.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب'} tone={m.status === 'active' ? 'danger' : 'secondary'} onClick={() => setToggling(m)} />
                 </RowActions>

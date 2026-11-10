@@ -147,7 +147,6 @@ export function createSeedData(now: number = Date.now()): AppData {
     merchant: string;
     area: string;
     dest: { label: string; address: string };
-    customerName?: string;
     customerPhone?: string;
     mealJod?: number;
     captain?: string;
@@ -168,21 +167,21 @@ export function createSeedData(now: number = Date.now()): AppData {
   };
 
   const defs: OrderDef[] = [
-    { merchant: 'm-sanabel', area: 'a-jubaiha', dest: D.khaled, customerName: 'لينا', mealJod: 12.5, captain: 'c-ahmad', status: 'delivered', ageMin: 6 * DAY / MIN },
+    { merchant: 'm-sanabel', area: 'a-jubaiha', dest: D.khaled, mealJod: 12.5, captain: 'c-ahmad', status: 'delivered', ageMin: 6 * DAY / MIN },
     { merchant: 'm-hail', area: 'a-khalda', dest: D.city, captain: 'c-mohammad', status: 'delivered', ageMin: 5 * DAY / MIN },
-    { merchant: 'm-taboon', area: 'a-tla', dest: D.waha, customerName: 'سعيد', customerPhone: '0790000301', captain: 'c-samer', status: 'delivered', ageMin: 5 * DAY / MIN + 120 },
+    { merchant: 'm-taboon', area: 'a-tla', dest: D.waha, customerPhone: '0790000301', captain: 'c-samer', status: 'delivered', ageMin: 5 * DAY / MIN + 120 },
     { merchant: 'm-yasmine', area: 'a-sweifieh', dest: D.wakalat, mealJod: 18, captain: 'c-firas', status: 'delivered', ageMin: 4 * DAY / MIN },
     { merchant: 'm-zahra', area: 'a-shmeisani', dest: D.thaqafa, captain: 'c-khaled', status: 'delivered', ageMin: 3 * DAY / MIN },
     { merchant: 'm-sanabel', area: 'a-tla', dest: D.waha, customerPhone: '0790000302', captain: 'c-ahmad', status: 'delivered', ageMin: 2 * DAY / MIN },
-    { merchant: 'm-hail', area: 'a-uthaina', dest: D.uthaina, customerName: 'ريم', captain: 'c-samer', status: 'delivered', ageMin: 1 * DAY / MIN + 300 },
+    { merchant: 'm-hail', area: 'a-uthaina', dest: D.uthaina, captain: 'c-samer', status: 'delivered', ageMin: 1 * DAY / MIN + 300 },
     { merchant: 'm-taboon', area: 'a-jubaiha', dest: D.uj, captain: 'c-mohammad', status: 'delivered', ageMin: 1 * DAY / MIN },
-    { merchant: 'm-yasmine', area: 'a-abdoun', dest: D.taj, customerName: 'مها', mealJod: 25, captain: 'c-firas', status: 'delivered', ageMin: 300 },
-    { merchant: 'm-sanabel', area: 'a-jubaiha', dest: D.uj, customerName: 'طارق', captain: 'c-ahmad', status: 'delivered', ageMin: 140 },
+    { merchant: 'm-yasmine', area: 'a-abdoun', dest: D.taj, mealJod: 25, captain: 'c-firas', status: 'delivered', ageMin: 300 },
+    { merchant: 'm-sanabel', area: 'a-jubaiha', dest: D.uj, captain: 'c-ahmad', status: 'delivered', ageMin: 140 },
     { merchant: 'm-zahra', area: 'a-sweifieh', dest: D.wakalat, status: 'cancelled', ageMin: 2 * DAY / MIN },
     { merchant: 'm-hail', area: 'a-tla', dest: D.waha, status: 'dispatch_expired', ageMin: 35 },
-    { merchant: 'm-taboon', area: 'a-uthaina', dest: D.uthaina, customerName: 'جود', status: 'pending_dispatch', ageMin: 12 },
+    { merchant: 'm-taboon', area: 'a-uthaina', dest: D.uthaina, status: 'pending_dispatch', ageMin: 12 },
     { merchant: 'm-yasmine', area: 'a-sweifieh', dest: D.wakalat, customerPhone: '0790000303', mealJod: 9, status: 'pending_dispatch', ageMin: 6 },
-    { merchant: 'm-sanabel', area: 'a-uthaina', dest: D.uthaina, customerName: 'عبدالله', customerPhone: '0790000304', captain: 'c-samer', status: 'on_the_way', ageMin: 18 },
+    { merchant: 'm-sanabel', area: 'a-uthaina', dest: D.uthaina, customerPhone: '0790000304', captain: 'c-samer', status: 'on_the_way', ageMin: 18 },
   ];
 
   let seq = 10000;
@@ -211,7 +210,6 @@ export function createSeedData(now: number = Date.now()): AppData {
       reference: `SH-${++seq}`,
       merchantId: m.id,
       pickup: { position: m.pickup, address: m.address },
-      customerName: d.customerName,
       customerPhone: d.customerPhone ?? `07900004${String(i + 1).padStart(2, '0')}`,
       destination: { ...d.dest, position: polygonCentroid(areas.find((a) => a.id === d.area)!.polygon), approximate: true },
       areaId: d.area,

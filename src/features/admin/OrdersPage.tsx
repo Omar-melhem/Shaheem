@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Eye, ReceiptText } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useNow } from '@/application/hooks';
@@ -11,7 +12,7 @@ import { formatDateTime, formatRelative } from '@/shared/lib/format';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 
 const PAGE_SIZE = 12;
-const HEADERS = ['الطلب', 'التاجر', 'العميل', 'الوجهة / المنطقة', 'السعر', 'الكابتن', 'الحالة', 'آخر تحديث'];
+const HEADERS = ['الطلب', 'التاجر', 'هاتف العميل', 'الوجهة / المنطقة', 'السعر', 'الكابتن', 'الحالة', 'آخر تحديث'];
 const LEGEND = [{ icon: <Eye />, label: 'عرض تفاصيل الطلب وسجله ومحاولات التوزيع (والإلغاء حسب السياسة)' }];
 
 export function OrdersPage() {
@@ -22,8 +23,10 @@ export function OrdersPage() {
   const areas = useAppStore((s) => s.areas);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<OrderStatus | ''>('');
-  const [merchantId, setMerchantId] = useState('');
-  const [captainId, setCaptainId] = useState('');
+  // «طلبات التاجر» / «سجل الكابتن» row actions open this page pre-filtered (?merchant= / ?captain=).
+  const [params] = useSearchParams();
+  const [merchantId, setMerchantId] = useState(() => params.get('merchant') ?? '');
+  const [captainId, setCaptainId] = useState(() => params.get('captain') ?? '');
   const [areaId, setAreaId] = useState('');
   const [page, setPage] = useState(0);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -41,7 +44,7 @@ export function OrdersPage() {
       .filter(
         (o) =>
           !needle ||
-          [o.reference, o.customerName, o.customerPhone, o.destination.label].some((v) => v?.toLowerCase().includes(needle)),
+          [o.reference, o.customerPhone, o.destination.label].some((v) => v?.toLowerCase().includes(needle)),
       )
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [orders, q, status, merchantId, captainId, areaId]);
@@ -58,7 +61,7 @@ export function OrdersPage() {
       <PageHeader title="الطلبات" description="البحث في طلبات التوصيل ومتابعتها. اضغط على أي طلب لعرض التفاصيل والسجل ومحاولات التوزيع." />
 
       <Card className="mb-4 grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-6">
-        <SearchField label="بحث" className="md:col-span-3 xl:col-span-2" placeholder="رقم الطلب، اسم/هاتف العميل، الوجهة" value={q} onChange={(e) => resetPage(setQ)(e.target.value)} />
+        <SearchField label="بحث" className="md:col-span-3 xl:col-span-2" placeholder="رقم الطلب، هاتف العميل، الوجهة" value={q} onChange={(e) => resetPage(setQ)(e.target.value)} />
         <Select aria-label="الحالة" value={status} onChange={(e) => resetPage(setStatus)(e.target.value as OrderStatus | '')}>
           <option value="">كل الحالات</option>
           {(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => (
@@ -106,14 +109,13 @@ export function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
                     <td className="px-4 py-3">
-                      {o.customerName ?? <span className="text-ink-muted">—</span>}
-                      {o.customerPhone && <p className="text-xs text-ink-muted" dir="ltr" style={{ textAlign: 'right' }}>{o.customerPhone}</p>}
+                      {o.customerPhone ? <span dir="ltr">{o.customerPhone}</span> : <span className="text-ink-muted">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {o.destination.label}
                       <p className="text-xs text-ink-muted">{o.areaName}</p>
                     </td>
-                    <td className="px-4 py-3 font-bold">{formatMoney(o.deliveryPrice)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-bold">{formatMoney(o.deliveryPrice)}</td>
                     <td className="px-4 py-3">{captainName(o.captainId)}</td>
                     <td className="px-4 py-3">
                       <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />

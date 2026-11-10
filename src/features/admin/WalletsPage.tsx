@@ -77,7 +77,7 @@ export function WalletsPage() {
           <CardHeader
             title="سجل الحركات"
             actions={
-              <Select className="h-9 w-44" value={filterCaptain} onChange={(e) => setFilterCaptain(e.target.value)} aria-label="تصفية حسب الكابتن">
+              <Select className="w-44" value={filterCaptain} onChange={(e) => setFilterCaptain(e.target.value)} aria-label="تصفية حسب الكابتن">
                 <option value="">كل الكباتن</option>
                 {views.map((v) => <option key={v.captain.id} value={v.captain.id}>{v.captain.fullName}</option>)}
               </Select>

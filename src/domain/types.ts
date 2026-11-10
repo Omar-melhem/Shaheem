@@ -195,7 +195,6 @@ export interface DeliveryOrder {
   reference: string;
   merchantId: ID;
   pickup: { position: LatLng; address: string };
-  customerName?: string;
   customerPhone?: string;
   destination: Destination;
   areaId: ID;
