@@ -9,7 +9,7 @@ import { useSignOut } from '@/features/auth/hooks/useSignOut';
 
 const iconLink = 'inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300';
 
-const SUBTITLE = { home: 'بوابة التاجر', settings: 'الإعدادات', areas: 'مناطق التوصيل والأسعار' } as const;
+const SUBTITLE = { home: 'بوابة التاجر', settings: 'الإعدادات', areas: 'مناطق التوصيل والأسعار', orders: 'سجل الطلبات' } as const;
 
 /** Merchant top bar shared by the operations screen, the areas & prices list and settings. */
 export function MerchantHeader({ merchant, page }: { merchant: Merchant; page: keyof typeof SUBTITLE }) {

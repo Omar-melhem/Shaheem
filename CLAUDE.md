@@ -30,6 +30,7 @@ OPEN decision as if approved — make it a labelled demo assumption with its O-x
 - Merchant location (CR v1.3 §3): City → Area → exact pin, via IDs (`domain/cities.ts`, `application/merchantLocation.ts`). City is its own layer, not a Governorate. A pin outside the Area polygon is an error, never a silent reassignment. `cityId`/`areaId` null = legacy text address, valid until Admin changes it.
 - Price copy (CR v1.3 §4): `application/pricingCopy.ts`. Default fills missing prices only; overwrite needs separate confirmation; every copy is audited in `pricingAudit`. Order fee snapshots never change.
 - No merchant contact-person field and no captain vehicle data anywhere (owner, Master Prompt §15/§18): merchants keep only the business phone; do not reintroduce either.
+- Dashboards: every overview number comes from `application/dashboard.ts` (`operationalKpis`, `platformKpis`, `availabilitySummary`, `orderActivity` from real timestamps, `operationalAlerts` only for conditions the data supports, `merchantOrderOverview`). Components only format. Merchant home: form, then active deliveries, then the last 3 finished orders → `/merchant/orders` (full history).
 - Captain trip history (CR v1.4 §7): completed trips by Amman calendar day of `deliveredAt` (today, yesterday, the day before), a view only.
 - Logo: `/brand/shahm-logo-transparent.png` has real transparency. Do not use `mix-blend-mode` or filters to hide a background.
 - Admin cancel: existing policy only (`CANCELLABLE_STATUSES`, pre-acceptance, O-029) through `CancelOrderDialog`. No merchant-side cancel.

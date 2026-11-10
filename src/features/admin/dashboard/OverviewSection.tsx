@@ -1,42 +1,47 @@
-import { Bike, CheckCircle2, Hourglass, PackageSearch, Store, Truck, Users } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews } from '@/application/hooks';
-import { isActiveDelivery, isInQueue, isOffering } from '@/domain/orderStatus';
+import type { ReactNode } from 'react';
+import { CheckCircle2, Hourglass, PackageSearch, Store, Truck, UserCheck, Users } from 'lucide-react';
+import type { OperationalKpis, PlatformKpis } from '@/application/dashboard';
 import { StatCard } from '@/shared/components/ui';
 
-/**
- * «نظرة عامة»: seven KPI cards (FU-1.2 §3; «GPS متأخر أثناء توصيل» removed at the owner's request —
- * stale GPS is still flagged on the Live Map and in alerts). The existing metric definitions are kept;
- * «كباتن في توصيل» is removed and the old combined Merchants / Captains card is split
- * into two separate account counts.
- */
-export function OverviewSection({ now }: { now: number }) {
-  const orders = useAppStore((s) => s.orders);
-  const merchantCount = useAppStore((s) => s.merchants.length);
-  const captains = useCaptainViews(now);
-
-  const startOfDay = new Date(now).setHours(0, 0, 0, 0);
-  const queue = orders.filter((o) => isInQueue(o.status)).length;
-  const offered = orders.filter((o) => isOffering(o.status)).length;
-  const active = orders.filter((o) => isActiveDelivery(o.status)).length;
-  const deliveredToday = orders.filter((o) => o.status === 'delivered' && (o.deliveredAt ?? 0) >= startOfDay).length;
-  const eligible = captains.filter((c) => c.eligibility.eligible).length;
-  const available = captains.filter((c) => c.opStatus === 'available').length;
-
+/** A titled dashboard block; every section uses the same heading rhythm. */
+export function DashboardSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section aria-labelledby="overview-title" className="mt-6">
-      <h2 id="overview-title" className="mb-3 text-lg font-extrabold text-ink">
-        نظرة عامة
-      </h2>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="بانتظار التوزيع" value={queue} icon={<Hourglass className="h-5 w-5" />} tone={queue ? 'warning' : 'neutral'} />
-        <StatCard label="معروضة على الكباتن" value={offered} icon={<PackageSearch className="h-5 w-5" />} tone="warning" />
-        <StatCard label="توصيلات نشطة" value={active} icon={<Truck className="h-5 w-5" />} tone="primary" />
-        <StatCard label="سُلّمت اليوم" value={deliveredToday} icon={<CheckCircle2 className="h-5 w-5" />} tone="secondary" />
-        <StatCard label="كباتن مؤهلون الآن" value={eligible} icon={<Bike className="h-5 w-5" />} tone="secondary" hint={`من ${available} متاح`} />
-        <StatCard label="إجمالي التجار" value={merchantCount} icon={<Store className="h-5 w-5" />} hint="حسابات التجار" />
-        <StatCard label="إجمالي الكباتن" value={captains.length} icon={<Users className="h-5 w-5" />} hint="حسابات الكباتن" />
-      </div>
+    <section aria-labelledby={id} className="min-w-0">
+      <h2 id={id} className="mb-3 text-base font-extrabold text-ink">{title}</h2>
+      {children}
     </section>
+  );
+}
+
+/** «مؤشرات التشغيل»: four live order counts (definitions in application/dashboard.ts). */
+export function OperationalKpiSection({ kpis }: { kpis: OperationalKpis }) {
+  return (
+    <DashboardSection id="ops-kpis" title="مؤشرات التشغيل">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="بانتظار التوزيع" value={kpis.queue} icon={<Hourglass className="h-5 w-5" />} tone={kpis.queue ? 'warning' : 'neutral'} hint="تحتاج إسناداً من الإدارة" />
+        <StatCard label="معروضة على الكباتن" value={kpis.offered} icon={<PackageSearch className="h-5 w-5" />} tone="warning" hint="بث عام أو عرض خاص قائم" />
+        <StatCard label="توصيلات نشطة" value={kpis.activeDeliveries} icon={<Truck className="h-5 w-5" />} tone="primary" hint="من القبول حتى التسليم" />
+        <StatCard label="تم التسليم اليوم" value={kpis.deliveredToday} icon={<CheckCircle2 className="h-5 w-5" />} tone="secondary" hint="حسب يوم عمّان" />
+      </div>
+    </DashboardSection>
+  );
+}
+
+/** «حسابات المنصة»: quieter account counts, three even columns. */
+export function PlatformKpiSection({ kpis }: { kpis: PlatformKpis }) {
+  return (
+    <DashboardSection id="platform-kpis" title="حسابات المنصة">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          label="الكباتن المتاحون الآن"
+          value={<>{kpis.availableNow} <span className="text-sm font-bold text-ink-muted">/ {kpis.activeCaptainAccounts}</span></>}
+          icon={<UserCheck className="h-5 w-5" />}
+          tone="secondary"
+          hint="متاح من الحسابات المفعّلة"
+        />
+        <StatCard label="إجمالي التجار" value={kpis.merchants} icon={<Store className="h-5 w-5" />} hint="كل حسابات التجار" />
+        <StatCard label="إجمالي الكباتن" value={kpis.captains} icon={<Users className="h-5 w-5" />} hint="كل حسابات الكباتن" />
+      </div>
+    </DashboardSection>
   );
 }

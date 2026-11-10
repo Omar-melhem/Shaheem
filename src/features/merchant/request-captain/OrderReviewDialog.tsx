@@ -59,7 +59,7 @@ export function OrderReviewDialog({
         <>
           <Button variant="outline" onClick={onClose} disabled={submitting}>رجوع للتعديل</Button>
           <Button ref={confirmRef} onClick={onConfirm} loading={submitting} icon={<CheckCircle2 className="h-4 w-4" />}>
-            {submitting ? 'جاري إنشاء الطلب...' : changed ? 'تأكيد بالرسوم الجديدة' : 'تأكيد الطلب'}
+            {submitting ? 'جاري إنشاء الطلب...' : changed ? 'تأكيد بالرسوم الجديدة' : 'إرسال الطلب'}
           </Button>
         </>
       }

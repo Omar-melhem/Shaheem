@@ -10,6 +10,7 @@ import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/pho
 import { destinationPinError, isAreaOnly } from '@/domain/destination';
 import { formatJodInput, parseJodAmount, parseJodInput } from '@/domain/money';
 import { previewPricingCopy } from '@/application/pricingCopy';
+import { ACTIVITY_DAYS, MERCHANT_RECENT_PREVIEW, availabilitySummary, merchantOrderOverview, operationalAlerts, operationalKpis, orderActivity, platformKpis } from '@/application/dashboard';
 import { check, finish, section } from './harness';
 
 // Business-rule checks against the real store and seed. Run with `npm test`.
@@ -368,5 +369,38 @@ const lateUtc = Date.UTC(2026, 10, 9, 22, 30); // 01:30 on the 10th in Amman
 check(ammanDayKey(lateUtc) === '2026-11-10', 'calendar day follows Amman, not UTC');
 check(JSON.stringify(lastThreeAmmanDays(lateUtc)) === JSON.stringify(['2026-11-10', '2026-11-09', '2026-11-08']), 'today, yesterday, day before (calendar days, not 72 hours)');
 check(JSON.stringify(lastThreeAmmanDays(Date.UTC(2026, 2, 1, 12))) === JSON.stringify(['2026-03-01', '2026-02-28', '2026-02-27']), 'crosses a month boundary correctly');
+
+section('Admin overview and merchant dashboard (application/dashboard.ts)');
+{
+  const now = Date.now();
+  const st = S();
+  const ops = operationalKpis(st.orders, now);
+  check(ops.queue + ops.offered + ops.activeDeliveries <= st.orders.length, 'KPI groups never exceed the order count');
+  check(ops.activeDeliveries === st.orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).length, 'active deliveries KPI uses the delivery stages');
+  const snaps = [
+    { opStatus: 'available' as const, eligible: true, freshness: 'demo' as const },
+    { opStatus: 'busy' as const, eligible: false, freshness: 'stale' as const },
+    { opStatus: 'offline' as const, eligible: false, freshness: 'none' as const },
+    { opStatus: 'inactive' as const, eligible: false, freshness: 'none' as const },
+  ];
+  const plat = platformKpis({ merchantCount: 6, captains: snaps });
+  check(plat.availableNow === 1 && plat.activeCaptainAccounts === 3 && plat.captains === 4, 'available captains counted out of active accounts only');
+  const sum = availabilitySummary(snaps);
+  check(sum.available === 1 && sum.busy === 1 && sum.offline === 1 && sum.inactive === 1, 'availability summary uses real op statuses');
+  const act = orderActivity(st.orders, now);
+  check(act.length === ACTIVITY_DAYS && act[act.length - 1].dayKey === ammanDayKey(now), 'activity covers 7 Amman days ending today');
+  check(act.reduce((n, d) => n + d.created, 0) === st.orders.filter((o) => act.some((d) => d.dayKey === ammanDayKey(o.createdAt))).length, 'activity counts only real orders in the window');
+  const pending = st.orders.find((o) => o.status === 'pending_dispatch');
+  const alertsOff = operationalAlerts({ orders: st.orders, merchantCount: 6, captains: snaps, publicBroadcast: false });
+  check(alertsOff.some((a) => a.id === 'broadcast-off' && a.to === '/admin/dispatch'), 'broadcast paused raises an actionable alert');
+  check(alertsOff.some((a) => a.id === 'gps'), 'busy captain with stale location raises a GPS alert');
+  const alertsCalm = operationalAlerts({ orders: [], merchantCount: 0, captains: [], publicBroadcast: true });
+  check(alertsCalm.length === 0, 'no invented alerts when nothing needs attention');
+  check(!pending || alertsOff.some((a) => a.id === 'queue'), 'waiting orders raise a queue alert');
+  const ov = merchantOrderOverview(st.orders, 'm-sanabel');
+  check(ov.active.concat(ov.history).every((o) => o.merchantId === 'm-sanabel'), 'merchant overview is isolated to one merchant');
+  check(ov.history.every((o) => o.status === 'delivered' || o.status === 'cancelled') && ov.active.every((o) => o.status !== 'delivered' && o.status !== 'cancelled'), 'active vs finished split');
+  check(MERCHANT_RECENT_PREVIEW === 3 && ov.history.slice(0, MERCHANT_RECENT_PREVIEW).length <= 3, 'dashboard preview shows at most three orders');
+}
 
 finish();

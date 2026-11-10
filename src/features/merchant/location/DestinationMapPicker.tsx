@@ -22,7 +22,7 @@ function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
 export function DestinationMapPicker({ value, pickup, area, onChange }: { value: LatLng | null; pickup: LatLng; area: ServiceArea | null; onChange: (p: LatLng) => void }) {
   const boundary = area && hasAreaBoundary(area) ? area.polygon : null;
   return (
-    <BaseMap className="h-60" center={value ?? pickup} zoom={value ? 16 : 13} label="خريطة منطقة التوصيل">
+    <BaseMap className="h-[220px] sm:h-[260px]" center={value ?? pickup} zoom={value ? 16 : 13} label="خريطة منطقة التوصيل">
       <InvalidateSize />
       {boundary && (
         <>
