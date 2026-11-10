@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react';
-import { ReceiptText } from 'lucide-react';
+import { Eye, ReceiptText } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useNow } from '@/application/hooks';
 import type { OrderStatus } from '@/domain/types';
 import { ORDER_STATUS_LABEL } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
-import { Card, EmptyState, PageHeader, Select, SearchField } from '@/shared/components/ui';
+import { Card, DataTable, EmptyState, IconAction, PageHeader, RowActions, Select, SearchField } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatDateTime, formatRelative } from '@/shared/lib/format';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 
 const PAGE_SIZE = 12;
+const HEADERS = ['الطلب', 'التاجر', 'العميل', 'الوجهة / المنطقة', 'السعر', 'الكابتن', 'الحالة', 'آخر تحديث'];
+const LEGEND = [{ icon: <Eye />, label: 'عرض تفاصيل الطلب وسجله ومحاولات التوزيع (والإلغاء حسب السياسة)' }];
 
 export function OrdersPage() {
   const now = useNow(10000);
@@ -95,24 +97,11 @@ export function OrdersPage() {
         {visible.length === 0 ? (
           <EmptyState icon={<ReceiptText className="h-6 w-6" />} title="لا توجد طلبات مطابقة" description="جرّب تعديل عوامل التصفية." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-sm">
-              <thead className="bg-cream text-xs text-ink-muted">
-                <tr>
-                  {['الطلب', 'التاجر', 'العميل', 'الوجهة / المنطقة', 'السعر', 'الكابتن', 'الحالة', 'آخر تحديث'].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 text-start font-bold">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-cream-dark">
+          <DataTable headers={HEADERS} actionsLegend={LEGEND} minWidth={1020}>
                 {visible.map((o) => (
-                  <tr key={o.id} className="cursor-pointer hover:bg-cream/60" onClick={() => setDetailId(o.id)}>
+                  <tr key={o.id}>
                     <td className="px-4 py-3">
-                      <button className="font-mono font-bold text-primary hover:underline" dir="ltr" onClick={(e) => { e.stopPropagation(); setDetailId(o.id); }}>
-                        {o.reference}
-                      </button>
+                      <p className="font-mono font-bold text-ink" dir="ltr" style={{ textAlign: 'right' }}>{o.reference}</p>
                       <p className="text-xs text-ink-muted">{formatDateTime(o.createdAt)}</p>
                     </td>
                     <td className="px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
@@ -130,11 +119,12 @@ export function OrdersPage() {
                       <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
                     </td>
                     <td className="px-4 py-3 text-xs text-ink-muted">{formatRelative(o.updatedAt, now)}</td>
+                    <RowActions>
+                      <IconAction icon={<Eye />} label="عرض التفاصيل والسجل" onClick={() => setDetailId(o.id)} />
+                    </RowActions>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+          </DataTable>
         )}
         <div className="flex items-center justify-between border-t border-cream-dark px-4 py-3 text-sm">
           <span className="text-ink-muted">{filtered.length} طلب</span>

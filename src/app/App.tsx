@@ -12,7 +12,7 @@ import { DispatchPage } from '@/features/admin/dispatch/DispatchPage';
 import { LiveMapPage } from '@/features/admin/live-map/LiveMapPage';
 import { OrdersPage } from '@/features/admin/OrdersPage';
 import { MerchantsPage } from '@/features/admin/MerchantsPage';
-import { CaptainsPage } from '@/features/admin/CaptainsPage';
+import { CaptainsPage } from '@/features/admin/captains/CaptainsPage';
 import { ServiceAreasPage } from '@/features/admin/service-areas/ServiceAreasPage';
 import { MerchantPricingPage } from '@/features/admin/merchant-pricing/MerchantPricingPage';
 import { MerchantPricingDetails } from '@/features/admin/merchant-pricing/MerchantPricingDetails';

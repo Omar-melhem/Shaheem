@@ -5,10 +5,14 @@ import type { ServiceArea } from '@/domain/types';
 import { childrenOf } from '@/domain/regions';
 import { governorateName } from '@/domain/governorates';
 import { cityName } from '@/domain/cities';
-import { Badge, Button, Toggle } from '@/shared/components/ui';
+import { Badge, DataTable, IconAction, RowActions, Toggle } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 
-const HEADERS = ['المنطقة', 'المحافظة › المدينة', 'أقسام', 'تجار يغطّونها', 'طلبات', 'الحالة', ''];
+const HEADERS = ['المنطقة', 'المحافظة › المدينة', 'أقسام', 'تجار يغطّونها', 'طلبات', 'الحالة'];
+const LEGEND = [
+  { icon: <Pencil />, label: 'تعديل الاسم والأسماء البديلة والملاحظات' },
+  { icon: <Plus />, label: 'إضافة قسم تحت المنطقة' },
+];
 
 /**
  * Areas with their sub-areas (CR v1.4 §1.3): a top-level row expands to its sections.
@@ -45,7 +49,7 @@ export function AreaTreeTable({
   const row = (a: ServiceArea, depth: 0 | 1, sectionCount: number) => {
     const parentOff = depth === 1 && areas.find((p) => p.id === a.parentId)?.status !== 'active';
     return (
-      <tr key={a.id} className={cn(depth === 1 && 'bg-cream/40', a.status !== 'active' && 'opacity-70')}>
+      <tr key={a.id} className={cn(a.status !== 'active' && 'opacity-70')}>
         <td className="px-4 py-3">
           <div className={cn('flex items-start gap-2', depth === 1 && 'ps-6')}>
             {depth === 0 ? (
@@ -79,35 +83,22 @@ export function AreaTreeTable({
             <Badge tone={a.status === 'active' && !parentOff ? 'success' : 'neutral'}>{a.status !== 'active' ? 'متوقفة' : parentOff ? 'المنطقة الأم متوقفة' : 'نشطة'}</Badge>
           </div>
         </td>
-        <td className="px-4 py-3">
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => onEdit(a)}>تعديل</Button>
-            {depth === 0 && <Button size="sm" variant="ghost" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => onAddSection(a)}>قسم</Button>}
-          </div>
-        </td>
+        <RowActions>
+          <IconAction icon={<Pencil />} label={`تعديل ${a.name}`} onClick={() => onEdit(a)} />
+          {depth === 0 && <IconAction icon={<Plus />} label={`إضافة قسم إلى ${a.name}`} tone="primary" onClick={() => onAddSection(a)} />}
+        </RowActions>
       </tr>
     );
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px] text-sm">
-        <thead className="bg-cream text-xs text-ink-muted">
-          <tr>
-            {HEADERS.map((h, i) => (
-              <th key={i} scope="col" className="px-4 py-3 text-start font-bold">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-cream-dark">
+    <DataTable headers={HEADERS} actionsLegend={LEGEND} minWidth={860}>
           {roots.flatMap((root) => {
             const sections = childrenOf(areas, root.id);
             const shownSections = visibleIds ? sections.filter((s) => visibleIds.has(s.id)) : sections;
             const open = !collapsed.has(root.id) || (visibleIds !== null && shownSections.length > 0);
             return [row(root, 0, sections.length), ...(open ? shownSections.map((s) => row(s, 1, 0)) : [])];
           })}
-        </tbody>
-      </table>
-    </div>
+    </DataTable>
   );
 }

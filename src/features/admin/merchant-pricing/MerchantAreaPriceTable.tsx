@@ -6,13 +6,19 @@ import type { Merchant, ServiceArea } from '@/domain/types';
 import { areaLabel, childrenOf, isDestinationActive, topLevelAreas } from '@/domain/regions';
 import { cityName } from '@/domain/cities';
 import { formatMoney } from '@/domain/money';
-import { Badge, Button, Card, ConfirmDialog, EmptyState, SearchField } from '@/shared/components/ui';
+import { Badge, Button, Card, ConfirmDialog, DataTable, EmptyState, IconAction, RowActions, SearchField } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { formatDateTime } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import { FeeDialog, type Editing } from './FeeDialog';
 
 type Bulk = 'select' | 'clear' | null;
+
+const HEADERS = ['مفعّلة للتاجر', 'المنطقة', 'رسوم التوصيل', 'الحالة', 'آخر تعديل للسعر'];
+const LEGEND = [
+  { icon: <Plus />, label: 'إضافة سعر لمنطقة بلا سعر' },
+  { icon: <Pencil />, label: 'تعديل السعر أو إيقافه' },
+];
 
 /**
  * A Merchant's coverage and prices (CR v1.4 §2). Coverage (served or not) and price are
@@ -87,23 +93,14 @@ export function MerchantAreaPriceTable({ merchant }: { merchant: Merchant }) {
         {rows.length === 0 ? (
           <EmptyState title="لا توجد مناطق مطابقة" description="أضف المناطق من صفحة «مناطق التوصيل»." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead className="bg-cream text-xs text-ink-muted">
-                <tr>
-                  {['مفعّلة للتاجر', 'المنطقة', 'رسوم التوصيل', 'الحالة', 'آخر تعديل للسعر', 'السعر'].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 text-start font-bold">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-cream-dark">
+          <DataTable headers={HEADERS} actionsLegend={LEGEND} minWidth={820}>
                 {rows.map((a) => {
                   const price = prices.find((p) => p.merchantId === merchant.id && p.areaId === a.id);
                   const active = isDestinationActive(a, areas);
                   const isCovered = covered.has(a.id);
                   const status = resolveZoneFee(data, merchant.id, a.id).kind;
                   return (
-                    <tr key={a.id} className={cn(a.parentId && 'bg-cream/30', !active && 'opacity-70')}>
+                    <tr key={a.id} className={cn(!active && 'opacity-70')}>
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
@@ -127,19 +124,17 @@ export function MerchantAreaPriceTable({ merchant }: { merchant: Merchant }) {
                           : <Badge tone="warning">مفعّلة — بلا سعر</Badge>}
                       </td>
                       <td className="px-4 py-3 text-xs text-ink-muted">{price ? `${formatDateTime(price.updatedAt)} · ${price.updatedBy}` : '—'}</td>
-                      <td className="px-4 py-3">
+                      <RowActions>
                         {price ? (
-                          <Button size="sm" variant="outline" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditing({ area: a, price })}>تعديل</Button>
+                          <IconAction icon={<Pencil />} label={`تعديل سعر ${a.name}`} onClick={() => setEditing({ area: a, price })} />
                         ) : (
-                          <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} disabled={!active} onClick={() => setEditing({ area: a })}>إضافة سعر</Button>
+                          <IconAction icon={<Plus />} label={active ? `إضافة سعر ${a.name}` : 'المنطقة متوقفة'} tone="primary" disabled={!active} onClick={() => setEditing({ area: a })} />
                         )}
-                      </td>
+                      </RowActions>
                     </tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+          </DataTable>
         )}
       </Card>
 

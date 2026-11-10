@@ -78,13 +78,13 @@ export function createSeedData(now: number = Date.now()): AppData {
   ].map((a) => ({ ...a, governorateId: 'amman', cityId: 'amman', parentId: null, status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
 
   const merchantDefs: Array<Omit<Merchant, 'status' | 'createdAt' | 'username' | 'password'> & { status?: Merchant['status'] }> = [
-    { id: 'm-sanabel', cityId: 'amman', areaId: 'a-jubaiha', businessName: 'مطعم السنابل', category: 'restaurant', contactName: 'رامي حدّاد', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
-    { id: 'm-hail', cityId: 'amman', areaId: 'a-khalda', businessName: 'مقهى الهيل', category: 'cafe', contactName: 'دانا السعدي', phone: '0790000202', address: 'خلدا، شارع عامر بن مالك', pickup: { lat: 31.996, lng: 35.828 } },
-    { id: 'm-taboon', cityId: 'amman', areaId: 'a-tla', businessName: 'مخبز الطابون', category: 'bakery', contactName: 'باسل قاسم', phone: '0790000203', address: 'تلاع العلي، قرب دوار الواحة', pickup: { lat: 31.998, lng: 35.855 } },
+    { id: 'm-sanabel', cityId: 'amman', areaId: 'a-jubaiha', businessName: 'مطعم السنابل', category: 'restaurant', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
+    { id: 'm-hail', cityId: 'amman', areaId: 'a-khalda', businessName: 'مقهى الهيل', category: 'cafe', phone: '0790000202', address: 'خلدا، شارع عامر بن مالك', pickup: { lat: 31.996, lng: 35.828 } },
+    { id: 'm-taboon', cityId: 'amman', areaId: 'a-tla', businessName: 'مخبز الطابون', category: 'bakery', phone: '0790000203', address: 'تلاع العلي، قرب دوار الواحة', pickup: { lat: 31.998, lng: 35.855 } },
     // Deliberately legacy: no category and a text-only address, awaiting Admin classification (FR-MER-005, CR v1.3 §3.2).
-    { id: 'm-yasmine', cityId: null, areaId: null, businessName: 'حلويات الياسمين', category: null, contactName: 'هالة نصّار', phone: '0790000204', address: 'الصويفية، شارع الوكالات', pickup: { lat: 31.956, lng: 35.862 } },
-    { id: 'm-zahra', cityId: 'amman', areaId: 'a-shmeisani', businessName: 'متجر زهرة البلد', category: 'retail', contactName: 'سليم عوّاد', phone: '0790000205', address: 'الشميساني، شارع الثقافة', pickup: { lat: 31.968, lng: 35.902 } },
-    { id: 'm-rayhan', cityId: 'amman', areaId: 'a-abdoun', businessName: 'صيدلية الريحان', category: 'pharmacy', contactName: 'نور الكردي', phone: '0790000206', address: 'عبدون، قرب جسر عبدون', pickup: { lat: 31.944, lng: 35.88 }, status: 'inactive' },
+    { id: 'm-yasmine', cityId: null, areaId: null, businessName: 'حلويات الياسمين', category: null, phone: '0790000204', address: 'الصويفية، شارع الوكالات', pickup: { lat: 31.956, lng: 35.862 } },
+    { id: 'm-zahra', cityId: 'amman', areaId: 'a-shmeisani', businessName: 'متجر زهرة البلد', category: 'retail', phone: '0790000205', address: 'الشميساني، شارع الثقافة', pickup: { lat: 31.968, lng: 35.902 } },
+    { id: 'm-rayhan', cityId: 'amman', areaId: 'a-abdoun', businessName: 'صيدلية الريحان', category: 'pharmacy', phone: '0790000206', address: 'عبدون، قرب جسر عبدون', pickup: { lat: 31.944, lng: 35.88 }, status: 'inactive' },
   ];
   const merchants: Merchant[] = merchantDefs.map((m, i) => ({
     ...m,
@@ -95,14 +95,14 @@ export function createSeedData(now: number = Date.now()): AppData {
   }));
 
   const captainDefs: Array<Omit<Captain, 'createdAt' | 'gpsSignal' | 'lastLocation' | 'username' | 'password'> & { at?: LatLng }> = [
-    { id: 'c-ahmad', fullName: 'أحمد العمري', phone: '0790000101', vehicleType: 'motorcycle', vehicleDescription: 'دراجة نارية — أحمر', status: 'active', availability: 'available', rating: 5, at: { lat: 32.018, lng: 35.865 } },
-    { id: 'c-mohammad', fullName: 'محمد الخطيب', phone: '0790000102', vehicleType: 'motorcycle', vehicleDescription: 'دراجة نارية — أسود', status: 'active', availability: 'available', rating: 4, at: { lat: 31.993, lng: 35.835 } },
-    { id: 'c-yazan', fullName: 'يزن الحسن', phone: '0790000103', vehicleType: 'car', vehicleDescription: 'سيارة صغيرة — أبيض', status: 'active', availability: 'available', at: { lat: 32.0, lng: 35.858 } },
-    { id: 'c-omar', fullName: 'عمر الزعبي', phone: '0790000104', vehicleType: 'motorcycle', vehicleDescription: 'دراجة نارية — أزرق', status: 'active', availability: 'available', rating: 4, at: { lat: 31.958, lng: 35.858 } },
-    { id: 'c-khaled', fullName: 'خالد النسور', phone: '0790000105', vehicleType: 'motorcycle', vehicleDescription: 'دراجة نارية — رمادي', status: 'active', availability: 'offline', at: { lat: 31.972, lng: 35.9 } },
-    { id: 'c-samer', fullName: 'سامر الربضي', phone: '0790000106', vehicleType: 'car', vehicleDescription: 'سيارة — فضي', status: 'active', availability: 'available', rating: 5, at: { lat: 31.975, lng: 35.866 } },
-    { id: 'c-firas', fullName: 'فراس المومني', phone: '0790000107', vehicleType: 'motorcycle', vehicleDescription: 'دراجة نارية — أحمر', status: 'active', availability: 'available', at: { lat: 31.945, lng: 35.884 } },
-    { id: 'c-laith', fullName: 'ليث العبادي', phone: '0790000108', vehicleType: 'bicycle', vehicleDescription: 'دراجة هوائية', status: 'inactive', availability: 'offline' },
+    { id: 'c-ahmad', fullName: 'أحمد العمري', phone: '0790000101', status: 'active', availability: 'available', rating: 5, at: { lat: 32.018, lng: 35.865 } },
+    { id: 'c-mohammad', fullName: 'محمد الخطيب', phone: '0790000102', status: 'active', availability: 'available', rating: 4, at: { lat: 31.993, lng: 35.835 } },
+    { id: 'c-yazan', fullName: 'يزن الحسن', phone: '0790000103', status: 'active', availability: 'available', at: { lat: 32.0, lng: 35.858 } },
+    { id: 'c-omar', fullName: 'عمر الزعبي', phone: '0790000104', status: 'active', availability: 'available', rating: 4, at: { lat: 31.958, lng: 35.858 } },
+    { id: 'c-khaled', fullName: 'خالد النسور', phone: '0790000105', status: 'active', availability: 'offline', at: { lat: 31.972, lng: 35.9 } },
+    { id: 'c-samer', fullName: 'سامر الربضي', phone: '0790000106', status: 'active', availability: 'available', rating: 5, at: { lat: 31.975, lng: 35.866 } },
+    { id: 'c-firas', fullName: 'فراس المومني', phone: '0790000107', status: 'active', availability: 'available', at: { lat: 31.945, lng: 35.884 } },
+    { id: 'c-laith', fullName: 'ليث العبادي', phone: '0790000108', status: 'inactive', availability: 'offline' },
   ];
   const captains: Captain[] = captainDefs.map(({ at, ...c }, i) => ({
     ...c,

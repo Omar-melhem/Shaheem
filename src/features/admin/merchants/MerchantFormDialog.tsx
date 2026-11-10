@@ -10,7 +10,7 @@ import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySel
 import { MerchantLocationFields } from './MerchantLocationFields';
 
 type FormState = Omit<MerchantInput, 'pickup'> & { pickup: LatLng | null };
-const EMPTY: FormState = { businessName: '', category: null, contactName: '', phone: '', cityId: null, areaId: null, pickup: null, username: '', password: '' };
+const EMPTY: FormState = { businessName: '', category: null, phone: '', cityId: null, areaId: null, pickup: null, username: '', password: '' };
 
 /** Add / edit a Merchant. The pickup comes from City → Area → pin; there is no typed address. */
 export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant | 'new' | null; onClose: () => void }) {
@@ -38,7 +38,6 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
     const e: Record<string, string> = {};
     if (!form.businessName.trim()) e.businessName = 'اسم النشاط التجاري مطلوب';
     if (!form.category) e.category = 'اختر فئة النشاط التجاري';
-    if (!form.contactName.trim()) e.contactName = 'اسم جهة الاتصال مطلوب';
     if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
     else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
     const location = { cityId: form.cityId, areaId: form.areaId, pickup: form.pickup as LatLng };
@@ -80,9 +79,6 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
         </Field>
         <Field label="فئة النشاط التجاري" required error={errors.category} htmlFor="merchant-category">
           <BusinessCategorySelect id="merchant-category" value={form.category} onChange={(c) => set('category', c)} aria-invalid={!!errors.category} />
-        </Field>
-        <Field label="المالك / جهة الاتصال" required error={errors.contactName}>
-          <Input value={form.contactName} onChange={(e) => set('contactName', e.target.value)} aria-invalid={!!errors.contactName} />
         </Field>
         <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
           <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />

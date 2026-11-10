@@ -43,3 +43,11 @@ export function merchantZoneOptions(data: PricingData, merchantId: ID): Merchant
     .map((r) => ({ area: r.area, label: areaLabel(r.area, data.areas), price: r.price }))
     .sort((a, b) => a.label.localeCompare(b.label, 'ar'));
 }
+
+/**
+ * Distinct destinations with a configured (active, positive) price rule for a Merchant,
+ * regardless of coverage. Used by the Admin pricing filters (Master Prompt §16).
+ */
+export function pricedAreaIds(data: Pick<AppData, 'prices'>, merchantId: ID): Set<ID> {
+  return new Set(data.prices.filter((p) => p.merchantId === merchantId && p.status === 'active' && p.price > 0).map((p) => p.areaId));
+}

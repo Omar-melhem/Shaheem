@@ -5,7 +5,6 @@ import { Card, DetailRow, Drawer } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { DeliveryProgress } from '@/shared/components/OrderTimeline';
 import { formatDateTime, formatRelative } from '@/shared/lib/format';
-import { vehicleText } from '../captains/vehicle';
 
 
 /** Captain information opened from the Live Map (FU-1.2 §6.2). Shows only what the system holds. */
@@ -22,7 +21,6 @@ export function CaptainDetailsPanel({ view, now, onClose }: { view: CaptainView 
           <DetailRow label="رقم الكابتن"><span dir="ltr" className="font-mono text-xs">{captain.id}</span></DetailRow>
           <DetailRow label="حالة الحساب">{captain.status === 'active' ? 'مفعّل' : 'موقوف'}</DetailRow>
           <DetailRow label="التوفر">{OP_STATUS_LABEL[view.opStatus]}</DetailRow>
-          <DetailRow label="المركبة">{vehicleText(captain)}</DetailRow>
           <DetailRow label="الهاتف"><span dir="ltr">{captain.phone}</span></DetailRow>
         </dl>
       </Card>

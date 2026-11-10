@@ -10,7 +10,6 @@ import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatDateTime } from '@/shared/lib/format';
 import { SupportContactList } from '@/features/support/SupportContacts';
-import { vehicleText } from '@/features/admin/captains/vehicle';
 
 export function HistoryTab({ captainId }: { captainId: string }) {
   const orders = useAppStore((s) => s.orders);
@@ -94,7 +93,6 @@ export function ProfileTab({ captain }: { captain: Captain }) {
         <h2 className="mb-2 font-extrabold">حسابي</h2>
         <p><span className="text-ink-muted">الاسم:</span> {captain.fullName}</p>
         <p><span className="text-ink-muted">الهاتف:</span> <span dir="ltr">{captain.phone}</span></p>
-        <p><span className="text-ink-muted">المركبة:</span> {vehicleText(captain)}</p>
         <p className="pt-2 text-xs text-ink-muted">تعديل البيانات يتم من خلال إدارة شهم.</p>
       </section>
       <section className="space-y-3">

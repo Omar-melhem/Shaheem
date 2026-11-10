@@ -205,8 +205,8 @@ interface Actions {
 
 export type AppState = AppData & Actions;
 
-// v6: region hierarchy, merchant coverage and scheduled orders (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v6';
+// v7: merchants without a contact person, captains without vehicle data (older saved demo data is discarded).
+export const STORAGE_KEY = 'shahm-demo-v7';
 
 export const useAppStore = create<AppState>()(
   persist(

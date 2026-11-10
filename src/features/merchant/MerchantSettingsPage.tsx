@@ -39,7 +39,6 @@ export function MerchantSettingsPage() {
           <SettingsRow label="فئة النشاط" readOnly>
             <MerchantCategoryBadge category={merchant.category} />
           </SettingsRow>
-          <SettingsRow label="جهة الاتصال" readOnly>{merchant.contactName}</SettingsRow>
           <SettingsRow label="رقم الهاتف" readOnly>
             <span dir="ltr">{merchant.phone}</span>
           </SettingsRow>

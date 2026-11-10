@@ -1,6 +1,6 @@
 import type { PricingCopyAction, PricingCopyPreview } from '@/application/pricingCopy';
 import { formatMoney } from '@/domain/money';
-import { Badge } from '@/shared/components/ui';
+import { Badge, DataTable } from '@/shared/components/ui';
 
 const ACTION: Record<PricingCopyAction, { label: string; tone: 'success' | 'warning' | 'neutral' }> = {
   add: { label: 'إضافة', tone: 'success' },
@@ -9,6 +9,7 @@ const ACTION: Record<PricingCopyAction, { label: string; tone: 'success' | 'warn
   kept: { label: 'يبقى السعر الحالي', tone: 'neutral' },
   skipped: { label: 'تخطّي', tone: 'neutral' },
 };
+const HEADERS = ['منطقة الوصول', 'سعر المصدر', 'السعر الحالي', 'النتيجة'];
 
 /** Exactly what a copy will do, row by row, before anything is written. */
 export function PricingCopyPreviewTable({ preview }: { preview: PricingCopyPreview }) {
@@ -18,29 +19,20 @@ export function PricingCopyPreviewTable({ preview }: { preview: PricingCopyPrevi
       <p className="text-sm font-bold" aria-live="polite">
         إضافة {counts.add} · استبدال {counts.update} · يبقى {counts.kept + counts.unchanged} · تخطّي {counts.skipped}
       </p>
-      <div className="max-h-64 overflow-auto rounded-xl border border-cream-deep">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead className="sticky top-0 bg-cream text-xs text-ink-muted">
-            <tr>
-              {['منطقة الوصول', 'سعر المصدر', 'السعر الحالي', 'النتيجة'].map((h) => (
-                <th key={h} scope="col" className="px-4 py-2 text-start font-bold">{h}</th>
-              ))}
+      <div className="max-h-64 overflow-y-auto rounded-xl border border-cream-deep">
+        <DataTable headers={HEADERS} minWidth={560}>
+          {preview.rows.map((r) => (
+            <tr key={r.areaId}>
+              <th scope="row" className="px-4 py-2 text-start font-bold">{r.areaName}</th>
+              <td className="px-4 py-2">{formatMoney(r.sourcePrice)}</td>
+              <td className="px-4 py-2">{r.targetPrice !== undefined ? formatMoney(r.targetPrice) : '—'}</td>
+              <td className="px-4 py-2">
+                <Badge tone={ACTION[r.action].tone}>{ACTION[r.action].label}</Badge>
+                {r.skipReason && <span className="ms-2 text-xs text-ink-muted">{r.skipReason}</span>}
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-cream-dark">
-            {preview.rows.map((r) => (
-              <tr key={r.areaId}>
-                <th scope="row" className="px-4 py-2 text-start font-bold">{r.areaName}</th>
-                <td className="px-4 py-2">{formatMoney(r.sourcePrice)}</td>
-                <td className="px-4 py-2">{r.targetPrice !== undefined ? formatMoney(r.targetPrice) : '—'}</td>
-                <td className="px-4 py-2">
-                  <Badge tone={ACTION[r.action].tone}>{ACTION[r.action].label}</Badge>
-                  {r.skipReason && <span className="ms-2 text-xs text-ink-muted">{r.skipReason}</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </DataTable>
       </div>
     </div>
   );

@@ -35,7 +35,6 @@ export interface Merchant extends DemoCredentials {
   businessName: string;
   /** null = legacy record not yet categorised by Admin (shown as "غير مصنّف"). */
   category: MerchantCategory | null;
-  contactName: string;
   phone: string;
   /** Display label. Legacy Merchants have only this (cityId/areaId null) until Admin sets City → Area. */
   address: string;
@@ -46,8 +45,6 @@ export interface Merchant extends DemoCredentials {
   status: AccountStatus;
   createdAt: number;
 }
-
-export type VehicleType = 'motorcycle' | 'car' | 'bicycle';
 
 export type Availability = 'available' | 'offline';
 
@@ -69,9 +66,6 @@ export interface Captain extends DemoCredentials {
   id: ID;
   fullName: string;
   phone: string;
-  /** Optional: no longer collected when Admin adds a Captain; older records keep theirs. */
-  vehicleType?: VehicleType;
-  vehicleDescription?: string;
   status: AccountStatus;
   availability: Availability;
   lastLocation?: CaptainLocation;

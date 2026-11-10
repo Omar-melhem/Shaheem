@@ -10,6 +10,8 @@ export { SearchField } from './SearchField';
 export { PasswordField } from './PasswordField';
 export { PhoneField, PHONE_HINT } from './PhoneField';
 export { InfoTooltip } from './InfoTooltip';
+export { DataTable, RowActions, ACTIONS_HEADER, type ActionLegendItem } from './DataTable';
+export { IconAction } from './IconAction';
 export { InputIcon, INPUT_ICON_PAD } from './InputIcon';
 export { Toggle } from './Toggle';
 export { Dialog, ConfirmDialog } from './Dialog';

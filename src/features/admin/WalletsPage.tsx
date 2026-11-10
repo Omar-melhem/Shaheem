@@ -3,13 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { Wallet, PlusCircle } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useCaptainViews, useNow, type CaptainView } from '@/application/hooks';
-import { formatMoney, parseJodInput } from '@/domain/money';
+import { formatMoney } from '@/domain/money';
 import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { describeReasons } from '@/domain/eligibility';
-import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, OpenDecision, PageHeader, Select, SimTag } from '@/shared/components/ui';
-import { reportResult } from '@/shared/components/toast';
+import { Badge, Card, CardHeader, DataTable, EmptyState, IconAction, OpenDecision, PageHeader, RowActions, Select, SimTag } from '@/shared/components/ui';
 import { formatDateTime } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
+import { RechargeDialog } from './wallets/RechargeDialog';
+
+const BALANCE_HEADERS = ['الكابتن', 'الرصيد', 'أهلية المحفظة', 'الأهلية العامة'];
+const BALANCE_LEGEND = [{ icon: <PlusCircle />, label: 'شحن المحفظة (نفس نافذة الشحن في صفحة الكباتن، مع تأكيد)' }];
+const TX_HEADERS = ['التاريخ', 'الكابتن', 'المبلغ', 'السبب', 'بواسطة'];
 
 export function WalletsPage() {
   const now = useNow(10000);
@@ -48,39 +52,28 @@ export function WalletsPage() {
         </OpenDecision>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-5">
-        <Card className="xl:col-span-3">
+      <div className="space-y-6">
+        <Card className="overflow-hidden">
           <CardHeader title="الأرصدة والأهلية" />
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="bg-cream text-xs text-ink-muted">
-                <tr>
-                  {['الكابتن', 'الرصيد', 'أهلية المحفظة', 'الأهلية العامة', ''].map((h, i) => (
-                    <th key={i} scope="col" className="px-4 py-3 text-start font-bold">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-cream-dark">
+            <DataTable headers={BALANCE_HEADERS} actionsLegend={BALANCE_LEGEND} minWidth={640}>
                 {views.map((v) => {
                   const walletOk = v.balance > 0 && v.balance >= threshold;
                   return (
-                    <tr key={v.captain.id} className="hover:bg-cream/60">
+                    <tr key={v.captain.id}>
                       <td className="px-4 py-3 font-bold">{v.captain.fullName}</td>
-                      <td className={cn('px-4 py-3 text-base font-extrabold', !walletOk && 'text-red-700')}>{formatMoney(v.balance)}</td>
+                      <td className={cn('whitespace-nowrap px-4 py-3 text-base font-extrabold', !walletOk && 'text-red-700')}>{formatMoney(v.balance)}</td>
                       <td className="px-4 py-3">{walletOk ? <Badge tone="success">كافٍ</Badge> : <Badge tone="danger">غير كافٍ</Badge>}</td>
-                      <td className="max-w-[200px] px-4 py-3 text-xs">{v.eligibility.eligible ? <Badge tone="success">مؤهل</Badge> : <span className="text-ink-muted">{describeReasons(v.eligibility.reasons)}</span>}</td>
-                      <td className="px-4 py-3">
-                        <Button size="sm" variant="secondary" icon={<PlusCircle className="h-4 w-4" />} onClick={() => setRechargeFor(v)}>شحن</Button>
-                      </td>
+                      <td className="max-w-[260px] px-4 py-3 text-xs">{v.eligibility.eligible ? <Badge tone="success">مؤهل</Badge> : <span className="text-ink-muted">{describeReasons(v.eligibility.reasons)}</span>}</td>
+                      <RowActions>
+                        <IconAction icon={<PlusCircle />} label={`شحن محفظة ${v.captain.fullName}`} tone="secondary" onClick={() => setRechargeFor(v)} />
+                      </RowActions>
                     </tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+            </DataTable>
         </Card>
 
-        <Card className="xl:col-span-2">
+        <Card className="overflow-hidden">
           <CardHeader
             title="سجل الحركات"
             actions={
@@ -93,100 +86,22 @@ export function WalletsPage() {
           {tx.length === 0 ? (
             <EmptyState icon={<Wallet className="h-6 w-6" />} title="لا توجد حركات" />
           ) : (
-            <ul className="max-h-[520px] divide-y divide-cream-dark overflow-y-auto">
+            <DataTable headers={TX_HEADERS} minWidth={640}>
               {tx.map((t) => (
-                <li key={t.id} className="flex items-start gap-3 px-5 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">{captainName(t.captainId)}</p>
-                    <p className="text-xs text-ink-muted">{t.reason} · بواسطة {t.actor.name}</p>
-                    <p className="text-xs text-ink-muted">{formatDateTime(t.createdAt)}</p>
-                  </div>
-                  <span className="font-extrabold text-secondary" dir="ltr">+{formatMoney(t.amount)}</span>
-                </li>
+                <tr key={t.id}>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">{formatDateTime(t.createdAt)}</td>
+                  <td className="px-4 py-3 font-bold">{captainName(t.captainId)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-extrabold text-secondary" dir="ltr" style={{ textAlign: 'right' }}>+{formatMoney(t.amount)}</td>
+                  <td className="px-4 py-3 text-xs">{t.reason}</td>
+                  <td className="px-4 py-3 text-xs text-ink-muted">{t.actor.name}</td>
+                </tr>
               ))}
-            </ul>
+            </DataTable>
           )}
         </Card>
       </div>
 
       <RechargeDialog view={rechargeFor} onClose={() => setRechargeFor(null)} />
     </>
-  );
-}
-
-function RechargeDialog({ view, onClose }: { view: CaptainView | null; onClose: () => void }) {
-  const rechargeWallet = useAppStore((s) => s.rechargeWallet);
-  const threshold = useAppStore((s) => s.demo.walletThreshold);
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
-  const [step, setStep] = useState<'form' | 'review'>('form');
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    setAmount('');
-    setReason('');
-    setStep('form');
-    setError(null);
-  }, [view?.captain.id]);
-
-  if (!view) return null;
-  const fils = parseJodInput(amount);
-
-  const review = () => {
-    if (fils === null || fils <= 0) return setError('أدخل مبلغاً موجباً، مثل 5 أو 2.5');
-    setError(null);
-    setStep('review');
-  };
-  const confirm = () => {
-    if (submitting || fils === null) return;
-    setSubmitting(true);
-    const ok = reportResult(rechargeWallet(view.captain.id, fils, reason), `تم شحن محفظة ${view.captain.fullName} بمبلغ ${formatMoney(fils)} (محاكاة)`);
-    setSubmitting(false);
-    if (ok) onClose();
-  };
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      size="sm"
-      title={`شحن محفظة ${view.captain.fullName}`}
-      description={`الرصيد الحالي ${formatMoney(view.balance)}`}
-      footer={
-        step === 'form' ? (
-          <>
-            <Button variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button onClick={review}>مراجعة</Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" onClick={() => setStep('form')}>رجوع</Button>
-            <Button variant="secondary" onClick={confirm} loading={submitting}>تأكيد الشحن</Button>
-          </>
-        )
-      }
-    >
-      {step === 'form' ? (
-        <div className="space-y-4">
-          <Field label="المبلغ (د.أ)" required error={error}>
-            <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" dir="ltr" placeholder="5.000" aria-invalid={!!error} onKeyDown={(e) => e.key === 'Enter' && review()} />
-          </Field>
-          <Field label="المرجع / السبب" optional>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: إيصال نقدي رقم 1024" />
-          </Field>
-        </div>
-      ) : (
-        <div className="space-y-3 text-sm">
-          <div className="rounded-xl bg-cream p-4">
-            <p>الكابتن: <b>{view.captain.fullName}</b></p>
-            <p>مبلغ الشحن: <b className="text-secondary">{formatMoney(fils!)}</b></p>
-            <p>الرصيد بعد الشحن: <b>{formatMoney(view.balance + fils!)}</b></p>
-            {view.balance + fils! >= threshold && view.balance < threshold && <p className="mt-2 text-secondary">سيصبح رصيد الكابتن كافياً للأهلية التجريبية.</p>}
-          </div>
-          <p className="text-xs text-ink-muted">بالتأكيد أنت تُقرّ باستلام المبلغ من الكابتن خارج النظام. سيُسجَّل قيد شحن باسم المدير الحالي. هذه عملية محاكاة وليست تحويلاً إلكترونياً.</p>
-        </div>
-      )}
-    </Dialog>
   );
 }

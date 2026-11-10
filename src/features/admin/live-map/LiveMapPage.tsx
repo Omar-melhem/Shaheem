@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Marker, Tooltip } from 'react-leaflet';
 import { useAppStore } from '@/application/store';
 import { useCaptainViews, useNow, OP_STATUS_LABEL, type CaptainView } from '@/application/hooks';
@@ -33,12 +34,16 @@ export function LiveMapPage() {
   const orders = useAppStore((s) => s.orders);
   const [filter, setFilter] = useState<Filter>('all');
   const [q, setQ] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  // «فتح الموقع على الخريطة» from the Captains table preselects that Captain (?captain=id).
+  const [selectedId, setSelectedId] = useState<string | null>(() => params.get('captain'));
 
   const needle = q.trim();
   const listed = useMemo(() => views.filter((v) => matches(v, filter) && (!needle || v.captain.fullName.includes(needle))), [views, filter, needle]);
   const onMap = listed.filter((v) => v.captain.lastLocation);
   const selected = views.find((v) => v.captain.id === selectedId) ?? null;
+  // Centre once on a Captain opened from the Captains table; later selections don't move the map.
+  const [initialCenter] = useState(() => views.find((v) => v.captain.id === params.get('captain'))?.captain.lastLocation?.position);
   const orderOf = (v: CaptainView) => orders.find((o) => o.id === v.activeOrderId);
 
   return (
@@ -53,7 +58,7 @@ export function LiveMapPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <div className="relative self-start">
-          <BaseMap className="h-[64vh] min-h-[460px]" zoom={13} label="خريطة الكباتن">
+          <BaseMap className="h-[64vh] min-h-[460px]" zoom={13} center={initialCenter} label="خريطة الكباتن">
             {onMap.map((v) => {
               const loc = v.captain.lastLocation!;
               return (

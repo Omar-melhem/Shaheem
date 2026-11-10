@@ -1,6 +1,6 @@
 import './setup';
 import { useAppStore, captainEligibility } from '@/application/store';
-import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
+import { merchantZoneOptions, pricedAreaIds, resolveZoneFee } from '@/application/queries';
 import { polygonCentroid } from '@/domain/geo';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON, isAutoDispatchEligible } from '@/domain/dispatch';
 import { commissionFils, isValidCommissionBp } from '@/domain/commission';
@@ -25,7 +25,7 @@ check(S().authenticate('captain1', 'demo1234').ok, 'captain1 login');
 check(!S().authenticate('admin', 'wrong').ok, 'bad password rejected');
 
 section('Business category (FE-CR §8)');
-const base = { businessName: 'x', contactName: 'y', phone: '0790000888', cityId: 'amman', areaId: 'a-jubaiha', pickup: { lat: 32.02, lng: 35.87 }, password: 'secret1' };
+const base = { businessName: 'x', phone: '0790000888', cityId: 'amman', areaId: 'a-jubaiha', pickup: { lat: 32.02, lng: 35.87 }, password: 'secret1' };
 check(!S().createMerchant({ ...base, category: null, username: 'nocat' }).ok, 'merchant without category rejected');
 check(!S().createMerchant({ ...base, category: 'shoes' as any, username: 'badcat' }).ok, 'category outside taxonomy rejected');
 check(S().merchants.find((m) => m.id === 'm-yasmine')!.category === null, 'legacy merchant stays uncategorised (not defaulted)');
@@ -35,7 +35,7 @@ check(!S().updateMerchant(y.id, yIn).ok, 'editing uncategorised merchant require
 check(S().updateMerchant(y.id, { ...yIn, category: 'bakery' }).ok && S().merchants.find((m) => m.id === y.id)!.category === 'bakery', 'Admin sets category on edit');
 
 section('Zone pricing setup (Spec §13)');
-const created = S().createMerchant({ businessName: 'مطعم الجبيهة', category: 'restaurant', contactName: 'سامي', phone: '0790000999', cityId: 'amman', areaId: 'a-jubaiha', pickup: { lat: 32.02, lng: 35.87 }, username: 'jubeiha', password: 'secret1' });
+const created = S().createMerchant({ businessName: 'مطعم الجبيهة', category: 'restaurant', phone: '0790000999', cityId: 'amman', areaId: 'a-jubaiha', pickup: { lat: 32.02, lng: 35.87 }, username: 'jubeiha', password: 'secret1' });
 check(created.ok, 'Admin registers new merchant');
 const mid = created.ok ? created.value : '';
 check(merchantZoneOptions(S(), mid).length === 0, 'new merchant has no zones yet');
@@ -45,6 +45,7 @@ check(S().setMerchantAreaPrice(mid, 'a-tla', 1500).ok, "add Tla' Al-Ali 1.50");
 check(S().setMerchantAreaPrice(mid, 'a-khalda', 2000).ok, 'add Khalda 2.00');
 check(!S().setMerchantAreaPrice(mid, 'a-abdoun', 0).ok, 'zero fee rejected');
 check(merchantZoneOptions(S(), mid).length === 0, 'priced but not covered → not orderable (CR v1.4 §2)');
+check(pricedAreaIds(S(), mid).size === 3 && pricedAreaIds(S(), mid).has('a-khalda'), 'pricing filter counts distinct priced areas, independent of coverage');
 check(S().setMerchantCoverage(mid, ['a-jubaiha', 'a-tla', 'a-khalda'], true).ok, 'Admin enables coverage for the priced zones');
 check(S().prices.filter((p) => p.merchantId === mid && p.areaId === 'a-khalda').length === 1, 'no duplicate merchant-zone row');
 check(merchantZoneOptions(S(), mid).length === 3, 'merchant selector shows 3 zones');
