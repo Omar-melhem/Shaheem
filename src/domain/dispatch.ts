@@ -12,6 +12,12 @@ export const MAX_DISPATCH_ROUNDS = 3;
 export const ROUNDS_EXHAUSTED_REASON = `لم يقبل أي كابتن بعد ${MAX_DISPATCH_ROUNDS} محاولات`;
 export const NO_CANDIDATE_REASON = 'لا يوجد كابتن مؤهل متبقٍ';
 
+/**
+ * Scheduled orders never enter public broadcast or the automatic round loop, even after
+ * their time arrives (CR v1.4 §6.2). Every automatic path must check this.
+ */
+export const isAutoDispatchEligible = (order: { requestType?: 'immediate' | 'scheduled' }) => order.requestType !== 'scheduled';
+
 export interface RankedCaptain {
   captain: Captain;
   distanceMeters: number;

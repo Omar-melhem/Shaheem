@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Wallet, PlusCircle } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useCaptainViews, useNow, type CaptainView } from '@/application/hooks';
-import { formatMoney, formatMoneyExact, parseJodInput } from '@/domain/money';
-import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
+import { formatMoney, parseJodInput } from '@/domain/money';
+import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { describeReasons } from '@/domain/eligibility';
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, OpenDecision, PageHeader, Select, SimTag } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
@@ -41,7 +41,7 @@ export function WalletsPage() {
       />
       <div className="mb-4 space-y-2">
         <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
-          <b>عمولة شهم {formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)} لكل طلب مكتمل معتمدة لكنها غير مفعّلة:</b> الخصم يحتاج خادماً يضمن خصماً واحداً لكل طلب، ولا يُنفَّذ من المتصفح. لن تُخصم أي عمولة في هذا النموذج.
+          <b>عمولة شهم {formatPercentBp(COMMISSION_BP_PROPOSED)} من رسوم توصيل كل طلب مكتمل معتمدة لكنها غير مفعّلة:</b> الخصم يحتاج خادماً يضمن خصماً واحداً لكل طلب، ولا يُنفَّذ من المتصفح. لن تُخصم أي عمولة في هذا النموذج.
         </p>
         <OpenDecision id="O-020">
           يطبق هذا النموذج حداً تجريبياً للأهلية قدره {formatMoney(threshold)}. حجز العمولة عند القبول بانتظار تنفيذ الخادم وقرار مالك المنتج.

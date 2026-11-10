@@ -113,7 +113,7 @@ export function LiveMapPage() {
                       {order && (
                         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-soft">
                           <span dir="ltr" className="font-mono font-bold">{order.reference}</span>
-                          <OrderStatusBadge status={order.status} />
+                          <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
                         </div>
                       )}
                     </button>

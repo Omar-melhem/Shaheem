@@ -23,8 +23,9 @@ export function MerchantSettingsPage() {
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === merchantId));
   const areas = useAppStore((s) => s.areas);
   const prices = useAppStore((s) => s.prices);
+  const coverage = useAppStore((s) => s.coverage);
   const signOut = useSignOut();
-  const zones = useMemo(() => (merchantId ? merchantZoneOptions({ areas, prices }, merchantId) : []), [areas, prices, merchantId]);
+  const zones = useMemo(() => (merchantId ? merchantZoneOptions({ areas, prices, coverage }, merchantId) : []), [areas, prices, coverage, merchantId]);
   if (!merchant) return <Navigate to="/login" replace />;
 
   return (
@@ -62,8 +63,8 @@ export function MerchantSettingsPage() {
           {zones.length === 0 ? (
             <p className="px-5 py-4 text-sm text-ink-muted">لا توجد مناطق مفعّلة لحسابك بعد.</p>
           ) : (
-            zones.map(({ area, price }) => (
-              <SettingsRow key={area.id} label={area.name} readOnly>
+            zones.map(({ area, label, price }) => (
+              <SettingsRow key={area.id} label={label} readOnly>
                 <span className="font-bold">{formatMoney(price)}</span>
               </SettingsRow>
             ))

@@ -5,21 +5,25 @@ The prototype keeps all data in browser storage, which Change Request v1.3 forbi
 truth for balances and debits. `src/domain/commission.ts` holds the approved amount for display only.
 
 **Approved rule (CR v1.3 §6):** Admin credits a Captain's wallet after payment outside the system.
-Each delivered order then debits the Captain JOD 0.200 (200 fils) by default. Admin can change that
-default for future assignments.
+Each delivered order then debits the Captain a **percentage of that order's delivery fee**
+(CR v1.4 §3, proposed 20%: a JOD 1.500 fee → JOD 0.300). It is never a flat amount and never
+uses the goods value. Admin can change the percentage for future assignments only. The
+calculation already exists in `src/domain/commission.ts` (`commissionFils`, basis points,
+integer fils, round half up) and is covered by `npm test`; the backend should reuse the same rule.
 
 ## Data model (PostgreSQL example; adapt to the chosen stack)
 
 ```sql
 CREATE TABLE commission_settings (
   id             BIGSERIAL PRIMARY KEY,          -- append-only; the latest row is effective
-  commission_fils INTEGER NOT NULL CHECK (commission_fils >= 0),
+  commission_bp  INTEGER NOT NULL CHECK (commission_bp BETWEEN 0 AND 10000), -- 2000 = 20%
   updated_by     UUID NOT NULL,
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE delivery_orders
-  ADD COLUMN commission_snapshot_fils INTEGER CHECK (commission_snapshot_fils >= 0); -- NULL = none
+  ADD COLUMN commission_snapshot_bp INTEGER,                 -- rate at acceptance
+  ADD COLUMN commission_snapshot_fils INTEGER CHECK (commission_snapshot_fils >= 0); -- fee snapshot × rate; NULL = none
 
 CREATE TABLE wallet_ledger (                     -- immutable: no UPDATE or DELETE
   id              UUID PRIMARY KEY,
@@ -76,7 +80,7 @@ holds with `hold_release` entries. Keep the ledger rows.
 
 ## Tests required before production
 
-- Five deliveries at 200 fils take a JOD 5.000 wallet to JOD 4.000.
+- At 20%: fees of 1.000 / 1.500 / 0.750 JOD post 0.200 / 0.300 / 0.150 JOD; a 5.000 wallet after those three holds 4.350.
 - Repeated and concurrent `CompleteDelivery` calls produce exactly one debit.
 - Two simultaneous acceptances cannot reserve the same funds.
 - Cancelled, rejected and expired offers post no commission.

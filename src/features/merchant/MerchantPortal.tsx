@@ -7,6 +7,7 @@ import { useNow } from '@/application/hooks';
 import type { DeliveryOrder } from '@/domain/types';
 import { FINAL_STATUSES, isActiveDelivery } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
+import { formatAmmanDateTime } from '@/domain/time';
 import { Card, CardHeader, EmptyState, Tabs } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { DeliveryProgress } from '@/shared/components/OrderTimeline';
@@ -94,12 +95,15 @@ function ActiveOrderItem({ order }: { order: DeliveryOrder }) {
     <li className="space-y-3 px-5 py-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
-        <OrderStatusBadge status={order.status} />
+        <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
         <span className="ms-auto text-xs text-ink-muted">آخر تحديث {formatRelative(order.updatedAt, now)}</span>
       </div>
       <p className="text-sm text-ink-soft">
         إلى <b>{order.destination.label}</b> ({order.areaName}) · {formatMoney(order.deliveryPrice)}
       </p>
+      {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && (
+        <p className="rounded-lg bg-sand-light/30 px-3 py-1.5 text-xs">طلب مؤجل · موعد الاستلام <b>{formatAmmanDateTime(order.scheduledPickupAt)}</b></p>
+      )}
       {active && <DeliveryProgress order={order} />}
       {captain && active ? (
         <div className="flex items-center gap-3 rounded-xl bg-cream px-3 py-2">
@@ -113,7 +117,11 @@ function ActiveOrderItem({ order }: { order: DeliveryOrder }) {
         </div>
       ) : (
         <p className="text-xs text-ink-muted">
-          {order.status === 'awaiting_captain' || order.status === 'offered_privately'
+          {order.requestType === 'scheduled'
+            ? order.status === 'offered_privately'
+              ? 'عُرض الطلب على كابتن وبانتظار قبوله.'
+              : 'بانتظار تنسيق الإدارة لكابتن في الموعد المطلوب. لم يُسند كابتن بعد.'
+            : order.status === 'awaiting_captain' || order.status === 'offered_privately'
             ? 'جارٍ البحث عن كابتن قريب…'
             : order.status === 'dispatch_expired'
               ? 'لم يقبل أي كابتن بعد — فريق شهم يتابع الطلب.'
@@ -133,9 +141,10 @@ function HistoryItem({ order }: { order: DeliveryOrder }) {
         {order.destination.label} · {order.areaName}
       </span>
       <span className="font-bold">{formatMoney(order.deliveryPrice)}</span>
-      <OrderStatusBadge status={order.status} />
+      <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
       <span className="w-full text-xs text-ink-muted">
         {formatDateTime(order.createdAt)}
+        {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && ` · مؤجل لـ ${formatAmmanDateTime(order.scheduledPickupAt)}`}
         {captain && ` · ${captain.fullName}`}
       </span>
     </li>

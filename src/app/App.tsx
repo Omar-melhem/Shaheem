@@ -21,6 +21,7 @@ import { SupportSettingsPage } from '@/features/admin/SupportSettingsPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 import { MerchantPortal } from '@/features/merchant/MerchantPortal';
 import { MerchantSettingsPage } from '@/features/merchant/MerchantSettingsPage';
+import { MerchantAreasPage } from '@/features/merchant/areas/MerchantAreasPage';
 import { CaptainApp } from '@/features/captain/CaptainApp';
 
 export function App() {
@@ -67,6 +68,14 @@ export function App() {
           element={
             <RequireSession role="merchant">
               <MerchantSettingsPage />
+            </RequireSession>
+          }
+        />
+        <Route
+          path="/merchant/areas"
+          element={
+            <RequireSession role="merchant">
+              <MerchantAreasPage />
             </RequireSession>
           }
         />

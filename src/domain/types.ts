@@ -93,14 +93,26 @@ export interface ServiceArea {
   governorateId: string;
   /** City code from `CITIES` (domain/cities). */
   cityId: string;
+  /** Parent area for a sub-area (قسم); null for a top-level area. One level only (CR v1.4 §1.2). */
+  parentId: ID | null;
   name: string;
   aliases: string[];
   notes?: string;
+  /** Legacy drawn boundary; the catalogue no longer creates or edits these (CR v1.4 §1.1). */
   polygon: LatLng[];
   status: AccountStatus;
   createdAt: number;
   updatedAt: number;
 }
+
+/** A Merchant serves this destination (CR v1.4 §2). Coverage alone is not orderable: a price is also required. */
+export interface MerchantCoverage {
+  merchantId: ID;
+  areaId: ID;
+  enabledAt: number;
+}
+
+export type RequestType = 'immediate' | 'scheduled';
 
 /**
  * Origin area → destination area connection inside one Governorate (FU-1.2 §7.1).
@@ -194,8 +206,13 @@ export interface DeliveryOrder {
   areaId: ID;
   /** Snapshot so later area renames do not rewrite history. */
   areaName: string;
+  /** Legacy goods value from older orders; new orders no longer collect it (CR v1.4 §4). */
   mealValue?: Money;
   deliveryInstructions?: string;
+  /** Missing on older orders = immediate. Scheduled orders are dispatched by Admin only (CR v1.4 §6). */
+  requestType?: RequestType;
+  /** Requested Captain pickup time at the Merchant (epoch ms), for scheduled orders. */
+  scheduledPickupAt?: number;
   /** Fee locked at confirmation time (Pricing Spec §8). */
   deliveryPrice: Money;
   pricingSnapshotAt: number;

@@ -33,7 +33,7 @@ export function CaptainDetailsPanel({ view, now, onClose }: { view: CaptainView 
           <>
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
-              <OrderStatusBadge status={order.status} />
+              <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
             </div>
             <p className="text-sm text-ink-soft">المرحلة: <b>{ORDER_STATUS_LABEL[order.status]}</b> · المنطقة: {order.areaName}</p>
             <DeliveryProgress order={order} />

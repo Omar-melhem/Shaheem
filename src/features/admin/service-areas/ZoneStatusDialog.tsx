@@ -6,10 +6,12 @@ import { reportResult } from '@/shared/components/toast';
 /** Confirms activating / deactivating a central zone and explains the impact. */
 export function ZoneStatusDialog({ zone, onClose }: { zone: ServiceArea | null; onClose: () => void }) {
   const setStatus = useAppStore((s) => s.setServiceAreaStatus);
-  const prices = useAppStore((s) => s.prices);
+  const coverage = useAppStore((s) => s.coverage);
+  const areas = useAppStore((s) => s.areas);
   const orders = useAppStore((s) => s.orders);
   const active = zone?.status === 'active';
-  const merchantsUsing = zone ? prices.filter((p) => p.areaId === zone.id && p.status === 'active').length : 0;
+  const merchantsUsing = zone ? coverage.filter((c) => c.areaId === zone.id).length : 0;
+  const sections = zone ? areas.filter((a) => a.parentId === zone.id).length : 0;
   const orderCount = zone ? orders.filter((o) => o.areaId === zone.id).length : 0;
 
   return (
@@ -37,6 +39,7 @@ export function ZoneStatusDialog({ zone, onClose }: { zone: ServiceArea | null; 
           <p>أثر الإيقاف:</p>
           <ul className="list-disc space-y-1 ps-5">
             <li>لن تُقبل طلبات جديدة لعملاء داخلها لدى <b>{merchantsUsing}</b> تاجر.</li>
+            {sections > 0 && <li>أقسامها (<b>{sections}</b>) تتوقف معها ولا تُقبل طلبات إليها.</li>}
             <li>الطلبات السابقة (<b>{orderCount}</b>) تبقى كما هي برسومها المحفوظة.</li>
             <li>أسعار التجار لهذه المنطقة تبقى محفوظة وتعود عند إعادة التفعيل.</li>
           </ul>

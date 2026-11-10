@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { AlertTriangle, ArrowLeft, PenTool } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { governorateName } from '@/domain/governorates';
 import { Button, Dialog, Field, OpenDecision } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { GovernorateSelect } from './GovernorateSelect';
 import { AreaSelect } from './AreaSelect';
-import { ServiceAreaBoundaryEditor } from './ServiceAreaBoundaryEditor';
 
 const EMPTY = { governorateId: '', originAreaId: '', destinationAreaId: '' };
 
@@ -19,7 +18,6 @@ export function DeliveryRouteDialog({ open, onClose }: { open: boolean; onClose:
   const createRoute = useAppStore((s) => s.createRoute);
   const [form, setForm] = useState(EMPTY);
   const [step, setStep] = useState<'form' | 'review'>('form');
-  const [editingBoundaryId, setEditingBoundaryId] = useState<string | null>(null);
 
   const close = () => {
     setForm(EMPTY);
@@ -28,12 +26,8 @@ export function DeliveryRouteDialog({ open, onClose }: { open: boolean; onClose:
   };
   // Changing a parent selection resets the now-invalid child selections.
   const setGovernorate = (governorateId: string) => setForm({ governorateId, originAreaId: '', destinationAreaId: '' });
-  const setOrigin = (originAreaId: string) => {
+  const setOrigin = (originAreaId: string) =>
     setForm((f) => ({ ...f, originAreaId, destinationAreaId: f.destinationAreaId === originAreaId ? '' : f.destinationAreaId }));
-    // An origin with no boundary needs defining; selecting it never changes the polygon by itself.
-    const chosen = areas.find((a) => a.id === originAreaId);
-    if (chosen && chosen.polygon.length < 3) setEditingBoundaryId(chosen.id);
-  };
 
   const origin = areas.find((a) => a.id === form.originAreaId);
   const destination = areas.find((a) => a.id === form.destinationAreaId);
@@ -43,7 +37,6 @@ export function DeliveryRouteDialog({ open, onClose }: { open: boolean; onClose:
   };
 
   return (
-    <>
     <Dialog
       open={open}
       onClose={close}
@@ -71,16 +64,6 @@ export function DeliveryRouteDialog({ open, onClose }: { open: boolean; onClose:
           <Field label="2. من منطقة" required htmlFor="route-origin" hint="منطقة الانطلاق داخل المحافظة المختارة">
             <AreaSelect id="route-origin" areas={areas} scope={{ by: 'governorate', id: form.governorateId }} placeholder="اختر منطقة الانطلاق" value={form.originAreaId} onChange={(e) => setOrigin(e.target.value)} />
           </Field>
-          {origin && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
-              {origin.polygon.length >= 3 ? (
-                <span className="text-ink-soft">حدود «{origin.name}» مرسومة.</span>
-              ) : (
-                <span className="flex items-center gap-1.5 font-medium text-amber-800"><AlertTriangle className="h-4 w-4" aria-hidden /> «{origin.name}» بلا حدود مرسومة.</span>
-              )}
-              <Button size="sm" variant="ghost" icon={<PenTool className="h-3.5 w-3.5" />} onClick={() => setEditingBoundaryId(origin.id)}>تعديل الحدود</Button>
-            </div>
-          )}
           <Field label="3. إلى منطقة" required htmlFor="route-dest" hint="منطقة الوصول — مختلفة عن منطقة الانطلاق">
             <AreaSelect
               id="route-dest"
@@ -110,7 +93,5 @@ export function DeliveryRouteDialog({ open, onClose }: { open: boolean; onClose:
         </div>
       )}
     </Dialog>
-    <ServiceAreaBoundaryEditor area={areas.find((a) => a.id === editingBoundaryId) ?? null} onClose={() => setEditingBoundaryId(null)} />
-    </>
   );
 }

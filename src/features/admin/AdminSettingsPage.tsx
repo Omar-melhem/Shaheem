@@ -4,9 +4,10 @@ import { Headphones, Info, Languages, LogOut, Map as MapIcon, RadioTower, Store,
 import { version } from '../../../package.json';
 import { useAppStore, DEMO_ADMIN } from '@/application/store';
 import { MERCHANT_CATEGORIES } from '@/domain/types';
-import { formatMoney, formatMoneyExact } from '@/domain/money';
+import { formatMoney } from '@/domain/money';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
-import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
+import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
+import { CommissionPreview } from './CommissionPreview';
 import { Badge, Button, OpenDecision, PageHeader, SettingsRow, SettingsSection, Toggle } from '@/shared/components/ui';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
 import { useSignOut } from '@/features/auth/hooks/useSignOut';
@@ -71,17 +72,25 @@ export function AdminSettingsPage() {
             </Link>
           }
         >
-          <SettingsRow label="عمولة شهم على الكابتن" description="تعديلها غير متاح: يحتاج خادماً يحفظ القيمة ويطبّقها على الطلبات الجديدة فقط." readOnly>
+          <SettingsRow
+            label="نسبة عمولة شهم من رسوم التوصيل"
+            description="تُحسب من رسوم توصيل الطلب عند قبوله، وتُخصم مرة واحدة بعد التسليم. حفظها وتعديلها والخصم تحتاج خادماً، فهي معروضة فقط."
+            readOnly
+          >
             <span className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <span dir="ltr">{formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)}</span> / طلب مكتمل
-              <Badge tone="warning">مخطط — غير مفعّل</Badge>
+              <span dir="ltr" className="font-bold">{formatPercentBp(COMMISSION_BP_PROPOSED)}</span>
+              <Badge tone="warning">مقترحة — غير مفعّلة</Badge>
             </span>
           </SettingsRow>
+          <div className="border-b border-cream-dark px-5 py-4">
+            <p className="mb-2 text-sm font-bold">معاينة الحساب</p>
+            <CommissionPreview />
+          </div>
           <SettingsRow label="الحد الأدنى لرصيد المحفظة" readOnly>
             {formatMoney(demo.walletThreshold)}
           </SettingsRow>
           <div className="px-5 py-3">
-            <OpenDecision id="O-020">الحد الأدنى قيمة تجريبية يغيّرها مقدّم العرض. لا تُخصم أي عمولة في هذا النموذج.</OpenDecision>
+            <OpenDecision id="CR-1.4 §9.4">التقريب المقترح: لأقرب فلس (النصف يُقرَّب للأعلى) — بانتظار الاعتماد. الحد الأدنى للرصيد (O-020) قيمة تجريبية. لا تُخصم أي عمولة في هذا النموذج.</OpenDecision>
           </div>
         </SettingsSection>
 

@@ -1,0 +1,89 @@
+/*
+ * SHAHM delivery car on the login brand panel.
+ * --car-w scales with the viewport (the panel is a fixed share of it from tablet up).
+ * The image keeps its own transparent margins; its tyres touch the ground at 85.4% of
+ * its height, so the road sits exactly there. Physical left/right on purpose: the car
+ * drives left → right whatever the page direction.
+ */
+.shahm-car-lane {
+  --car-w: clamp(170px, 18vw, 300px);
+  --car-h: calc(var(--car-w) * 0.5628); /* 941 / 1672 */
+  --ground: calc(var(--car-h) * 0.854);
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Slightly lower than the previous car: the road sits ~16px below where it was. */
+  top: calc(71% + 90px - var(--ground));
+  height: var(--car-h);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+
+/* Short laptop screens: the centred copy sits lower, so anchor the road near the panel bottom instead. */
+@media (max-height: 880px) {
+  .shahm-car-lane {
+    top: calc(100% - 80px - var(--ground));
+  }
+}
+
+.shahm-car-road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--ground);
+  height: 1px;
+  opacity: 0.5;
+  background: repeating-linear-gradient(to right, #a88866 0 18px, transparent 18px 30px);
+}
+
+/*
+ * The runner is one car-width wider than the lane, and the car starts one car-width to its
+ * left. Moving the runner by its own width carries the car from fully off the left edge to
+ * fully off the right edge, so the loop restart is never visible.
+ */
+.shahm-car-run {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + var(--car-w));
+  height: 100%;
+  will-change: transform;
+  animation: shahm-car-drive 18s linear infinite;
+}
+
+.shahm-car {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--car-w);
+  height: auto;
+  max-width: none;
+  transform: translateX(-100%);
+  animation: shahm-car-ride 0.7s ease-in-out infinite alternate;
+  user-select: none;
+}
+
+@keyframes shahm-car-drive {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* Barely-there suspension: 1px, keeps the decal readable. */
+@keyframes shahm-car-ride {
+  from { transform: translateX(-100%) translateY(0); }
+  to { transform: translateX(-100%) translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shahm-car-run {
+    animation: none;
+    width: 100%;
+  }
+  .shahm-car {
+    animation: none;
+    left: 18%;
+    transform: none; /* parked, fully visible */
+  }
+}

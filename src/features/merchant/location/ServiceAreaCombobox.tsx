@@ -24,7 +24,7 @@ export function ServiceAreaCombobox({
   invalid?: boolean;
   onSelect: (areaId: ID | null) => void;
 }) {
-  const [query, setQuery] = useState(() => options.find((o) => o.area.id === selectedId)?.area.name ?? '');
+  const [query, setQuery] = useState(() => options.find((o) => o.area.id === selectedId)?.label ?? '');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -33,12 +33,12 @@ export function ServiceAreaCombobox({
     const needle = query.trim().toLowerCase();
     // The chosen name should not narrow the list when the Merchant reopens it to change area.
     if (!needle || selectedId) return options;
-    return options.filter((o) => [o.area.name, ...o.area.aliases].some((name) => name.toLowerCase().includes(needle)));
+    return options.filter((o) => [o.label, ...o.area.aliases].some((name) => name.toLowerCase().includes(needle)));
   }, [options, query, selectedId]);
 
   const choose = (option: MerchantZoneOption) => {
     setOpen(false);
-    setQuery(option.area.name);
+    setQuery(option.label);
     onSelect(option.area.id);
   };
 
@@ -93,7 +93,7 @@ export function ServiceAreaCombobox({
             >
               <Shapes className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold text-ink">{o.area.name}</span>
+                <span className="block truncate text-sm font-bold text-ink">{o.label}</span>
                 <span className="block truncate text-xs text-ink-muted">{cityName(o.area.cityId)}</span>
               </span>
               <span className="shrink-0 text-xs font-bold text-primary">{formatMoney(o.price)}</span>

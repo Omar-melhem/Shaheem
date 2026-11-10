@@ -8,6 +8,7 @@ import type {
   DemoSettings,
   DispatchOffer,
   ID,
+  RequestType,
   LatLng,
   Merchant,
   Money,
@@ -18,7 +19,9 @@ import type {
 import { isMerchantCategory } from '@/domain/types';
 import { ADMIN_ACTOR, SYSTEM_ACTOR, createSeedData, type AppData } from '@/infrastructure/seed';
 import { describeReasons } from '@/domain/eligibility';
-import { isValidLatLng, moveTowards, haversineMeters, polygonError } from '@/domain/geo';
+import { isValidLatLng, moveTowards, haversineMeters } from '@/domain/geo';
+import { isAutoDispatchEligible } from '@/domain/dispatch';
+import { isDestinationActive } from '@/domain/regions';
 import { isGovernorateId } from '@/domain/governorates';
 import { cityName, isCityInGovernorate } from '@/domain/cities';
 import { PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
@@ -30,7 +33,6 @@ import {
   isInQueue,
 } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
-import { ORDER_VALUE_INVALID } from '@/domain/orderValue';
 import { AREA_REQUIRED, AREA_UNAVAILABLE, PINNED_LOCATION_LABEL, destinationPinError } from '@/domain/destination';
 import { resolveZoneFee } from './queries';
 import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError } from './merchantLocation';
@@ -72,8 +74,10 @@ export interface CreateOrderInput {
   location?: LatLng | null;
   /** Name of the searched place, if the pin came from search. */
   placeName?: string;
-  /** Order value in fils; required and strictly positive for new orders (CR v1.3 §8.3). */
-  mealValue: Money;
+  /** Immediate (default) is auto-dispatched; scheduled goes to the Admin manual queue only (CR v1.4 §6). */
+  requestType?: RequestType;
+  /** Required for scheduled requests: Captain pickup time at the Merchant, epoch ms, in the future. */
+  scheduledPickupAt?: number;
   /** Fee the Merchant saw; if the current fee differs, creation is refused with code 'fee_changed'. */
   expectedFee?: Money;
 }
@@ -81,9 +85,18 @@ export interface CreateOrderInput {
 export interface ZoneInput {
   governorateId: string;
   cityId: string;
+  /** Set to create a sub-area (قسم) under a top-level area; it inherits the parent's governorate and city. */
+  parentId?: ID | null;
   name: string;
   aliases: string[];
   notes?: string;
+}
+
+/** One line per area, or "Area / Sub-area". Names only: no coordinates are invented. */
+export interface AreaImportInput {
+  governorateId: string;
+  cityId: string;
+  lines: string;
 }
 
 export interface RouteInput {
@@ -120,9 +133,22 @@ function validateCredentials(data: AppData, creds: { username: string; password:
 }
 
 /** An existing zone with the same name/alias, if any (no duplicate zones — Spec §4). */
+/** Same name or alias among siblings (same city, same parent). Equal names elsewhere are allowed (CR v1.4 §1.2). */
 function duplicateZone(data: AppData, input: ZoneInput, exceptId?: ID): ServiceArea | undefined {
   const names = [input.name, ...input.aliases].map(normalizeName).filter(Boolean);
-  return data.areas.find((a) => a.id !== exceptId && [a.name, ...a.aliases].map(normalizeName).some((n) => names.includes(n)));
+  const parentId = input.parentId ?? null;
+  return data.areas.find(
+    (a) => a.id !== exceptId && a.cityId === input.cityId && (a.parentId ?? null) === parentId && [a.name, ...a.aliases].map(normalizeName).some((n) => names.includes(n)),
+  );
+}
+
+/** Resolves a sub-area's parent and inherits its location; an error string when invalid. */
+function zoneParent(data: AppData, input: ZoneInput): { parent: ServiceArea | null } | string {
+  if (!input.parentId) return { parent: null };
+  const parent = data.areas.find((a) => a.id === input.parentId);
+  if (!parent) return 'المنطقة الأم غير موجودة';
+  if (parent.parentId) return 'لا يمكن إضافة قسم داخل قسم — اختر منطقة رئيسية';
+  return { parent };
 }
 
 interface Actions {
@@ -140,7 +166,9 @@ interface Actions {
   rateCaptain: (id: ID, rating: number | undefined, notes: string) => Result;
 
   createZone: (input: ZoneInput) => Result<ID>;
-  updateZone: (id: ID, patch: Partial<ZoneInput> & { polygon?: LatLng[] }) => Result;
+  updateZone: (id: ID, patch: Partial<Omit<ZoneInput, 'parentId'>>) => Result;
+  importAreas: (input: AreaImportInput) => Result<{ created: number; skipped: number }>;
+  setMerchantCoverage: (merchantId: ID, areaIds: ID[], enabled: boolean) => Result<{ changed: number }>;
   setServiceAreaStatus: (id: ID, active: boolean) => Result;
 
   createRoute: (input: RouteInput) => Result<ID>;
@@ -177,8 +205,8 @@ interface Actions {
 
 export type AppState = AppData & Actions;
 
-// v5: cities, merchant City/Area IDs and the pricing-copy audit (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v5';
+// v6: region hierarchy, merchant coverage and scheduled orders (older saved demo data is discarded).
+export const STORAGE_KEY = 'shahm-demo-v6';
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -340,16 +368,20 @@ export const useAppStore = create<AppState>()(
           }),
 
         // ----- Service areas -----
-        createZone: (input) =>
+        createZone: (raw) =>
           run((d, now) => {
+            const parentCheck = zoneParent(d, raw);
+            if (typeof parentCheck === 'string') return fail(parentCheck);
+            const { parent } = parentCheck;
+            const input = parent ? { ...raw, governorateId: parent.governorateId, cityId: parent.cityId } : raw;
             if (!isGovernorateId(input.governorateId)) return fail('اختر المحافظة أولاً');
             if (!isCityInGovernorate(input.cityId, input.governorateId)) return fail('اختر مدينة تابعة للمحافظة');
-            if (!input.name.trim()) return fail('اسم المنطقة مطلوب');
+            if (!input.name.trim()) return fail(parent ? 'اسم القسم مطلوب' : 'اسم المنطقة مطلوب');
             const aliases = input.aliases.map((a) => a.trim()).filter(Boolean);
             const dup = duplicateZone(d, { ...input, aliases });
-            if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
+            if (dup) return fail(`يوجد ${parent ? 'قسم' : 'منطقة'} بنفس الاسم أو الاسم البديل في نفس المكان: «${dup.name}»`);
             const id = uid('a');
-            d.areas.push({ id, governorateId: input.governorateId, cityId: input.cityId, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
+            d.areas.push({ id, governorateId: input.governorateId, cityId: input.cityId, parentId: parent?.id ?? null, name: input.name.trim(), aliases, notes: input.notes?.trim() || undefined, polygon: [], status: 'active', createdAt: now, updatedAt: now });
             return ok(id);
           }),
         updateZone: (id, patch) =>
@@ -357,18 +389,18 @@ export const useAppStore = create<AppState>()(
             const a = d.areas.find((x) => x.id === id);
             if (!a) return fail('المنطقة غير موجودة');
             if (patch.name !== undefined && !patch.name.trim()) return fail('اسم المنطقة مطلوب');
-            if (patch.polygon) {
-              const geoErr = polygonError(patch.polygon);
-              if (geoErr) return fail(geoErr);
+            if (a.parentId && ((patch.cityId && patch.cityId !== a.cityId) || (patch.governorateId && patch.governorateId !== a.governorateId))) {
+              return fail('القسم يتبع مدينة منطقته الأم');
             }
             const nextCity = patch.cityId ?? a.cityId;
+            if (nextCity !== a.cityId && d.areas.some((x) => x.parentId === id)) return fail('لا يمكن نقل منطقة لها أقسام إلى مدينة أخرى');
             if (!isCityInGovernorate(nextCity, patch.governorateId ?? a.governorateId)) return fail('اختر مدينة تابعة للمحافظة');
             if (nextCity !== a.cityId && d.merchants.some((m) => m.areaId === id)) return fail('لا يمكن نقل منطقة مرتبطة بمواقع تجار إلى مدينة أخرى');
             if (patch.governorateId !== undefined && !isGovernorateId(patch.governorateId)) return fail('اختر المحافظة');
             if (patch.governorateId && patch.governorateId !== a.governorateId && d.routes.some((r) => r.originAreaId === id || r.destinationAreaId === id)) {
               return fail('لا يمكن نقل منطقة مرتبطة بمسارات توصيل إلى محافظة أخرى — احذف مساراتها أولاً');
             }
-            const next: ZoneInput = { governorateId: patch.governorateId ?? a.governorateId, cityId: nextCity, name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
+            const next: ZoneInput = { governorateId: patch.governorateId ?? a.governorateId, cityId: nextCity, parentId: a.parentId, name: patch.name ?? a.name, aliases: (patch.aliases ?? a.aliases).map((x) => x.trim()).filter(Boolean) };
             const dup = duplicateZone(d, next, id);
             if (dup) return fail(`توجد منطقة بنفس الاسم أو الاسم البديل: «${dup.name}»`);
             a.governorateId = next.governorateId;
@@ -376,7 +408,6 @@ export const useAppStore = create<AppState>()(
             a.name = next.name.trim();
             a.aliases = next.aliases;
             if (patch.notes !== undefined) a.notes = patch.notes.trim() || undefined;
-            if (patch.polygon) a.polygon = patch.polygon;
             a.updatedAt = now;
             return done;
           }),
@@ -387,6 +418,54 @@ export const useAppStore = create<AppState>()(
             a.status = active ? 'active' : 'inactive';
             a.updatedAt = now;
             return done;
+          }),
+
+        // Bulk catalogue entry from typed names (CR v1.4 §1.2). Existing names are skipped, never duplicated.
+        importAreas: ({ governorateId, cityId, lines }) =>
+          run((d, now) => {
+            if (!isGovernorateId(governorateId)) return fail('اختر المحافظة أولاً');
+            if (!isCityInGovernorate(cityId, governorateId)) return fail('اختر مدينة تابعة للمحافظة');
+            const rows = lines.split('\n').map((l) => l.split(/\s*[/›>]\s*/).map((x) => x.trim()).filter(Boolean)).filter((r) => r.length > 0);
+            if (rows.length === 0) return fail('اكتب اسم منطقة واحدة على الأقل');
+            if (rows.some((r) => r.length > 2)) return fail('مستويان كحد أقصى في السطر: «منطقة» أو «منطقة / قسم»');
+            let created = 0;
+            let skipped = 0;
+            const ensure = (name: string, parentId: ID | null): ID => {
+              const existing = duplicateZone(d, { governorateId, cityId, parentId, name, aliases: [] });
+              if (existing) { skipped++; return existing.id; }
+              const id = uid('a');
+              d.areas.push({ id, governorateId, cityId, parentId, name, aliases: [], polygon: [], status: 'active', createdAt: now, updatedAt: now });
+              created++;
+              return id;
+            };
+            for (const [areaName, subName] of rows) {
+              const areaId = ensure(areaName, null);
+              if (subName) ensure(subName, areaId);
+            }
+            return ok({ created, skipped });
+          }),
+
+        // Coverage is separate from price: enabling a destination never invents a fee (CR v1.4 §2).
+        setMerchantCoverage: (merchantId, areaIds, enabled) =>
+          run((d, now) => {
+            if (!d.merchants.some((m) => m.id === merchantId)) return fail('التاجر غير موجود');
+            const unique = [...new Set(areaIds)];
+            if (unique.some((id) => !d.areas.some((a) => a.id === id))) return fail('منطقة غير موجودة');
+            let changed = 0;
+            if (enabled) {
+              const inactive = unique.filter((id) => !isDestinationActive(d.areas.find((a) => a.id === id)!, d.areas));
+              if (inactive.length) return fail('لا يمكن تفعيل منطقة متوقفة للتاجر');
+              for (const areaId of unique) {
+                if (d.coverage.some((c) => c.merchantId === merchantId && c.areaId === areaId)) continue;
+                d.coverage.push({ merchantId, areaId, enabledAt: now });
+                changed++;
+              }
+            } else {
+              const before = d.coverage.length;
+              d.coverage = d.coverage.filter((c) => !(c.merchantId === merchantId && unique.includes(c.areaId)));
+              changed = before - d.coverage.length;
+            }
+            return ok({ changed });
           }),
 
         // ----- Delivery routes (origin → destination; availability record only, no pricing effect) -----
@@ -498,7 +577,12 @@ export const useAppStore = create<AppState>()(
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
             if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
-            if (!Number.isInteger(input.mealValue) || input.mealValue <= 0) return fail(ORDER_VALUE_INVALID, { code: 'invalid_order_value' });
+            const requestType: RequestType = input.requestType ?? 'immediate';
+            if (requestType === 'scheduled') {
+              const at = input.scheduledPickupAt;
+              if (at === undefined || !Number.isFinite(at)) return fail('حدّد تاريخ ووقت وصول الكابتن إلى المتجر', { code: 'no_schedule' });
+              if (at <= now) return fail('وقت الاستلام المطلوب يجب أن يكون في المستقبل', { code: 'schedule_past' });
+            }
             if (!input.areaId) return fail(AREA_REQUIRED, { code: 'no_area' });
             // Read the current fee for Merchant + chosen area at confirmation (Spec §8, §10).
             const resolution = resolveZoneFee(d, merchantId, input.areaId);
@@ -531,19 +615,21 @@ export const useAppStore = create<AppState>()(
               },
               areaId: zone.id,
               areaName: zone.name,
-              mealValue: input.mealValue,
+              requestType,
+              scheduledPickupAt: requestType === 'scheduled' ? input.scheduledPickupAt : undefined,
+              queueReason: requestType === 'scheduled' ? 'طلب مؤجل — بانتظار تنسيق الإدارة' : undefined,
               deliveryPrice: resolution.price,
               pricingSnapshotAt: now,
               dispatchRound: 0,
               status: 'pending_dispatch',
               createdAt: now,
               updatedAt: now,
-              history: [{ to: 'pending_dispatch', actor: merchantActor(m), at: now, note: 'تم إنشاء الطلب' }],
+              history: [{ to: 'pending_dispatch', actor: merchantActor(m), at: now, note: requestType === 'scheduled' ? 'تم إنشاء طلب مؤجل — يُسند يدوياً من الإدارة' : 'تم إنشاء الطلب' }],
             };
             d.orders.unshift(order);
-            pushAlert(d, 'new_order', `طلب جديد ${reference} من ${m.businessName} — ${zone.name}`, now, order.id);
+            pushAlert(d, 'new_order', `${requestType === 'scheduled' ? 'طلب مؤجل' : 'طلب جديد'} ${reference} من ${m.businessName} — ${zone.name}`, now, order.id);
             const draftOrder = d.orders[0];
-            if (d.settings.publicBroadcast) startPublicDispatch(d, draftOrder, SYSTEM_ACTOR, now);
+            if (d.settings.publicBroadcast && isAutoDispatchEligible(draftOrder)) startPublicDispatch(d, draftOrder, SYSTEM_ACTOR, now);
             return ok({ id: order.id, reference });
           }),
 
@@ -570,6 +656,7 @@ export const useAppStore = create<AppState>()(
             const order = d.orders.find((o) => o.id === orderId);
             if (!order) return fail('الطلب غير موجود');
             if (!isInQueue(order.status)) return fail(`لا يمكن نشر طلب حالته "${ORDER_STATUS_LABEL[order.status]}"`);
+            if (!isAutoDispatchEligible(order)) return fail('الطلب المؤجل يُسند يدوياً فقط — استخدم الإسناد الخاص');
             startPublicDispatch(d, order, ADMIN_ACTOR, now);
             return done;
           }),
@@ -756,8 +843,8 @@ export const useAppStore = create<AppState>()(
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => {
-        const { merchants, captains, areas, routes, prices, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
-        return { merchants, captains, areas, routes, prices, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
+        const { merchants, captains, areas, routes, prices, coverage, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
+        return { merchants, captains, areas, routes, prices, coverage, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
       },
     },
   ),

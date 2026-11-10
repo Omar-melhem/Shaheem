@@ -39,25 +39,6 @@ export function pointInPolygon(p: LatLng, polygon: LatLng[]): boolean {
   return inside;
 }
 
-const cross = (o: LatLng, a: LatLng, b: LatLng) => (a.lng - o.lng) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lng - o.lng);
-const segmentsCross = (a: LatLng, b: LatLng, c: LatLng, d: LatLng) =>
-  cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0;
-
-/** Boundary geometry check: an error message, or null when valid (CR v1.3 §5.2). The ring is closed implicitly. */
-export function polygonError(points: LatLng[]): string | null {
-  if (!points.every(isValidLatLng)) return 'إحداثيات الحدود غير صالحة';
-  const unique = new Set(points.map((p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`));
-  if (unique.size < 3) return 'ارسم ثلاث نقاط مختلفة على الأقل';
-  const n = points.length;
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 2; j < n; j++) {
-      if (i === 0 && j === n - 1) continue; // adjacent through the closing edge
-      if (segmentsCross(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])) return 'الحدود متقاطعة مع نفسها — عدّل ترتيب النقاط';
-    }
-  }
-  return null;
-}
-
 export function moveTowards(from: LatLng, to: LatLng, meters: number): LatLng {
   const total = haversineMeters(from, to);
   if (total <= meters || total === 0) return { ...to };

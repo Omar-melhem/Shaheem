@@ -16,6 +16,7 @@ import type {
   DispatchOffer,
   DeliveryRoute,
   PricingCopyAudit,
+  MerchantCoverage,
 } from '@/domain/types';
 import { MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
 import { haversineMeters, polygonCentroid } from '@/domain/geo';
@@ -30,6 +31,7 @@ export interface AppData {
   areas: ServiceArea[];
   routes: DeliveryRoute[];
   prices: MerchantAreaPrice[];
+  coverage: MerchantCoverage[];
   pricingAudit: PricingCopyAudit[];
   orders: DeliveryOrder[];
   offers: DispatchOffer[];
@@ -73,7 +75,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     { id: 'a-sweifieh', name: 'الصويفية', aliases: ['Sweifieh', 'الصويفيه'], polygon: rect(31.948, 31.968, 35.845, 35.87) },
     { id: 'a-shmeisani', name: 'الشميساني', aliases: ['Shmeisani'], polygon: rect(31.96, 31.98, 35.89, 35.915) },
     { id: 'a-abdoun', name: 'عبدون', aliases: ['Abdoun'], polygon: rect(31.935, 31.952, 35.87, 35.9) },
-  ].map((a) => ({ ...a, governorateId: 'amman', cityId: 'amman', status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
+  ].map((a) => ({ ...a, governorateId: 'amman', cityId: 'amman', parentId: null, status: 'active' as const, createdAt: now - 30 * DAY, updatedAt: now - 30 * DAY }));
 
   const merchantDefs: Array<Omit<Merchant, 'status' | 'createdAt' | 'username' | 'password'> & { status?: Merchant['status'] }> = [
     { id: 'm-sanabel', cityId: 'amman', areaId: 'a-jubaiha', businessName: 'مطعم السنابل', category: 'restaurant', contactName: 'رامي حدّاد', phone: '0790000201', address: 'الجبيهة، قرب دوار المنهل', pickup: { lat: 32.02, lng: 35.86 } },
@@ -241,6 +243,8 @@ export function createSeedData(now: number = Date.now()): AppData {
     areas,
     routes: [],
     prices,
+    // Every seeded price row is also covered, so the demo starts orderable as before.
+    coverage: prices.map((p) => ({ merchantId: p.merchantId, areaId: p.areaId, enabledAt: p.updatedAt })),
     pricingAudit: [],
     orders,
     offers: [],

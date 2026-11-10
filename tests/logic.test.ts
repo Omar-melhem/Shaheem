@@ -1,12 +1,14 @@
 import './setup';
 import { useAppStore, captainEligibility } from '@/application/store';
 import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
-import { polygonCentroid, polygonError } from '@/domain/geo';
-import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
+import { polygonCentroid } from '@/domain/geo';
+import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON, isAutoDispatchEligible } from '@/domain/dispatch';
+import { commissionFils, isValidCommissionBp } from '@/domain/commission';
+import { ammanDayKey, ammanWallTimeToEpoch, lastThreeAmmanDays } from '@/domain/time';
+import { areaLabel, isDestinationActive } from '@/domain/regions';
 import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import { destinationPinError, isAreaOnly } from '@/domain/destination';
-import { parseJodInput } from '@/domain/money';
-import { ORDER_VALUE_INVALID, ORDER_VALUE_REQUIRED, checkOrderValue } from '@/domain/orderValue';
+import { formatJodInput, parseJodAmount, parseJodInput } from '@/domain/money';
 import { previewPricingCopy } from '@/application/pricingCopy';
 import { check, finish, section } from './harness';
 
@@ -37,46 +39,46 @@ const created = S().createMerchant({ businessName: 'مطعم الجبيهة', ca
 check(created.ok, 'Admin registers new merchant');
 const mid = created.ok ? created.value : '';
 check(merchantZoneOptions(S(), mid).length === 0, 'new merchant has no zones yet');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 }).ok, 'order blocked without zones');
+check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda') }).ok, 'order blocked without zones');
 check(S().setMerchantAreaPrice(mid, 'a-jubaiha', 1000).ok, 'add Jubeiha 1.00');
 check(S().setMerchantAreaPrice(mid, 'a-tla', 1500).ok, "add Tla' Al-Ali 1.50");
 check(S().setMerchantAreaPrice(mid, 'a-khalda', 2000).ok, 'add Khalda 2.00');
 check(!S().setMerchantAreaPrice(mid, 'a-abdoun', 0).ok, 'zero fee rejected');
+check(merchantZoneOptions(S(), mid).length === 0, 'priced but not covered → not orderable (CR v1.4 §2)');
+check(S().setMerchantCoverage(mid, ['a-jubaiha', 'a-tla', 'a-khalda'], true).ok, 'Admin enables coverage for the priced zones');
 check(S().prices.filter((p) => p.merchantId === mid && p.areaId === 'a-khalda').length === 1, 'no duplicate merchant-zone row');
 check(merchantZoneOptions(S(), mid).length === 3, 'merchant selector shows 3 zones');
 check(S().authenticate('jubeiha', 'secret1').ok, 'new merchant can log in');
 
 section('Order creation from the customer pin');
-const o1 = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000, expectedFee: 2000 });
+const o1 = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), expectedFee: 2000 });
 check(o1.ok, 'order to Khalda from pin');
 const order1 = S().orders.find((o) => o1.ok && o.id === o1.value.id)!;
 check(order1.deliveryPrice === 2000 && order1.areaName === 'خلدا', 'order stores JOD 2.00');
 check(!!order1.pricingSnapshotAt, 'pricing snapshot timestamp');
 check(order1.destination.position?.lat === at('a-khalda').lat && !order1.destination.approximate, 'order stores the exact customer pin');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: 31.5, lng: 36.5 }, mealValue: 5000 }).ok, 'pin outside every zone rejected');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: NaN, lng: 0 }, mealValue: 5000 }).ok, 'missing/invalid pin rejected');
-const named = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-tla', location: at('a-tla'), placeName: 'سيتي مول', mealValue: 5000 });
+check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: 31.5, lng: 36.5 } }).ok, 'pin outside every zone rejected');
+check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: { lat: NaN, lng: 0 } }).ok, 'missing/invalid pin rejected');
+const named = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-tla', location: at('a-tla'), placeName: 'سيتي مول' });
 check(named.ok && S().orders.find((o) => o.id === named.value.id)!.destination.label.includes('سيتي مول'), 'searched place name kept on the order');
 
 section('Fee lock and re-confirmation');
 check(S().setMerchantAreaPrice(mid, 'a-khalda', 2500).ok, 'Admin changes Khalda to 2.50');
-const stale = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000, expectedFee: 2000 });
+const stale = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), expectedFee: 2000 });
 check(!stale.ok && stale.code === 'fee_changed' && stale.currentFee === 2500, 'stale displayed fee → fee_changed with new fee');
-const o2 = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000, expectedFee: 2500 });
+const o2 = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), expectedFee: 2500 });
 check(o2.ok && S().orders.find((o) => o.id === o2.value.id)!.deliveryPrice === 2500, 'second order uses 2.50');
 check(S().orders.find((o) => o.id === order1.id)!.deliveryPrice === 2000, 'first order still 2.00');
 
 section('Request validation');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-abdoun', location: at('a-abdoun'), mealValue: 5000 }).ok, 'zone not enabled for merchant rejected');
-check(S().createOrder(mid, { customerPhone: '', areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 }).ok, 'customer phone is optional (CR v1.3 §8.4)');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 0 }).ok, 'zero order value rejected');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: -500 }).ok, 'negative order value rejected');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 12.5 }).ok, 'non-integer fils rejected');
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda') } as never).ok, 'missing order value rejected');
+check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-abdoun', location: at('a-abdoun') }).ok, 'zone not enabled for merchant rejected');
+check(S().createOrder(mid, { customerPhone: '', areaId: 'a-khalda', location: at('a-khalda') }).ok, 'customer phone is optional (CR v1.3 §8.4)');
+const noGoods = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda' });
+check(noGoods.ok && S().orders.find((x) => x.id === noGoods.value.id)!.mealValue === undefined, 'no goods/order value is collected (CR v1.4 §4)');
 S().setMerchantAreaPriceStatus(mid, 'a-tla', false);
 check(!merchantZoneOptions(S(), mid).some((z) => z.area.id === 'a-tla'), 'disabled zone hidden from merchant');
 S().setServiceAreaStatus('a-jubaiha', false);
-check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-jubaiha', location: at('a-jubaiha'), mealValue: 5000 }).ok, 'central zone deactivated → rejected');
+check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-jubaiha', location: at('a-jubaiha') }).ok, 'central zone deactivated → rejected');
 S().setServiceAreaStatus('a-jubaiha', true);
 
 section('Zones');
@@ -98,7 +100,7 @@ section('Dispatch rounds: 60 s × 3, then Admin queue (FU-1.2 §5)');
 // One Captain per round so three rounds need only three eligible Captains.
 S().updateDemoSettings({ offerPolicy: 'sequential' });
 const newOrder = () => {
-  const r = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 });
+  const r = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda') });
   return r.ok ? r.value.id : '';
 };
 const orderById = (id: string) => S().orders.find((x) => x.id === id)!;
@@ -148,8 +150,8 @@ section('Phone numbers: exactly 10 digits (FU-1.2 §1.3)');
 check(isValidPhone('0791234567') && !isValidPhone('079123456') && !isValidPhone('07912345678'), '10 digits only');
 check(normalizePhone('079 123-4567') === '0791234567' && normalizePhone('٠٧٩١٢٣٤٥٦٧') === '0791234567', 'separators dropped, Arabic digits converted, leading zero kept');
 check(isValidOptionalPhone('') && !isValidOptionalPhone('123'), 'optional phone: blank valid, short invalid');
-check(!S().createOrder(mid, { customerPhone: '079111111', areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 }).ok, '9-digit customer phone rejected');
-const spaced = S().createOrder(mid, { customerPhone: '079 111 1111', areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 });
+check(!S().createOrder(mid, { customerPhone: '079111111', areaId: 'a-khalda', location: at('a-khalda') }).ok, '9-digit customer phone rejected');
+const spaced = S().createOrder(mid, { customerPhone: '079 111 1111', areaId: 'a-khalda', location: at('a-khalda') });
 check(spaced.ok && orderById(spaced.value.id).customerPhone === '0791111111', 'customer phone stored normalised');
 check(!S().createMerchant({ ...base, category: 'cafe', phone: '079000088', username: 'shortphone' }).ok, 'merchant 9-digit phone rejected');
 check(!S().createCaptain({ fullName: 'ك', phone: '07900001234', vehicleType: 'car', vehicleDescription: '', username: 'longphone', password: 'secret1' }).ok, 'captain 11-digit phone rejected');
@@ -207,62 +209,61 @@ check(skipPreview.rows.find((r) => r.areaId === stopArea)?.action === 'skipped',
 S().setServiceAreaStatus(stopArea, true);
 check(JSON.stringify(S().orders.filter((x) => historic.some(([i]) => i === x.id)).map((x) => [x.id, x.deliveryPrice])) === JSON.stringify(historic), 'existing order fee snapshots unchanged');
 
-section('Boundaries (CR v1.3 §5)');
-check(polygonError([{ lat: 1, lng: 1 }, { lat: 2, lng: 2 }]) !== null, 'fewer than 3 points invalid');
-check(polygonError([{ lat: 1, lng: 1 }, { lat: 1, lng: 1 }, { lat: 2, lng: 2 }]) !== null, 'duplicate vertices do not count');
-check(polygonError([{ lat: 0, lng: 0 }, { lat: 1, lng: 1 }, { lat: 1, lng: 0 }, { lat: 0, lng: 1 }]) !== null, 'self-intersecting boundary invalid');
-check(polygonError(S().areas.find((a) => a.id === 'a-khalda')!.polygon) === null, 'seed boundary valid');
-check(!S().updateZone('a-khalda', { polygon: [{ lat: 0, lng: 0 }, { lat: 1, lng: 1 }, { lat: 1, lng: 0 }, { lat: 0, lng: 1 }] }).ok, 'store refuses an invalid boundary');
-const other = JSON.stringify(S().areas.find((a) => a.id === 'a-tla')!.polygon);
-const square = [{ lat: 31.97, lng: 35.81 }, { lat: 31.97, lng: 35.846 }, { lat: 32.011, lng: 35.846 }, { lat: 32.011, lng: 35.81 }];
-check(S().updateZone('a-khalda', { polygon: square }).ok && JSON.stringify(S().areas.find((a) => a.id === 'a-khalda')!.polygon) === JSON.stringify(square) && JSON.stringify(S().areas.find((a) => a.id === 'a-tla')!.polygon) === other, 'saving writes only to the selected Area');
+section('Region catalogue without boundaries (CR v1.4 §1)');
+const legacyPolygon = JSON.stringify(S().areas.find((a) => a.id === 'a-khalda')!.polygon);
+check(S().updateZone('a-khalda', { notes: 'ملاحظة' }).ok && JSON.stringify(S().areas.find((a) => a.id === 'a-khalda')!.polygon) === legacyPolygon, 'editing an area keeps its legacy boundary untouched');
+const plain = S().createZone({ governorateId: 'amman', cityId: 'amman', name: 'منطقة بالاسم فقط', aliases: [] });
+check(plain.ok && S().areas.find((a) => a.id === plain.value)!.polygon.length === 0, 'an area is created by name, with no coordinates');
 
-section('Orders: order value and destination (CR v1.3 §8)');
-const nameless = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-khalda'), mealValue: 12500 });
+section('Orders: destination and optional fields (CR v1.3 §8, v1.4 §4)');
+const nameless = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-khalda') });
 const namelessOrder = S().orders.find((x) => nameless.ok && x.id === nameless.value.id)!;
-check(nameless.ok && namelessOrder.mealValue === 12500 && namelessOrder.customerPhone === undefined, 'order value kept in fils; name and phone optional');
-check(namelessOrder.deliveryPrice !== namelessOrder.mealValue, 'order value and delivery fee stay separate');
+check(nameless.ok && namelessOrder.customerPhone === undefined && namelessOrder.mealValue === undefined, 'name, phone and goods value all absent');
 check(!!namelessOrder.destination.position && !namelessOrder.destination.approximate && namelessOrder.destination.label !== '', 'exact pin and a label stored without a typed description');
-check(S().orders.some((x) => x.mealValue === undefined), 'older orders without an order value stay readable');
-check(!S().createOrder(mid, { customerPhone: '123', areaId: 'a-khalda', location: at('a-khalda'), mealValue: 5000 }).ok, 'a supplied phone must still be 10 digits');
+check(S().orders.some((x) => x.mealValue !== undefined), 'older orders keep their recorded goods value (read-only)');
+check(!S().createOrder(mid, { customerPhone: '123', areaId: 'a-khalda', location: at('a-khalda') }).ok, 'a supplied phone must still be 10 digits');
 
 section('Orders: required area, optional exact pin');
 const ordersBefore = S().orders.length;
-check(!S().createOrder(mid, { mealValue: 5000 } as never).ok && !S().createOrder(mid, { areaId: '', mealValue: 5000 }).ok, 'no area → rejected even with a valid value');
-check(!S().createOrder(mid, { location: at('a-khalda'), mealValue: 5000 } as never).ok, 'a pin alone does not replace the required area');
-check(!S().createOrder(mid, { areaId: 'خلدا', mealValue: 5000 }).ok, 'typed area name is not an area ID');
+check(!S().createOrder(mid, {} as never).ok && !S().createOrder(mid, { areaId: '' }).ok, 'no area → rejected even with a valid value');
+check(!S().createOrder(mid, { location: at('a-khalda') } as never).ok, 'a pin alone does not replace the required area');
+check(!S().createOrder(mid, { areaId: 'خلدا' }).ok, 'typed area name is not an area ID');
 check(S().orders.length === ordersBefore, 'rejected requests create no order');
 
 const zoneFee = resolveZoneFee(S(), mid, 'a-khalda');
-const areaOnlyResult = S().createOrder(mid, { areaId: 'a-khalda', mealValue: 7000 });
+const areaOnlyResult = S().createOrder(mid, { areaId: 'a-khalda' });
 const areaOnlyOrder = S().orders.find((x) => areaOnlyResult.ok && x.id === areaOnlyResult.value.id)!;
 check(areaOnlyResult.ok && areaOnlyOrder.areaId === 'a-khalda' && areaOnlyOrder.deliveryPrice === (zoneFee.kind === 'ok' ? zoneFee.price : -1), 'area-only order created with the merchant + area fee');
 check(areaOnlyOrder.destination.position === undefined && !areaOnlyOrder.destination.approximate && isAreaOnly(areaOnlyOrder.destination), 'area-only order stores no coordinates (no centroid, no 0,0)');
 check(areaOnlyOrder.destination.label.includes(areaOnlyOrder.areaName), 'area-only label names the area');
-const placeIgnored = S().createOrder(mid, { areaId: 'a-khalda', placeName: 'مكان وهمي', mealValue: 7000 });
+const placeIgnored = S().createOrder(mid, { areaId: 'a-khalda', placeName: 'مكان وهمي' });
 check(placeIgnored.ok && !S().orders.find((x) => x.id === placeIgnored.value.id)!.destination.label.includes('مكان وهمي'), 'a place name without a pin is not presented as a location');
 
-const withPin = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-khalda'), mealValue: 7000 });
+const withPin = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-khalda') });
 const withPinOrder = S().orders.find((x) => withPin.ok && x.id === withPin.value.id)!;
 check(withPin.ok && withPinOrder.areaId === 'a-khalda' && !isAreaOnly(withPinOrder.destination) && withPinOrder.destination.position?.lat === at('a-khalda').lat, 'area + pin stores both');
-const mismatch = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-tla'), mealValue: 7000 });
+const mismatch = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-tla') });
 check(!mismatch.ok && mismatch.code === 'pin_outside_area', "pin in another area is rejected, it never switches the area or the fee");
-check(!S().createOrder(mid, { areaId: 'a-khalda', location: { lat: 0, lng: 0 }, mealValue: 7000 }).ok, 'fictitious 0,0 pin rejected');
+check(!S().createOrder(mid, { areaId: 'a-khalda', location: { lat: 0, lng: 0 } }).ok, 'fictitious 0,0 pin rejected');
 check(withPinOrder.deliveryPrice === areaOnlyOrder.deliveryPrice, 'adding a pin does not change the fee');
 
 const areaBeforeEdit = S().areas.find((a) => a.id === 'a-khalda')!;
 check(destinationPinError(areaBeforeEdit, at('a-khalda')) === null && destinationPinError(areaBeforeEdit, at('a-tla')) !== null, 'pin check follows the selected area');
-check(destinationPinError({ ...areaBeforeEdit, polygon: [] }, at('a-khalda')) !== null, 'a pin cannot be verified against an area with no boundary');
+check(destinationPinError({ ...areaBeforeEdit, polygon: [] }, at('a-khalda')) === null, 'an area with no boundary accepts the optional pin, unverified');
 const noBoundaryArea = S().createZone({ governorateId: areaBeforeEdit.governorateId, cityId: areaBeforeEdit.cityId, name: 'منطقة بلا حدود', aliases: [], polygon: [] } as never);
 check(noBoundaryArea.ok, 'area without a boundary can be configured');
 if (noBoundaryArea.ok) {
-  check(S().setMerchantAreaPrice(mid, noBoundaryArea.value, 1200).ok, 'priced area without a boundary');
-  const noBoundary = S().createOrder(mid, { areaId: noBoundaryArea.value, mealValue: 7000 });
+  check(S().setMerchantAreaPrice(mid, noBoundaryArea.value, 1200).ok && S().setMerchantCoverage(mid, [noBoundaryArea.value], true).ok, 'covered and priced area without a boundary');
+  const noBoundary = S().createOrder(mid, { areaId: noBoundaryArea.value });
   check(noBoundary.ok && S().orders.find((x) => x.id === noBoundary.value.id)!.deliveryPrice === 1200, 'area without a boundary can still be ordered area-only');
-  check(!S().createOrder(mid, { areaId: noBoundaryArea.value, location: at('a-khalda'), mealValue: 7000 }).ok, 'and refuses a pin it cannot verify');
+  const unverified = S().createOrder(mid, { areaId: noBoundaryArea.value, location: at('a-khalda') });
+  check(unverified.ok && S().orders.find((x) => x.id === unverified.value.id)!.areaId === noBoundaryArea.value, 'its optional pin is kept, never moving the order to another area');
 }
-check(!S().createOrder(mid, { areaId: 'a-abdoun', mealValue: 7000 }).ok && resolveZoneFee(S(), mid, 'a-abdoun').kind === 'no_price', 'no merchant price → blocked, no invented fee');
-const staleAreaOnly = S().createOrder(mid, { areaId: 'a-khalda', mealValue: 7000, expectedFee: 1 });
+check(!S().createOrder(mid, { areaId: 'a-abdoun' }).ok && resolveZoneFee(S(), mid, 'a-abdoun').kind === 'not_covered', 'not covered → blocked');
+S().setMerchantCoverage(mid, ['a-abdoun'], true);
+check(!S().createOrder(mid, { areaId: 'a-abdoun' }).ok && resolveZoneFee(S(), mid, 'a-abdoun').kind === 'no_price', 'covered but no merchant price → blocked, no invented fee');
+S().setMerchantCoverage(mid, ['a-abdoun'], false);
+const staleAreaOnly = S().createOrder(mid, { areaId: 'a-khalda', expectedFee: 1 });
 check(!staleAreaOnly.ok && staleAreaOnly.code === 'fee_changed', 'area-only order still re-confirms a changed fee');
 
 const areaOnlyId = areaOnlyOrder.id;
@@ -271,34 +272,99 @@ check(walk('pending_dispatch') || walk('awaiting_captain'), 'area-only order ent
 S().tick(Date.now());
 check(S().orders.find((x) => x.id === areaOnlyId)!.destination.position === undefined, 'simulation clock never invents coordinates for an area-only order');
 
-section('Order value input: parsing and display');
-const shown = (raw: string) => { const c = checkOrderValue(raw); return c.ok ? c.display : null; };
-const filsOf = (raw: string) => { const c = checkOrderValue(raw); return c.ok ? c.fils : null; };
-const errorOf = (raw: string) => { const c = checkOrderValue(raw); return c.ok ? null : c.error; };
+section('Shared JOD parser (Admin money fields)');
+const shown = (raw: string) => { const r = parseJodAmount(raw); return r.ok ? formatJodInput(r.fils) : null; };
+const filsOf = (raw: string) => { const r = parseJodAmount(raw); return r.ok ? r.fils : null; };
 for (const [raw, display, fils] of [
-  ['50', '50.00', 50000], ['50.0', '50.00', 50000], ['50.5', '50.50', 50500], ['50.75', '50.75', 50750], ['50.125', '50.125', 50125],
-  ['5', '5.00', 5000], ['50.', '50.00', 50000], ['.5', '0.50', 500], ['0.001', '0.001', 1], ['1.005', '1.005', 1005], ['4.35', '4.35', 4350],
-  ['٥٠', '50.00', 50000], ['۵۰', '50.00', 50000], ['١٢٫٥', '12.50', 12500], ['١٢٫١٢٥', '12.125', 12125], ['12,5', '12.50', 12500], ['٥٠،٧٥', '50.75', 50750],
-  ['1,000.50', '1000.50', 1000500], ['1,000,000', '1000000.00', 1000000000], ['١٬٥٠٠', '1500.00', 1500000],
-  ['‏50‎', '50.00', 50000], ['  50  ', '50.00', 50000],
+  ['50', '50.00', 50000], ['50.5', '50.50', 50500], ['50.125', '50.125', 50125], ['.5', '0.50', 500], ['1.005', '1.005', 1005],
+  ['٥٠', '50.00', 50000], ['١٢٫٥', '12.50', 12500], ['12,5', '12.50', 12500], ['1,000.50', '1000.50', 1000500],
 ] as const) {
   check(shown(raw) === display && filsOf(raw) === fils, `"${raw}" → ${display} (${fils} fils)`);
 }
-check(shown(shown('12.125')!) === '12.125' && filsOf(shown('50')!) === 50000, 'a normalized value stays editable and re-parses to the same amount (never converted twice)');
-check(errorOf('') === ORDER_VALUE_REQUIRED && errorOf('   ') === ORDER_VALUE_REQUIRED, 'empty → required message');
-for (const raw of ['abc', '-5', '+5', '0', '0.000', '.', '1.2.3', '5 0', '50 د.أ', 'NaN', 'Infinity', '1e3', '12,', '1,2345', '12,34,56', '1,00.5', '٬', '9'.repeat(30)]) {
-  check(errorOf(raw) === ORDER_VALUE_INVALID, `"${raw.slice(0, 12)}" rejected as invalid`);
-}
-check(!!errorOf('50.1234') && errorOf('50.1234') !== ORDER_VALUE_INVALID, 'a fourth decimal is reported, never rounded away');
-check(!!errorOf('1,500') && filsOf('1,500') === null && parseJodInput('1,500') === null, 'ambiguous "1,500" is reported, never read as 1.5 or 1500');
-check(parseJodInput('0') === 0 && parseJodInput('2') === 2000 && parseJodInput('١٫٥') === 1500, 'shared parser still serves the Admin money fields');
-const fromInput = S().createOrder(mid, { areaId: 'a-khalda', location: at('a-khalda'), mealValue: filsOf('٥٠٫٧٥')! });
-check(fromInput.ok && S().orders.find((x) => x.id === fromInput.value.id)!.mealValue === 50750, 'typed value reaches the order in fils, exactly');
+for (const raw of ['abc', '-5', '+5', '.', '1.2.3', '50 د.أ', 'NaN', '1e3', '']) check(filsOf(raw) === null, `"${raw}" rejected`);
+check(filsOf('50.1234') === null && filsOf('1,500') === null, 'a fourth decimal and the ambiguous "1,500" are refused, never guessed');
+check(parseJodInput('0') === 0 && parseJodInput('2') === 2000 && parseJodInput('١٫٥') === 1500, 'parser still serves the Admin money fields');
 
 section('Commission boundary (CR v1.3 §6): nothing charged from browser code');
 const txBefore = S().walletTx.length;
 const debitOrder = S().orders.find((x) => x.status === 'on_the_way')!;
 S().advanceDelivery(debitOrder.id, debitOrder.captainId!);
 check(S().walletTx.length === txBefore && S().walletTx.every((t) => t.amount > 0), 'delivery posts no wallet debit in the prototype');
+
+section('Sub-areas (CR v1.4 §1.2)');
+const parentRes = S().createZone({ governorateId: 'amman', cityId: 'amman', name: 'ضاحية الاختبار', aliases: [] });
+const parentId = parentRes.ok ? parentRes.value : '';
+const sec1 = S().createZone({ governorateId: '', cityId: '', parentId, name: 'الحي الشرقي', aliases: [] });
+const sec2 = S().createZone({ governorateId: '', cityId: '', parentId, name: 'الحي الغربي', aliases: [] });
+const sec1Area = S().areas.find((a) => sec1.ok && a.id === sec1.value)!;
+check(sec1.ok && sec2.ok && sec1Area.parentId === parentId && sec1Area.cityId === 'amman', 'an area holds several sections that inherit its city');
+check(!S().createZone({ governorateId: '', cityId: '', parentId, name: 'الحي الشرقي', aliases: [] }).ok, 'duplicate section in the same area rejected');
+check(S().createZone({ governorateId: '', cityId: '', parentId: 'a-khalda', name: 'الحي الشرقي', aliases: [] }).ok, 'same section name under another area is allowed');
+check(!S().createZone({ governorateId: '', cityId: '', parentId: sec1Area.id, name: 'فرعي', aliases: [] }).ok, 'no section inside a section');
+check(areaLabel(sec1Area, S().areas) === 'ضاحية الاختبار › الحي الشرقي', 'sections are named with their parent');
+check(S().setMerchantAreaPrice(mid, sec1Area.id, 1300).ok && S().setMerchantCoverage(mid, [sec1Area.id], true).ok && resolveZoneFee(S(), mid, sec1Area.id).kind === 'ok', 'a section is its own priced destination');
+check(resolveZoneFee(S(), mid, parentId).kind !== 'ok', 'no price is inherited from section to parent or back');
+S().setServiceAreaStatus(parentId, false);
+check(!isDestinationActive(S().areas.find((a) => a.id === sec1Area.id)!, S().areas) && resolveZoneFee(S(), mid, sec1Area.id).kind === 'zone_unavailable', 'stopping an area stops its sections');
+S().setServiceAreaStatus(parentId, true);
+const imported = S().importAreas({ governorateId: 'amman', cityId: 'amman', lines: 'ضاحية الاختبار / الحي الشمالي\nحي مستورد\nحي مستورد' });
+check(imported.ok && imported.value.created === 2 && imported.value.skipped === 2, 'import creates new names and skips existing ones');
+check(!S().importAreas({ governorateId: 'amman', cityId: 'irbid', lines: 'x' }).ok, 'import needs a city of the governorate');
+
+section('Merchant coverage (CR v1.4 §2)');
+const covTarget = S().createMerchant({ ...base, category: 'cafe', phone: '0790000555', username: 'covtarget' });
+const cid = covTarget.ok ? covTarget.value : '';
+const activeIds = S().areas.filter((a) => isDestinationActive(a, S().areas)).map((a) => a.id);
+check(S().setMerchantCoverage(cid, activeIds, true).ok && S().coverage.filter((c) => c.merchantId === cid).length === activeIds.length, 'select all covers every active destination');
+check(merchantZoneOptions(S(), cid).length === 0, 'covered but unpriced → still not orderable (no invented fee)');
+check(S().setMerchantCoverage(cid, activeIds, true).ok && S().coverage.filter((c) => c.merchantId === cid).length === activeIds.length, 'selecting again adds no duplicates');
+S().setServiceAreaStatus('a-abdoun', false);
+check(!S().setMerchantCoverage(cid, ['a-abdoun'], true).ok, 'a stopped destination cannot be newly enabled');
+S().setServiceAreaStatus('a-abdoun', true);
+const later = S().createZone({ governorateId: 'amman', cityId: 'amman', name: 'منطقة جديدة لاحقاً', aliases: [] });
+check(later.ok && !S().coverage.some((c) => c.merchantId === cid && c.areaId === later.value), 'areas added later are not auto-covered');
+check(S().setMerchantCoverage(cid, activeIds, false).ok && S().coverage.every((c) => c.merchantId !== cid), 'clear all removes coverage only');
+
+section('Commission as a percentage of the delivery fee (CR v1.4 §3)');
+check(commissionFils(1000, 2000) === 200 && commissionFils(1500, 2000) === 300 && commissionFils(2000, 2000) === 400 && commissionFils(750, 2000) === 150, '20%: 1.000→0.200, 1.500→0.300, 2.000→0.400, 0.750→0.150');
+check(commissionFils(1000, 1500) === 150, '15%: 1.000 → 0.150');
+check(commissionFils(3, 2000) === 1 && commissionFils(2, 2000) === 0 && commissionFils(1, 5000) === 1, 'fractional fils round half up (0.6→1, 0.4→0, 0.5→1)');
+check(commissionFils(1250, 1250) === 156, '12.5% of 1.250 = 156.25 → 156 fils');
+check(isValidCommissionBp(0) && isValidCommissionBp(10000) && !isValidCommissionBp(10001) && !isValidCommissionBp(-1) && !isValidCommissionBp(12.5), 'rate limited to 0–100% in whole basis points');
+let threw = false;
+try { commissionFils(1.5, 2000); } catch { threw = true; }
+check(threw, 'a non-integer fee is refused, never floated');
+
+section('Scheduled requests are Admin-only (CR v1.4 §6)');
+const T = Date.now();
+const offersOf = (id: string) => S().offers.filter((x) => x.orderId === id);
+check(!S().createOrder(mid, { areaId: 'a-khalda', requestType: 'scheduled' }).ok, 'scheduled needs a pickup time');
+check(!S().createOrder(mid, { areaId: 'a-khalda', requestType: 'scheduled', scheduledPickupAt: T - 60_000 }).ok, 'a past pickup time is rejected');
+const sch = S().createOrder(mid, { areaId: 'a-khalda', requestType: 'scheduled', scheduledPickupAt: T + 3 * 3_600_000 });
+const schId = sch.ok ? sch.value.id : '';
+const schOrder = () => S().orders.find((x) => x.id === schId)!;
+check(sch.ok && schOrder().status === 'pending_dispatch' && schOrder().requestType === 'scheduled' && !!schOrder().queueReason, 'scheduled order waits in the Admin queue');
+check(offersOf(schId).length === 0, 'no public offer is made for it');
+S().tick(T + 10 * 3_600_000);
+check(offersOf(schId).length === 0 && schOrder().status === 'pending_dispatch', 'still no offers after its time passes (no auto release)');
+check(!S().dispatchPublic(schId).ok && offersOf(schId).length === 0, 'Admin cannot publish it to everyone');
+check(!isAutoDispatchEligible(schOrder()) && isAutoDispatchEligible({}), 'eligibility rule: scheduled no, immediate/legacy yes');
+const freeCaptain = S().captains.find((c) => captainEligibility(S(), c).eligible)!;
+check(S().assignPrivate(schId, freeCaptain.id).ok && schOrder().status === 'offered_privately', 'Admin assigns it privately');
+const privOffer = offersOf(schId).find((x) => x.status === 'pending')!;
+S().rejectOffer(privOffer.id, freeCaptain.id);
+check(schOrder().status === 'pending_dispatch' && schOrder().requestType === 'scheduled' && offersOf(schId).every((x) => x.mode === 'private'), 'a declined private offer returns it to the manual queue, never to broadcast');
+const imm = S().createOrder(mid, { areaId: 'a-khalda' });
+check(imm.ok && S().orders.find((x) => x.id === imm.value.id)!.requestType === 'immediate' && offersOf(imm.value.id).some((x) => x.mode === 'public'), 'immediate orders keep automatic dispatch');
+S().cancelOrder(schId, 'تنظيف');
+if (imm.ok) S().cancelOrder(imm.value.id, 'تنظيف');
+
+section('Amman business time (CR v1.4 §6–7)');
+check(ammanWallTimeToEpoch('2026-11-09', '10:00') === Date.UTC(2026, 10, 9, 7, 0), 'Amman 10:00 = 07:00 UTC');
+check(ammanWallTimeToEpoch('2026-02-31', '10:00') === null && ammanWallTimeToEpoch('2026-11-09', '25:00') === null, 'impossible dates/times rejected');
+const lateUtc = Date.UTC(2026, 10, 9, 22, 30); // 01:30 on the 10th in Amman
+check(ammanDayKey(lateUtc) === '2026-11-10', 'calendar day follows Amman, not UTC');
+check(JSON.stringify(lastThreeAmmanDays(lateUtc)) === JSON.stringify(['2026-11-10', '2026-11-09', '2026-11-08']), 'today, yesterday, day before (calendar days, not 72 hours)');
+check(JSON.stringify(lastThreeAmmanDays(Date.UTC(2026, 2, 1, 12))) === JSON.stringify(['2026-03-01', '2026-02-28', '2026-02-27']), 'crosses a month boundary correctly');
 
 finish();

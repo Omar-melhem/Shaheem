@@ -50,7 +50,7 @@ const tones = {
 export function Toaster() {
   const { toasts, dismiss } = useToastStore();
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-[2000] flex flex-col items-start gap-2 px-4" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 top-[max(1rem,env(safe-area-inset-top))] z-[2000] print:hidden flex flex-col items-start gap-2 px-4" aria-live="polite">
       {toasts.map((t) => {
         const Icon = icons[t.kind];
         return (

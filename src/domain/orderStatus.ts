@@ -61,6 +61,13 @@ export const CAPTAIN_NEXT_ACTION_LABEL: Partial<Record<OrderStatus, string>> = {
 
 export const DELIVERY_STAGES: OrderStatus[] = ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way', 'delivered'];
 
+/** Wording for scheduled orders before a Captain is assigned (CR v1.4 §6.3). */
+export const SCHEDULED_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
+  pending_dispatch: 'بانتظار تنسيق الإدارة',
+  dispatch_expired: 'بانتظار تنسيق الإدارة',
+  offered_privately: 'بانتظار قبول الكابتن',
+};
+
 export const isActiveDelivery = (s: OrderStatus) => ACTIVE_DELIVERY_STATUSES.includes(s);
 export const isInQueue = (s: OrderStatus) => QUEUE_STATUSES.includes(s);
 export const isOffering = (s: OrderStatus) => OFFERING_STATUSES.includes(s);

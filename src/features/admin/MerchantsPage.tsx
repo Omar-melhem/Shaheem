@@ -158,7 +158,7 @@ function MerchantDetailDrawer({ merchantId, onClose, onEdit }: { merchantId: str
               <span className="font-mono font-bold" dir="ltr">{o.reference}</span>
               <span className="flex-1 text-ink-muted">{o.areaName} · {formatDateTime(o.createdAt)}</span>
               <span className="font-bold">{formatMoney(o.deliveryPrice)}</span>
-              <OrderStatusBadge status={o.status} />
+              <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
             </li>
           ))}
           {merchantOrders.length === 0 && <li className="py-4 text-center text-sm text-ink-muted">لا توجد طلبات بعد</li>}

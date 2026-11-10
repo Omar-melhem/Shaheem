@@ -10,6 +10,7 @@ import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptySta
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { reportResult } from '@/shared/components/toast';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { CaptainTripHistory } from './captains/CaptainTripHistory';
 import { formatDate, formatDateTime, formatRelative } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 
@@ -215,6 +216,8 @@ function CaptainDetailDrawer({ captainId, onClose, onEdit }: { captainId: string
         </dl>
       </Card>
 
+      <CaptainTripHistory captainId={c.id} now={now} />
+
       <Card className="space-y-3 p-4">
         <h3 className="text-sm font-bold">التقييم الداخلي</h3>
         <div className="flex items-center gap-1" role="radiogroup" aria-label="التقييم من 5">
@@ -236,7 +239,7 @@ function CaptainDetailDrawer({ captainId, onClose, onEdit }: { captainId: string
             <li key={o.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
               <span className="font-mono font-bold" dir="ltr">{o.reference}</span>
               <span className="flex-1 text-ink-muted">{o.areaName} · {formatDateTime(o.createdAt)}</span>
-              <OrderStatusBadge status={o.status} />
+              <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
             </li>
           ))}
           {captainOrders.length === 0 && <li className="py-4 text-center text-sm text-ink-muted">لا توجد توصيلات</li>}

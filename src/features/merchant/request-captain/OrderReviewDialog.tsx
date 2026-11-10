@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { NO_EXACT_LOCATION } from '@/domain/destination';
-import type { Money } from '@/domain/types';
+import type { Money, RequestType } from '@/domain/types';
+import { formatAmmanDateTime } from '@/domain/time';
 import { formatMoney } from '@/domain/money';
 import { Button, DetailRow, Dialog } from '@/shared/components/ui';
 
 export interface ReviewState {
   fee: Money;
-  /** Parsed once when the review opened; this is the amount the order is created with. */
-  orderValue: Money;
+  requestType: RequestType;
+  /** Set for scheduled requests: Captain pickup time at the Merchant (Amman). */
+  scheduledPickupAt?: number;
   /** Set when Admin changed the fee while the form was open (Spec §10). */
   changedFrom?: Money;
 }
@@ -40,6 +42,7 @@ export function OrderReviewDialog({
   onConfirm: () => void;
 }) {
   const changed = review?.changedFrom !== undefined;
+  const scheduled = review?.requestType === 'scheduled';
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   // The confirm button lost focus while disabled; hand it back so retrying works from the keyboard.
@@ -51,7 +54,7 @@ export function OrderReviewDialog({
     <Dialog
       open={!!review}
       onClose={onClose}
-      title={changed ? 'تم تحديث رسوم التوصيل' : 'تأكيد طلب الكابتن'}
+      title={changed ? 'تم تحديث رسوم التوصيل' : scheduled ? 'تأكيد الطلب المؤجل' : 'تأكيد طلب الكابتن'}
       description="يرجى مراجعة تفاصيل الطلب قبل التأكيد"
       footer={
         <>
@@ -75,7 +78,15 @@ export function OrderReviewDialog({
               <span>لم يُنشأ الطلب: {error}</span>
             </p>
           )}
+          {scheduled && review.scheduledPickupAt !== undefined && (
+            <div className="mb-3 rounded-xl border border-sand/60 bg-sand-light/20 p-3 text-sm">
+              <p className="flex items-center gap-2 font-extrabold text-ink"><CalendarClock className="h-4 w-4 text-primary" aria-hidden /> طلب مؤجل</p>
+              <p className="mt-1">موعد استلام الكابتن من المتجر: <b>{formatAmmanDateTime(review.scheduledPickupAt)}</b></p>
+              <p className="mt-1 text-xs text-ink-muted">ستنسّق إدارة شهم كابتناً لهذا الموعد يدوياً. لن يُعرض الطلب تلقائياً على الكباتن.</p>
+            </div>
+          )}
           <dl className="divide-y divide-cream-dark text-sm">
+            <DetailRow label="نوع الطلب">{scheduled ? 'طلب مؤجل' : 'طلب فوري'}</DetailRow>
             <DetailRow label="موقع الاستلام">
               {details.pickupName}
               <span className="block text-xs font-normal text-ink-muted">{details.pickupAddress}</span>
@@ -88,7 +99,6 @@ export function OrderReviewDialog({
             {details.customerPhone && <DetailRow label="هاتف العميل"><span dir="ltr">{details.customerPhone}</span></DetailRow>}
           </dl>
           <dl className="mt-3 divide-y divide-cream-deep rounded-xl bg-cream px-3 text-sm">
-            <DetailRow label="قيمة الطلب"><span className="text-base font-extrabold text-ink">{formatMoney(review.orderValue)}</span></DetailRow>
             <DetailRow label="رسوم التوصيل"><span className="text-lg font-extrabold text-primary">{formatMoney(review.fee)}</span></DetailRow>
           </dl>
           <p className="mt-3 text-xs text-ink-muted">تُحفظ الرسوم مع الطلب عند التأكيد ولا تتغير لاحقاً.</p>

@@ -127,7 +127,7 @@ export function OrdersPage() {
                     <td className="px-4 py-3 font-bold">{formatMoney(o.deliveryPrice)}</td>
                     <td className="px-4 py-3">{captainName(o.captainId)}</td>
                     <td className="px-4 py-3">
-                      <OrderStatusBadge status={o.status} />
+                      <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
                     </td>
                     <td className="px-4 py-3 text-xs text-ink-muted">{formatRelative(o.updatedAt, now)}</td>
                   </tr>

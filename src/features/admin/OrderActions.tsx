@@ -3,6 +3,7 @@ import { Ban, Megaphone, UserCheck } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { DeliveryOrder } from '@/domain/types';
 import { CANCELLABLE_STATUSES, isInQueue } from '@/domain/orderStatus';
+import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { Button } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { PrivateAssignDialog } from './PrivateAssignDialog';
@@ -23,7 +24,7 @@ export function OrderActions({ order, size = 'sm' }: { order: DeliveryOrder; siz
     <div className="flex flex-wrap gap-2">
       {inQueue && (
         <>
-          <Button
+          {isAutoDispatchEligible(order) && <Button
             size={size}
             variant="secondary"
             icon={<Megaphone className="h-4 w-4" />}
@@ -32,7 +33,7 @@ export function OrderActions({ order, size = 'sm' }: { order: DeliveryOrder; siz
             onClick={() => reportResult(dispatchPublic(order.id), `تم نشر ${order.reference} للكباتن الأقرب المؤهلين`)}
           >
             نشر للعموم
-          </Button>
+          </Button>}
           <Button size={size} icon={<UserCheck className="h-4 w-4" />} onClick={() => setAssigning(true)}>
             إسناد خاص
           </Button>

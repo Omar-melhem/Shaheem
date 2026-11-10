@@ -4,7 +4,8 @@ import { useAppStore } from '@/application/store';
 import { useNow } from '@/application/hooks';
 import type { DeliveryOrder } from '@/domain/types';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
-import { isOffering } from '@/domain/orderStatus';
+import { isInQueue, isOffering } from '@/domain/orderStatus';
+import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { formatMoney } from '@/domain/money';
 import { Badge, Card, CardHeader, EmptyState, OpenDecision, PageHeader, SimTag } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
@@ -13,6 +14,7 @@ import { OrderActions } from '../OrderActions';
 import { OrderDetailDrawer } from '../OrderDetailDrawer';
 import { DispatchSummary } from './DispatchSummary';
 import { OfferRound } from './OfferRound';
+import { ScheduledQueueCard } from './ScheduledQueueCard';
 
 export function DispatchPage() {
   const now = useNow(1000);
@@ -23,9 +25,14 @@ export function DispatchPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const byAge = (a: DeliveryOrder, b: DeliveryOrder) => a.createdAt - b.createdAt;
-  const waiting = orders.filter((o) => o.status === 'pending_dispatch').sort(byAge);
-  const intervention = orders.filter((o) => o.status === 'dispatch_expired').sort(byAge);
-  const offering = orders.filter((o) => isOffering(o.status));
+  const immediate = orders.filter(isAutoDispatchEligible);
+  const waiting = immediate.filter((o) => o.status === 'pending_dispatch').sort(byAge);
+  const intervention = immediate.filter((o) => o.status === 'dispatch_expired').sort(byAge);
+  const offering = orders.filter((o) => isOffering(o.status) && !(o.requestType === 'scheduled' && o.status === 'offered_privately'));
+  // Scheduled orders stay here until a Captain accepts, ordered by requested pickup time.
+  const scheduled = orders
+    .filter((o) => o.requestType === 'scheduled' && (isInQueue(o.status) || o.status === 'offered_privately'))
+    .sort((a, b) => (a.scheduledPickupAt ?? 0) - (b.scheduledPickupAt ?? 0));
   const merchantName = (id: string) => merchants.find((m) => m.id === id)?.businessName ?? '—';
 
   const summary = (o: DeliveryOrder) => (
@@ -34,7 +41,7 @@ export function DispatchPage() {
         <button className="font-mono font-bold text-primary hover:underline" dir="ltr" onClick={() => setDetailId(o.id)}>
           {o.reference}
         </button>
-        <OrderStatusBadge status={o.status} />
+        <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
         {o.dispatchMode === 'private' && <Badge tone="info">خاص</Badge>}
       </div>
       <p className="mt-1 text-sm text-ink-soft">
@@ -85,6 +92,10 @@ export function DispatchPage() {
           <OpenDecision id="O-004 / O-005">من يستلم العرض في كل جولة (كابتن واحد أم مجموعة) وطريقة حساب القرب قرارات مفتوحة.</OpenDecision>
           <p className="text-xs text-ink-muted">في هذا النموذج تُدار الجولات بساعة محاكاة داخل المتصفح. في التشغيل الفعلي يجب أن يملكها الخادم (مهمة مجدولة محفوظة، وقبول/انتهاء ذرّي).</p>
         </Card>
+      </div>
+
+      <div className="mb-6">
+        <ScheduledQueueCard orders={scheduled} now={now} onOpen={setDetailId} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

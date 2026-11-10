@@ -5,6 +5,7 @@ import { useAppStore } from '@/application/store';
 import type { CaptainView } from '@/application/hooks';
 import { describeReasons } from '@/domain/eligibility';
 import { formatMoney } from '@/domain/money';
+import { formatAmmanDateTime } from '@/domain/time';
 import { formatDistance } from '@/domain/geo';
 import { Badge, Button, EmptyState } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
@@ -84,6 +85,9 @@ export function OffersTab({ view, now }: { view: CaptainView; now: number }) {
                       <p className="font-bold">{merchant.businessName}</p>
                       <p className="text-xs text-ink-muted">{merchant.address}</p>
                       {offer.distanceMeters !== undefined && <p className="text-xs text-ink-muted">≈ {formatDistance(offer.distanceMeters)} منك (خط مستقيم)</p>}
+                      {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && (
+                        <p className="text-xs font-bold text-primary">طلب مؤجل — الاستلام {formatAmmanDateTime(order.scheduledPickupAt)}</p>
+                      )}
                     </div>
                   </li>
                   <li className="flex items-start gap-2">

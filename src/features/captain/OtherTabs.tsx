@@ -3,10 +3,10 @@ import { History, Wallet } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import type { CaptainView } from '@/application/hooks';
 import type { Captain } from '@/domain/types';
-import { formatMoney, formatMoneyExact } from '@/domain/money';
+import { formatMoney } from '@/domain/money';
 import { FINAL_STATUSES } from '@/domain/orderStatus';
 import { EmptyState, SimTag, Tabs } from '@/shared/components/ui';
-import { CAPTAIN_COMMISSION_APPROVED_FILS } from '@/domain/commission';
+import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatDateTime } from '@/shared/lib/format';
 import { SupportContactList } from '@/features/support/SupportContacts';
@@ -36,7 +36,7 @@ export function HistoryTab({ captainId }: { captainId: string }) {
             <li key={o.id} className="rounded-2xl bg-white p-3 shadow-card">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-sm font-bold" dir="ltr">{o.reference}</span>
-                <OrderStatusBadge status={o.status} />
+                <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
               </div>
               <p className="mt-1 text-sm">{merchants.find((m) => m.id === o.merchantId)?.businessName} ← {o.areaName}</p>
               <div className="mt-1 flex items-center justify-between text-xs text-ink-muted">
@@ -82,7 +82,7 @@ export function WalletTab({ view }: { view: CaptainView }) {
         </ul>
       )}
       <div className="flex justify-center"><SimTag>حركات المحفظة محاكاة</SimTag></div>
-      <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">عمولة شهم {formatMoneyExact(CAPTAIN_COMMISSION_APPROVED_FILS)} تُخصم بعد تأكيد تسليم كل طلب عند تفعيلها من الخادم. لا يتم خصم أي مبلغ في هذا النموذج.</p>
+      <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">عمولة شهم {formatPercentBp(COMMISSION_BP_PROPOSED)} من رسوم توصيل كل طلب، تُخصم بعد تأكيد تسليمه عند تفعيلها من الخادم. لا يتم خصم أي مبلغ في هذا النموذج.</p>
     </div>
   );
 }

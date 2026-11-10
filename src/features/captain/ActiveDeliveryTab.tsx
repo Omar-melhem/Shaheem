@@ -61,7 +61,7 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
 
       <div className="flex items-center justify-between">
         <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
-        <OrderStatusBadge status={order.status} />
+        <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
       </div>
       <div className="rounded-2xl bg-white p-3 shadow-card">
         <DeliveryProgress order={order} />

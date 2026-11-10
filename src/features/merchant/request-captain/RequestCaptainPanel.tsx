@@ -6,12 +6,13 @@ import { formatMoney } from '@/domain/money';
 import { Button, Card, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { CustomerLocationSection } from '../location/CustomerLocationSection';
 import { OrderReviewDialog } from './OrderReviewDialog';
-import { OrderValueField } from './OrderValueField';
+import { RequestTypeSelector } from './RequestTypeSelector';
+import { ScheduleFields } from './ScheduleFields';
 import { useRequestCaptainForm } from './useRequestCaptainForm';
 
 /**
- * Merchant "Request Captain" form. The Merchant chooses a delivery area from the list and
- * may add an exact pin. The read-only fee comes from Merchant + area in the application
+ * Merchant "Request Captain" form: immediate or scheduled first, then the required delivery
+ * area from the list and an optional exact pin. No goods value is asked (CR v1.4 §4). The read-only fee comes from Merchant + area in the application
  * layer and is re-checked at confirmation.
  */
 export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
@@ -46,6 +47,11 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
       ) : null}
 
       <fieldset ref={fieldsRef} disabled={blocked} className="space-y-5 p-5 disabled:opacity-60">
+        <RequestTypeSelector value={form.requestType} onChange={(v) => set('requestType', v)} />
+        {form.requestType === 'scheduled' && (
+          <ScheduleFields date={form.scheduleDate} time={form.scheduleTime} minDate={request.minScheduleDate} error={errors.schedule} onChange={request.setSchedule} />
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
             <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
@@ -69,8 +75,6 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
           onPinChange={request.setPin}
         />
 
-        <OrderValueField value={form.mealValue} error={errors.mealValue} onChange={(v) => set('mealValue', v)} onBlur={request.normalizeOrderValue} />
-
         <div className="rounded-xl bg-cream px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -81,7 +85,7 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
                 {resolution?.kind === 'ok' ? formatMoney(resolution.price) : '—'}
               </p>
             </div>
-            <Button size="lg" onClick={requestCaptain}>طلب كابتن</Button>
+            <Button size="lg" onClick={requestCaptain}>{form.requestType === 'scheduled' ? 'طلب مؤجل' : 'طلب كابتن'}</Button>
           </div>
           <p className="mt-1 text-xs text-ink-muted">تُحدَّد رسوم التوصيل تلقائياً من شهم حسب منطقة التوصيل.</p>
         </div>
@@ -92,7 +96,7 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         details={{
           pickupName: merchant.businessName,
           pickupAddress: merchant.address,
-          areaName: request.selectedArea?.name ?? '',
+          areaName: request.areaOptions.find((o) => o.area.id === form.areaId)?.label ?? request.selectedArea?.name ?? '',
           exactLocation: form.location ? form.location.placeName ?? PINNED_LOCATION_LABEL : null,
           customerName: form.customerName.trim() || undefined,
           customerPhone: form.customerPhone.trim() || undefined,

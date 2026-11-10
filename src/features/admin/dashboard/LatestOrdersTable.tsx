@@ -48,7 +48,7 @@ export function LatestOrdersTable({ now }: { now: number }) {
                     <td className="whitespace-nowrap px-4 py-3">{merchantName(o.merchantId)}</td>
                     <td className="px-4 py-3">{o.areaName}</td>
                     <td className="whitespace-nowrap px-4 py-3 font-bold">{formatMoney(o.deliveryPrice)}</td>
-                    <td className="px-4 py-3"><OrderStatusBadge status={o.status} /></td>
+                    <td className="px-4 py-3"><OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} /></td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">{formatDateTime(o.createdAt)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-muted">{formatRelative(o.updatedAt, now)}</td>
                     <td className="px-4 py-3">

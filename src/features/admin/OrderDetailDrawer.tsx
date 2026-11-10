@@ -3,6 +3,7 @@ import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
 import { useAppStore } from '@/application/store';
 import { useNow } from '@/application/hooks';
 import { formatMoney } from '@/domain/money';
+import { formatAmmanDateTime } from '@/domain/time';
 import { formatDistance } from '@/domain/geo';
 import { isActiveDelivery } from '@/domain/orderStatus';
 import { MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
@@ -40,7 +41,7 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
       title={<span dir="ltr">{order.reference}</span>}
       subtitle={
         <div className="flex flex-wrap items-center gap-2">
-          <OrderStatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
           {order.dispatchMode && <Badge tone="info">{order.dispatchMode === 'private' ? 'إسناد خاص' : 'بث عام'}</Badge>}
         </div>
       }
@@ -74,6 +75,9 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
         <dl className="divide-y divide-cream-dark">
           {order.queueReason && (order.status === 'dispatch_expired' || order.status === 'pending_dispatch') && (
             <DetailRow label="سبب العودة للطابور"><span className="font-bold text-red-800">{order.queueReason}</span></DetailRow>
+          )}
+          {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && (
+            <DetailRow label="طلب مؤجل — الاستلام">{formatAmmanDateTime(order.scheduledPickupAt)}</DetailRow>
           )}
           <DetailRow label="التاجر">{merchant?.businessName}</DetailRow>
           <DetailRow label="نقطة الاستلام">{order.pickup.address}</DetailRow>

@@ -4,6 +4,7 @@ import {
   MAX_DISPATCH_ROUNDS,
   NO_CANDIDATE_REASON,
   ROUNDS_EXHAUSTED_REASON,
+  isAutoDispatchEligible,
   rankByProximity,
 } from '@/domain/dispatch';
 import { SYSTEM_ACTOR, type AppData } from '@/infrastructure/seed';
@@ -28,6 +29,7 @@ function returnToQueue(data: AppData, order: DeliveryOrder, now: number, reason:
  */
 function startRound(data: AppData, order: DeliveryOrder, now: number) {
   if (!data.settings.publicBroadcast) return; // switch off: no new public offers
+  if (!isAutoDispatchEligible(order)) return; // scheduled: Admin-only
   const attempt = (order.dispatchAttempt ?? 0) + 1;
   if (attempt > MAX_DISPATCH_ROUNDS) return returnToQueue(data, order, now, ROUNDS_EXHAUSTED_REASON);
 
@@ -58,6 +60,7 @@ function startRound(data: AppData, order: DeliveryOrder, now: number) {
 
 /** Starts a new public cycle of up to three rounds (system on creation, or an explicit Admin publish). */
 export function startPublicDispatch(data: AppData, order: DeliveryOrder, actor: ActorRef, now: number) {
+  if (!isAutoDispatchEligible(order)) return;
   order.dispatchRound += 1;
   order.dispatchAttempt = 0;
   order.dispatchMode = 'public';

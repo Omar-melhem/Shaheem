@@ -10,6 +10,7 @@ export function MerchantPricingPage() {
   const merchants = useAppStore((s) => s.merchants);
   const areas = useAppStore((s) => s.areas);
   const prices = useAppStore((s) => s.prices);
+  const coverage = useAppStore((s) => s.coverage);
   const [q, setQ] = useState('');
   const needle = q.trim();
   const visible = merchants.filter((m) => !needle || m.businessName.includes(needle) || m.address.includes(needle));
@@ -26,7 +27,7 @@ export function MerchantPricingPage() {
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((m) => (
             <li key={m.id}>
-              <MerchantPricingCard merchant={m} activeZones={merchantZoneOptions({ areas, prices }, m.id).length} />
+              <MerchantPricingCard merchant={m} activeZones={merchantZoneOptions({ areas, prices, coverage }, m.id).length} />
             </li>
           ))}
         </ul>

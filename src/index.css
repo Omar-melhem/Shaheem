@@ -31,6 +31,12 @@
   border: none;
 }
 
+@media print {
+  body {
+    background: #fff;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
