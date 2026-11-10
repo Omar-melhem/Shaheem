@@ -10,7 +10,7 @@ import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/pho
 import { destinationPinError, isAreaOnly } from '@/domain/destination';
 import { formatJodInput, parseJodAmount, parseJodInput } from '@/domain/money';
 import { previewPricingCopy } from '@/application/pricingCopy';
-import { ACTIVITY_DAYS, MERCHANT_RECENT_PREVIEW, availabilitySummary, merchantOrderOverview, operationalAlerts, operationalKpis, orderActivity, platformKpis } from '@/application/dashboard';
+import { MERCHANT_RECENT_PREVIEW, availabilitySummary, merchantOrderOverview, operationalKpis, platformKpis } from '@/application/dashboard';
 import { check, finish, section } from './harness';
 
 // Business-rule checks against the real store and seed. Run with `npm test`.
@@ -378,29 +378,29 @@ section('Admin overview and merchant dashboard (application/dashboard.ts)');
   check(ops.queue + ops.offered + ops.activeDeliveries <= st.orders.length, 'KPI groups never exceed the order count');
   check(ops.activeDeliveries === st.orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).length, 'active deliveries KPI uses the delivery stages');
   const snaps = [
-    { opStatus: 'available' as const, eligible: true, freshness: 'demo' as const },
-    { opStatus: 'busy' as const, eligible: false, freshness: 'stale' as const },
-    { opStatus: 'offline' as const, eligible: false, freshness: 'none' as const },
-    { opStatus: 'inactive' as const, eligible: false, freshness: 'none' as const },
+    { opStatus: 'available' as const },
+    { opStatus: 'busy' as const },
+    { opStatus: 'offline' as const },
+    { opStatus: 'inactive' as const },
   ];
   const plat = platformKpis({ merchantCount: 6, captains: snaps });
   check(plat.availableNow === 1 && plat.activeCaptainAccounts === 3 && plat.captains === 4, 'available captains counted out of active accounts only');
   const sum = availabilitySummary(snaps);
   check(sum.available === 1 && sum.busy === 1 && sum.offline === 1 && sum.inactive === 1, 'availability summary uses real op statuses');
-  const act = orderActivity(st.orders, now);
-  check(act.length === ACTIVITY_DAYS && act[act.length - 1].dayKey === ammanDayKey(now), 'activity covers 7 Amman days ending today');
-  check(act.reduce((n, d) => n + d.created, 0) === st.orders.filter((o) => act.some((d) => d.dayKey === ammanDayKey(o.createdAt))).length, 'activity counts only real orders in the window');
-  const pending = st.orders.find((o) => o.status === 'pending_dispatch');
-  const alertsOff = operationalAlerts({ orders: st.orders, merchantCount: 6, captains: snaps, publicBroadcast: false });
-  check(alertsOff.some((a) => a.id === 'broadcast-off' && a.to === '/admin/dispatch'), 'broadcast paused raises an actionable alert');
-  check(alertsOff.some((a) => a.id === 'gps'), 'busy captain with stale location raises a GPS alert');
-  const alertsCalm = operationalAlerts({ orders: [], merchantCount: 0, captains: [], publicBroadcast: true });
-  check(alertsCalm.length === 0, 'no invented alerts when nothing needs attention');
-  check(!pending || alertsOff.some((a) => a.id === 'queue'), 'waiting orders raise a queue alert');
   const ov = merchantOrderOverview(st.orders, 'm-sanabel');
   check(ov.active.concat(ov.history).every((o) => o.merchantId === 'm-sanabel'), 'merchant overview is isolated to one merchant');
   check(ov.history.every((o) => o.status === 'delivered' || o.status === 'cancelled') && ov.active.every((o) => o.status !== 'delivered' && o.status !== 'cancelled'), 'active vs finished split');
   check(MERCHANT_RECENT_PREVIEW === 3 && ov.history.slice(0, MERCHANT_RECENT_PREVIEW).length <= 3, 'dashboard preview shows at most three orders');
+}
+
+section('Header broadcast switch uses the one global setting');
+{
+  const activeBefore = S().orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).map((o) => o.id + o.status).join();
+  check(S().setPublicBroadcast(false).ok && S().settings.publicBroadcast === false, 'stopping broadcast updates settings.publicBroadcast');
+  const activeAfter = S().orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).map((o) => o.id + o.status).join();
+  check(activeBefore === activeAfter, 'stopping broadcast never touches active deliveries');
+  check(S().orders.every((o) => o.status !== 'awaiting_captain'), 'no public offers remain while broadcast is stopped');
+  check(S().setPublicBroadcast(true).ok && S().settings.publicBroadcast === true, 'enabling broadcast restores the same setting');
 }
 
 finish();

@@ -65,6 +65,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = 'تأكيد',
+  cancelLabel = 'تراجع',
   variant = 'primary',
   children,
 }: {
@@ -74,6 +75,7 @@ export function ConfirmDialog({
   title: ReactNode;
   description?: ReactNode;
   confirmLabel?: string;
+  cancelLabel?: string;
   variant?: ButtonVariant;
   children?: ReactNode;
 }) {
@@ -86,7 +88,7 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            تراجع
+            {cancelLabel}
           </Button>
           <Button
             variant={variant}

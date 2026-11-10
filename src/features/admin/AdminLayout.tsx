@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useSignOut } from '@/features/auth/hooks/useSignOut';
 import {
   Bell,
@@ -9,6 +9,7 @@ import {
   Map,
   Menu,
   Radio,
+  RadioTower,
   ReceiptText,
   Send,
   Settings,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/application/store';
 import { useNow } from '@/application/hooks';
+import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 import { Logo } from '@/shared/components/Logo';
 import { cn } from '@/shared/lib/cn';
 import { formatRelative } from '@/shared/lib/format';
@@ -119,20 +121,39 @@ export function AdminLayout() {
   );
 }
 
+/**
+ * The single place to switch public broadcasting from the admin shell. It only opens the shared
+ * BroadcastConfirmDialog, which calls the store's `setPublicBroadcast` use case — the one setting
+ * (`settings.publicBroadcast`) that dispatch, orders and settings all read.
+ */
 function BroadcastPill() {
   const enabled = useAppStore((s) => s.settings.publicBroadcast);
+  const [pending, setPending] = useState<boolean | null>(null);
+  const action = enabled ? 'إيقاف البث العام للطلبات' : 'تفعيل البث العام للطلبات';
   return (
-    <Link
-      to="/admin"
-      className={cn(
-        'inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ring-1',
-        enabled ? 'bg-secondary-50 text-secondary ring-secondary-200' : 'bg-amber-50 text-amber-800 ring-amber-300',
-      )}
-      title="التحكم من لوحة التحكم"
-    >
-      <Radio className={cn('h-4 w-4', enabled && 'animate-pulse')} aria-hidden />
-      البث العام: {enabled ? 'مفعّل' : 'متوقف'}
-    </Link>
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setPending(!enabled)}
+        disabled={pending !== null}
+        aria-label={`${action} — الحالة الآن: ${enabled ? 'مفعّل' : 'متوقف'}`}
+        className={cn(
+          'peer inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-60',
+          enabled ? 'bg-secondary-50 text-secondary ring-secondary-200 hover:bg-secondary-100' : 'bg-amber-50 text-amber-900 ring-amber-300 hover:bg-amber-100',
+        )}
+      >
+        {enabled ? <RadioTower className="h-4 w-4" aria-hidden /> : <Radio className="h-4 w-4" aria-hidden />}
+        <span className="hidden sm:inline">البث العام:</span> {enabled ? 'مفعّل' : 'متوقف'}
+      </button>
+      <span
+        role="tooltip"
+        aria-hidden
+        className="pointer-events-none absolute end-0 top-full z-50 mt-2 hidden w-56 rounded-lg bg-ink px-3 py-2 text-xs font-medium text-white shadow-pop peer-hover:block peer-focus-visible:block"
+      >
+        البث العام {enabled ? 'مفعّل: الطلبات الجديدة تُعرض على الكباتن المؤهلين.' : 'متوقف: الطلبات الجديدة تبقى في طابور الإدارة.'} اضغط لـ{enabled ? 'الإيقاف' : 'التفعيل'}.
+      </span>
+      <BroadcastConfirmDialog next={pending} onClose={() => setPending(null)} />
+    </span>
   );
 }
 
