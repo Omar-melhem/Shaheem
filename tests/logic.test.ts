@@ -154,7 +154,7 @@ check(!S().createOrder(mid, { customerPhone: '079111111', areaId: 'a-khalda', lo
 const spaced = S().createOrder(mid, { customerPhone: '079 111 1111', areaId: 'a-khalda', location: at('a-khalda') });
 check(spaced.ok && orderById(spaced.value.id).customerPhone === '0791111111', 'customer phone stored normalised');
 check(!S().createMerchant({ ...base, category: 'cafe', phone: '079000088', username: 'shortphone' }).ok, 'merchant 9-digit phone rejected');
-check(!S().createCaptain({ fullName: 'ك', phone: '07900001234', vehicleType: 'car', vehicleDescription: '', username: 'longphone', password: 'secret1' }).ok, 'captain 11-digit phone rejected');
+check(!S().createCaptain({ fullName: 'ك', phone: '07900001234', username: 'longphone', password: 'secret1' }).ok, 'captain 11-digit phone rejected');
 check(S().setMerchantAreaPrice(mid, 'a-tla', 1750).ok, 'prices are not phone-validated');
 
 section('Governorates and delivery routes (FU-1.2 §7)');

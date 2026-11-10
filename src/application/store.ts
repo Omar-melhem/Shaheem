@@ -109,7 +109,7 @@ export type Session = { role: 'admin'; id: 'admin' } | { role: 'merchant'; id: I
 
 /** The address label is derived from City + Area; it is not typed by Admin. */
 export type MerchantInput = Omit<Merchant, 'id' | 'createdAt' | 'status' | 'address'>;
-export type CaptainInput = Pick<Captain, 'fullName' | 'phone' | 'vehicleType' | 'vehicleDescription' | 'username' | 'password'>;
+export type CaptainInput = Pick<Captain, 'fullName' | 'phone' | 'username' | 'password'>;
 
 export const DEMO_ADMIN = { username: 'admin', password: 'admin1234' };
 

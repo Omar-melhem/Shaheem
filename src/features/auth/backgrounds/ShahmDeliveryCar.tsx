@@ -14,7 +14,9 @@ const CAR_HEIGHT = 941;
 export function ShahmDeliveryCar() {
   return (
     <div className="shahm-car-lane" aria-hidden="true">
-      <div className="shahm-car-road" />
+      <div className="shahm-car-road">
+        <div className="shahm-car-lanemark" />
+      </div>
       <div className="shahm-car-run">
         <img className="shahm-car" src={SHAHM_CAR_SRC} width={CAR_WIDTH} height={CAR_HEIGHT} alt="" draggable={false} decoding="async" />
       </div>

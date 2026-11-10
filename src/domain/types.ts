@@ -69,8 +69,9 @@ export interface Captain extends DemoCredentials {
   id: ID;
   fullName: string;
   phone: string;
-  vehicleType: VehicleType;
-  vehicleDescription: string;
+  /** Optional: no longer collected when Admin adds a Captain; older records keep theirs. */
+  vehicleType?: VehicleType;
+  vehicleDescription?: string;
   status: AccountStatus;
   availability: Availability;
   lastLocation?: CaptainLocation;

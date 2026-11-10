@@ -28,14 +28,40 @@
   }
 }
 
+/*
+ * A soft road strip the tyres rest on (its upper third is above the ground line, as a road
+ * surface seen from the side), with a sand kerb line and centre lane markings.
+ */
 .shahm-car-road {
+  --road-h: calc(var(--car-h) * 0.13);
   position: absolute;
   left: 0;
   right: 0;
-  top: var(--ground);
-  height: 1px;
-  opacity: 0.5;
-  background: repeating-linear-gradient(to right, #a88866 0 18px, transparent 18px 30px);
+  top: calc(var(--ground) - var(--road-h) * 0.35);
+  height: var(--road-h);
+  overflow: hidden;
+  border-top: 1px solid rgba(168, 136, 102, 0.55);
+  background: linear-gradient(to bottom, rgba(36, 36, 36, 0.09), rgba(36, 36, 36, 0.15));
+}
+
+/*
+ * Lane markings drift slowly against the car's direction — the visual cue that it is driving
+ * along the road. One extra dash period of width makes the loop seamless (transform only).
+ */
+.shahm-car-lanemark {
+  position: absolute;
+  left: 0;
+  top: calc(50% - 1px);
+  width: calc(100% + 40px);
+  height: 2px;
+  background: repeating-linear-gradient(to right, rgba(245, 240, 232, 0.95) 0 22px, transparent 22px 40px);
+  will-change: transform;
+  animation: shahm-car-lanes 1.1s linear infinite;
+}
+
+@keyframes shahm-car-lanes {
+  from { transform: translateX(0); }
+  to { transform: translateX(-40px); }
 }
 
 /*
@@ -50,7 +76,7 @@
   width: calc(100% + var(--car-w));
   height: 100%;
   will-change: transform;
-  animation: shahm-car-drive 18s linear infinite;
+  animation: shahm-car-drive 15.3s linear infinite; /* ~17.6% faster than the previous 18s */
 }
 
 .shahm-car {
@@ -77,6 +103,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .shahm-car-lanemark {
+    animation: none;
+  }
   .shahm-car-run {
     animation: none;
     width: 100%;

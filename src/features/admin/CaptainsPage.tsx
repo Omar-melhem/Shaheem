@@ -3,18 +3,17 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, Users, Pencil, Star, Wallet } from 'lucide-react';
 import { useAppStore, type CaptainInput } from '@/application/store';
 import { useCaptainViews, useNow } from '@/application/hooks';
-import type { Captain, VehicleType } from '@/domain/types';
+import type { Captain } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { describeReasons } from '@/domain/eligibility';
-import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, OpenDecision, PageHeader, PhoneField, PHONE_HINT, Select, Textarea, Toggle, SearchField } from '@/shared/components/ui';
+import { Badge, Button, Card, ConfirmDialog, DetailRow, Dialog, Drawer, EmptyState, Field, Input, OpenDecision, PageHeader, PhoneField, PHONE_HINT, Textarea, Toggle, SearchField } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { reportResult } from '@/shared/components/toast';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { CaptainTripHistory } from './captains/CaptainTripHistory';
+import { vehicleText } from './captains/vehicle';
 import { formatDate, formatDateTime, formatRelative } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
-
-export const VEHICLE_LABEL: Record<VehicleType, string> = { motorcycle: 'دراجة نارية', car: 'سيارة', bicycle: 'دراجة هوائية' };
 
 export function CaptainsPage() {
   const now = useNow(5000);
@@ -65,7 +64,7 @@ export function CaptainsPage() {
                       <button className="font-bold text-primary hover:underline" onClick={() => setDetailId(v.captain.id)}>{v.captain.fullName}</button>
                       <p className="text-xs text-ink-muted" dir="ltr" style={{ textAlign: 'right' }}>{v.captain.phone}</p>
                     </td>
-                    <td className="px-4 py-3">{VEHICLE_LABEL[v.captain.vehicleType]}</td>
+                    <td className="px-4 py-3">{v.captain.vehicleType ? vehicleText({ vehicleType: v.captain.vehicleType }) : <span className="text-ink-muted">—</span>}</td>
                     <td className="px-4 py-3"><CaptainStatusBadge status={v.opStatus} /></td>
                     <td className="max-w-[220px] px-4 py-3">
                       {v.eligibility.eligible ? <Badge tone="success">مؤهل</Badge> : <span className="text-xs text-red-700">{describeReasons(v.eligibility.reasons)}</span>}
@@ -92,7 +91,7 @@ export function CaptainsPage() {
   );
 }
 
-const EMPTY: CaptainInput = { fullName: '', phone: '', vehicleType: 'motorcycle', vehicleDescription: '', username: '', password: '' };
+const EMPTY: CaptainInput = { fullName: '', phone: '', username: '', password: '' };
 
 function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'new' | null; onClose: () => void }) {
   const createCaptain = useAppStore((s) => s.createCaptain);
@@ -102,7 +101,7 @@ function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'new' | nu
   const setField = (k: 'username' | 'password', v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    setForm(captain === 'new' || !captain ? EMPTY : { fullName: captain.fullName, phone: captain.phone, vehicleType: captain.vehicleType, vehicleDescription: captain.vehicleDescription, username: captain.username, password: captain.password });
+    setForm(captain === 'new' || !captain ? EMPTY : { fullName: captain.fullName, phone: captain.phone, username: captain.username, password: captain.password });
     setErrors({});
   }, [captain]);
 
@@ -138,14 +137,6 @@ function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'new' | nu
         </Field>
         <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
           <PhoneField value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} aria-invalid={!!errors.phone} />
-        </Field>
-        <Field label="نوع المركبة" required>
-          <Select value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value as VehicleType })}>
-            {(Object.keys(VEHICLE_LABEL) as VehicleType[]).map((v) => <option key={v} value={v}>{VEHICLE_LABEL[v]}</option>)}
-          </Select>
-        </Field>
-        <Field label="وصف المركبة" optional>
-          <Input value={form.vehicleDescription} onChange={(e) => setForm({ ...form, vehicleDescription: e.target.value })} placeholder="اللون / رقم اللوحة" />
         </Field>
         <div className="rounded-xl border border-dashed border-sand-dark/50 bg-sand-light/20 p-4 md:col-span-2">
           <p className="mb-3 text-sm font-bold text-ink">بيانات الدخول (تجريبية)</p>
@@ -207,7 +198,7 @@ function CaptainDetailDrawer({ captainId, onClose, onEdit }: { captainId: string
       <Card className="px-4 py-2">
         <dl className="divide-y divide-cream-dark">
           <DetailRow label="الهاتف"><span dir="ltr">{c.phone}</span></DetailRow>
-          <DetailRow label="المركبة">{VEHICLE_LABEL[c.vehicleType]}{c.vehicleDescription && ` — ${c.vehicleDescription}`}</DetailRow>
+          <DetailRow label="المركبة">{vehicleText(c)}</DetailRow>
           <DetailRow label="رصيد المحفظة">{formatMoney(view.balance)}</DetailRow>
           <DetailRow label="الأهلية">{view.eligibility.eligible ? 'مؤهل لاستقبال العروض' : describeReasons(view.eligibility.reasons, threshold)}</DetailRow>
           <DetailRow label="آخر موقع">{c.lastLocation ? `${formatRelative(c.lastLocation.recordedAt, now)} (محاكاة)` : '—'}</DetailRow>
