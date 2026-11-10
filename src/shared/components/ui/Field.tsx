@@ -27,8 +27,8 @@ export function Field({
     <div className={cn('space-y-1.5', className)}>
       <label htmlFor={htmlFor} className="flex items-center gap-2 text-sm font-bold text-ink">
         {label}
-        {required && <span className="text-xs font-bold text-primary">مطلوب</span>}
-        {optional && <span className="text-xs font-medium text-ink-muted">اختياري</span>}
+        {required && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-bold text-primary">مطلوب</span>}
+        {optional && <span className="rounded-full bg-cream-dark px-2 py-0.5 text-[11px] font-medium text-ink-muted">اختياري</span>}
       </label>
       {children}
       {error ? (

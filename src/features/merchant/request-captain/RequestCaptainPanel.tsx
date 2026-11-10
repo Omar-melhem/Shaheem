@@ -40,7 +40,9 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         <h2 className="flex items-center gap-2 text-lg font-extrabold text-ink">
           <Send className="h-5 w-5 text-primary" /> طلب كابتن
         </h2>
-        <p className="text-sm text-ink-muted">أدخل بيانات التوصيل فقط؛ موقع الاستلام والرسوم من ملفك تلقائياً.</p>
+        <p className="flex items-center gap-1.5 text-sm text-ink-muted">
+          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden /> الاستلام من {merchant.businessName} · {merchant.address}
+        </p>
       </div>
 
       {merchant.status !== 'active' ? (
@@ -50,7 +52,7 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
       ) : null}
 
       <fieldset ref={fieldsRef} disabled={blocked} className="disabled:opacity-60">
-        <FormSection step={1} title="نوع الطلب">
+        <FormSection step={1} title="نوع الطلب" badge="الطلب الفوري افتراضياً">
           <RequestTypeSelector value={form.requestType} onChange={(v) => set('requestType', v)} />
           {form.requestType === 'scheduled' && (
             <ScheduleFields date={form.scheduleDate} time={form.scheduleTime} minDate={request.minScheduleDate} error={errors.schedule} onChange={request.setSchedule} />
@@ -58,7 +60,7 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         </FormSection>
 
         <FormSection step={2} title="بيانات التوصيل">
-          <Field label="رقم هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT} className="sm:max-w-sm">
+          <Field label="رقم هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
             <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
           </Field>
           <CustomerLocationSection
@@ -77,28 +79,24 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         </FormSection>
 
         <FormSection step={3} title="تفاصيل الطلب">
-          <div className="flex items-start gap-3 rounded-xl border border-cream-deep px-4 py-3 text-sm">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-ink-muted">موقع الاستلام (من ملفك)</p>
-              <p className="font-bold text-ink">{merchant.businessName}</p>
-              <p className="text-ink-soft">{merchant.address}</p>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-1 text-sm text-ink-soft">
+                <Lock className="h-3.5 w-3.5" aria-hidden /> رسوم التوصيل{fee !== null && areaLabel ? ` إلى ${areaLabel}` : ''}
+              </p>
+              <p className="text-lg font-extrabold text-ink" aria-live="polite">{fee !== null ? formatMoney(fee) : '—'}</p>
             </div>
+            <p className="text-xs text-ink-muted">
+              {fee !== null ? 'تُحدَّد تلقائياً من شهم حسب المنطقة، وتُثبَّت على الطلب عند التأكيد.' : 'اختر منطقة التوصيل لعرض الرسوم المحددة من شهم.'}
+            </p>
           </div>
         </FormSection>
 
         {/* Main action: in the card on desktop, a sticky bar with safe-area padding on small screens. */}
-        <div className="sticky bottom-0 z-10 rounded-b-2xl border-t border-cream-dark bg-white/95 px-5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur lg:static lg:bg-white lg:pb-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="flex items-center gap-1 text-xs font-bold text-ink-muted">
-                <Lock className="h-3.5 w-3.5" aria-hidden /> رسوم التوصيل{fee !== null && areaLabel ? ` إلى ${areaLabel}` : ''}
-              </p>
-              <p className="text-2xl font-extrabold text-primary sm:text-3xl" aria-live="polite">{fee !== null ? formatMoney(fee) : '—'}</p>
-              {fee === null && <p className="text-xs text-ink-muted">اختر منطقة التوصيل لعرض الرسوم المحددة من شهم.</p>}
-            </div>
-            <Button size="lg" onClick={requestCaptain} icon={<Send className="h-4 w-4" />}>تأكيد طلب كابتن</Button>
-          </div>
+        <div className="sticky bottom-0 z-10 rounded-b-2xl bg-white/95 px-5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur lg:static lg:bg-white lg:pb-5">
+          <Button size="lg" className="w-full" onClick={requestCaptain} icon={<Send className="h-4 w-4" />}>
+            تأكيد طلب كابتن{fee !== null ? ` · ${formatMoney(fee)}` : ''}
+          </Button>
         </div>
       </fieldset>
 
@@ -120,14 +118,17 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
   );
 }
 
-function FormSection({ step, title, children }: { step: number; title: string; children: ReactNode }) {
+function FormSection({ step, title, badge, children }: { step: number; title: string; badge?: string; children: ReactNode }) {
   const id = `request-section-${step}`;
   return (
-    <section aria-labelledby={id} className="space-y-4 border-b border-cream-dark px-5 py-5 last:border-b-0">
-      <h3 id={id} className="flex items-center gap-2 text-sm font-extrabold text-ink">
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-50 text-xs text-primary" aria-hidden>{step}</span>
-        {title}
-      </h3>
+    <section aria-labelledby={id} className="space-y-4 border-b border-cream-dark px-5 py-5">
+      <div className="flex items-center justify-between gap-2">
+        <h3 id={id} className="text-sm font-extrabold text-ink">
+          <span className="font-mono text-ink-soft" aria-hidden>{String(step).padStart(2, '0')} — </span>
+          {title}
+        </h3>
+        {badge && <span className="rounded-full bg-secondary-50 px-2.5 py-0.5 text-[11px] font-bold text-secondary">{badge}</span>}
+      </div>
       {children}
     </section>
   );
