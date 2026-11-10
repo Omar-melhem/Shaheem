@@ -2,17 +2,6 @@ import type { DeliveryOrder, ID } from '@/domain/types';
 import { FINAL_STATUSES, isActiveDelivery, isInQueue, isOffering } from '@/domain/orderStatus';
 import { ammanDayKey } from '@/domain/time';
 
-/** The slice of a Captain view the overview needs (keeps this module free of React hooks). */
-export interface CaptainSnapshot {
-  opStatus: 'inactive' | 'offline' | 'busy' | 'available';
-}
-
-export interface DashboardInput {
-  orders: DeliveryOrder[];
-  merchantCount: number;
-  captains: CaptainSnapshot[];
-}
-
 export interface OperationalKpis {
   queue: number;
   offered: number;
@@ -21,14 +10,9 @@ export interface OperationalKpis {
 }
 
 export interface PlatformKpis {
-  availableNow: number;
-  /** Denominator for «المتاحون الآن»: active (not deactivated) Captain accounts. */
-  activeCaptainAccounts: number;
   merchants: number;
   captains: number;
 }
-
-export type AvailabilitySummary = Record<CaptainSnapshot['opStatus'], number>;
 
 /** «مؤشرات التشغيل»: the four live order counts. «Today» is the Amman calendar day. */
 export function operationalKpis(orders: DeliveryOrder[], now: number): OperationalKpis {
@@ -41,20 +25,9 @@ export function operationalKpis(orders: DeliveryOrder[], now: number): Operation
   };
 }
 
-/** «حسابات المنصة»: available Captains out of active accounts, plus account totals. */
-export function platformKpis(input: Pick<DashboardInput, 'merchantCount' | 'captains'>): PlatformKpis {
-  return {
-    availableNow: input.captains.filter((c) => c.opStatus === 'available').length,
-    activeCaptainAccounts: input.captains.filter((c) => c.opStatus !== 'inactive').length,
-    merchants: input.merchantCount,
-    captains: input.captains.length,
-  };
-}
-
-export function availabilitySummary(captains: CaptainSnapshot[]): AvailabilitySummary {
-  const summary: AvailabilitySummary = { available: 0, busy: 0, offline: 0, inactive: 0 };
-  for (const c of captains) summary[c.opStatus] += 1;
-  return summary;
+/** «حسابات المنصة»: account totals only (availability is shown on the Captains page and live map). */
+export function platformKpis(input: { merchantCount: number; captainCount: number }): PlatformKpis {
+  return { merchants: input.merchantCount, captains: input.captainCount };
 }
 
 export interface MerchantOrderOverview {

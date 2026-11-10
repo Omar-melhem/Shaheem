@@ -2,34 +2,29 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Send, Store, UserPlus } from 'lucide-react';
 import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow } from '@/application/hooks';
-import { availabilitySummary, operationalKpis, platformKpis } from '@/application/dashboard';
+import { useNow } from '@/application/hooks';
+import { operationalKpis, platformKpis } from '@/application/dashboard';
 import { PageHeader } from '@/shared/components/ui';
 import { OperationalKpiSection, PlatformKpiSection } from './OverviewSection';
 import { LatestOrdersTable } from './LatestOrdersTable';
-import { CaptainAvailabilityCard } from './CaptainAvailabilityCard';
 
 const LINK_OUTLINE = 'inline-flex h-10 items-center gap-2 rounded-xl border border-cream-deep bg-white px-4 text-sm font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300';
 
 /**
  * «نظرة عامة»: composition only. Quick actions sit in the page header; public broadcasting is
  * switched from the header pill beside the notifications. Every number comes from
- * application/dashboard.ts over the shared store: KPIs → accounts → latest orders → availability.
+ * application/dashboard.ts over the shared store: KPIs → accounts → latest orders.
  */
 export function DashboardPage() {
   const now = useNow(5000);
   const orders = useAppStore((s) => s.orders);
   const merchantCount = useAppStore((s) => s.merchants.length);
-  const views = useCaptainViews(now);
+  const captainCount = useAppStore((s) => s.captains.length);
 
-  const overview = useMemo(() => {
-    const captains = views.map((v) => ({ opStatus: v.opStatus }));
-    return {
-      ops: operationalKpis(orders, now),
-      platform: platformKpis({ merchantCount, captains }),
-      availability: availabilitySummary(captains),
-    };
-  }, [orders, merchantCount, views, now]);
+  const overview = useMemo(
+    () => ({ ops: operationalKpis(orders, now), platform: platformKpis({ merchantCount, captainCount }) }),
+    [orders, merchantCount, captainCount, now],
+  );
 
   return (
     <div className="min-w-0 space-y-8">
@@ -54,7 +49,6 @@ export function DashboardPage() {
       <OperationalKpiSection kpis={overview.ops} />
       <PlatformKpiSection kpis={overview.platform} />
       <LatestOrdersTable now={now} />
-      <CaptainAvailabilityCard summary={overview.availability} />
     </div>
   );
 }

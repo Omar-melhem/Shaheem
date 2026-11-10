@@ -10,7 +10,8 @@ import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/pho
 import { destinationPinError, isAreaOnly } from '@/domain/destination';
 import { formatJodInput, parseJodAmount, parseJodInput } from '@/domain/money';
 import { previewPricingCopy } from '@/application/pricingCopy';
-import { MERCHANT_RECENT_PREVIEW, availabilitySummary, merchantOrderOverview, operationalKpis, platformKpis } from '@/application/dashboard';
+import { MERCHANT_RECENT_PREVIEW, merchantOrderOverview, operationalKpis, platformKpis } from '@/application/dashboard';
+import { dispatchQueues } from '@/application/dispatchQueues';
 import { check, finish, section } from './harness';
 
 // Business-rule checks against the real store and seed. Run with `npm test`.
@@ -377,16 +378,14 @@ section('Admin overview and merchant dashboard (application/dashboard.ts)');
   const ops = operationalKpis(st.orders, now);
   check(ops.queue + ops.offered + ops.activeDeliveries <= st.orders.length, 'KPI groups never exceed the order count');
   check(ops.activeDeliveries === st.orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).length, 'active deliveries KPI uses the delivery stages');
-  const snaps = [
-    { opStatus: 'available' as const },
-    { opStatus: 'busy' as const },
-    { opStatus: 'offline' as const },
-    { opStatus: 'inactive' as const },
-  ];
-  const plat = platformKpis({ merchantCount: 6, captains: snaps });
-  check(plat.availableNow === 1 && plat.activeCaptainAccounts === 3 && plat.captains === 4, 'available captains counted out of active accounts only');
-  const sum = availabilitySummary(snaps);
-  check(sum.available === 1 && sum.busy === 1 && sum.offline === 1 && sum.inactive === 1, 'availability summary uses real op statuses');
+  const plat = platformKpis({ merchantCount: st.merchants.length, captainCount: st.captains.length });
+  check(plat.merchants === st.merchants.length && plat.captains === st.captains.length, 'platform KPIs are the account totals');
+  const q = dispatchQueues(st.orders);
+  const ids = [...q.scheduled, ...q.intervention, ...q.waiting, ...q.offering].map((o) => o.id);
+  check(new Set(ids).size === ids.length, 'distribution queues never list an order twice');
+  check(q.scheduled.every((o) => o.requestType === 'scheduled') && [...q.intervention, ...q.waiting, ...q.offering].every((o) => o.requestType !== 'scheduled'), 'scheduled orders stay in their own queue');
+  check(q.intervention.every((o) => o.status === 'dispatch_expired') && q.waiting.every((o) => o.status === 'pending_dispatch'), 'queues follow the order status');
+  check(q.offering.every((o) => o.status === 'awaiting_captain' || o.status === 'offered_privately'), 'offers list holds only live offers');
   const ov = merchantOrderOverview(st.orders, 'm-sanabel');
   check(ov.active.concat(ov.history).every((o) => o.merchantId === 'm-sanabel'), 'merchant overview is isolated to one merchant');
   check(ov.history.every((o) => o.status === 'delivered' || o.status === 'cancelled') && ov.active.every((o) => o.status !== 'delivered' && o.status !== 'cancelled'), 'active vs finished split');

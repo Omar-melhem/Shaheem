@@ -10,7 +10,7 @@ import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { CommissionPreview } from './CommissionPreview';
 import { Badge, Button, OpenDecision, PageHeader, SettingsRow, SettingsSection, Toggle } from '@/shared/components/ui';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
-import { useSignOut } from '@/features/auth/hooks/useSignOut';
+import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 
 const linkButton = 'inline-flex h-9 items-center rounded-xl border border-cream-deep bg-white px-3 text-sm font-bold text-ink hover:bg-cream';
@@ -26,7 +26,7 @@ export function AdminSettingsPage() {
   const merchants = useAppStore((s) => s.merchants);
   const areas = useAppStore((s) => s.areas);
   const routes = useAppStore((s) => s.routes);
-  const signOut = useSignOut();
+  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
   const [pendingBroadcast, setPendingBroadcast] = useState<boolean | null>(null);
 
   const categoryCounts = useMemo(() => {
@@ -161,6 +161,7 @@ export function AdminSettingsPage() {
             <Button variant="outline" icon={<LogOut className="h-4 w-4" />} onClick={signOut}>
               خروج
             </Button>
+            {signOutDialog}
           </SettingsRow>
         </SettingsSection>
 

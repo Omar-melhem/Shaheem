@@ -11,7 +11,7 @@ import { BaseMap } from '@/shared/components/map/BaseMap';
 import { merchantIcon } from '@/shared/components/map/markers';
 import { SupportContactList } from '@/features/support/SupportContacts';
 import { MerchantCategoryBadge } from '@/features/merchants/MerchantCategoryBadge';
-import { useSignOut } from '@/features/auth/hooks/useSignOut';
+import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
 import { MerchantHeader } from './MerchantHeader';
 
 /**
@@ -24,7 +24,7 @@ export function MerchantSettingsPage() {
   const areas = useAppStore((s) => s.areas);
   const prices = useAppStore((s) => s.prices);
   const coverage = useAppStore((s) => s.coverage);
-  const signOut = useSignOut();
+  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
   const zones = useMemo(() => (merchantId ? merchantZoneOptions({ areas, prices, coverage }, merchantId) : []), [areas, prices, coverage, merchantId]);
   if (!merchant) return <Navigate to="/login" replace />;
 
@@ -79,6 +79,7 @@ export function MerchantSettingsPage() {
             <Button variant="outline" icon={<LogOut className="h-4 w-4" />} onClick={signOut}>
               خروج
             </Button>
+            {signOutDialog}
           </SettingsRow>
         </SettingsSection>
 

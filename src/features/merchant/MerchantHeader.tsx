@@ -5,7 +5,7 @@ import type { Merchant } from '@/domain/types';
 import { Logo } from '@/shared/components/Logo';
 import { Button, Dialog } from '@/shared/components/ui';
 import { SupportContactList } from '@/features/support/SupportContacts';
-import { useSignOut } from '@/features/auth/hooks/useSignOut';
+import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
 
 const iconLink = 'inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300';
 
@@ -13,7 +13,7 @@ const SUBTITLE = { home: 'بوابة التاجر', settings: 'الإعدادا�
 
 /** Merchant top bar shared by the operations screen, the areas & prices list and settings. */
 export function MerchantHeader({ merchant, page }: { merchant: Merchant; page: keyof typeof SUBTITLE }) {
-  const signOut = useSignOut();
+  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
   const [supportOpen, setSupportOpen] = useState(false);
 
   return (
@@ -47,6 +47,7 @@ export function MerchantHeader({ merchant, page }: { merchant: Merchant; page: k
         <Button variant="ghost" icon={<LogOut className="h-4 w-4" />} onClick={signOut} aria-label="خروج">
           <span className="hidden sm:inline">خروج</span>
         </Button>
+        {signOutDialog}
       </div>
       <Dialog open={supportOpen} onClose={() => setSupportOpen(false)} title="تواصل مع شهم" description="قنوات الدعم الرسمية">
         <SupportContactList />

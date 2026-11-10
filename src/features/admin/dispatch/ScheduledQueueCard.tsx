@@ -49,7 +49,7 @@ export function ScheduledQueueCard({ orders, now, onOpen }: { orders: DeliveryOr
         icon={<CalendarClock className="h-5 w-5" />}
       />
       {orders.length === 0 ? (
-        <EmptyState title="لا توجد طلبات مؤجلة" />
+        <EmptyState compact title="لا توجد طلبات مؤجلة حالياً" />
       ) : (
         <ul className="divide-y divide-cream-dark">
           {orders.map((o) => {

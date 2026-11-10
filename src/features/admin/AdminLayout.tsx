@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useSignOut } from '@/features/auth/hooks/useSignOut';
+import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
 import {
   Bell,
   Headphones,
@@ -44,7 +44,7 @@ const NAV = [
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { pathname } = useLocation();
-  const signOut = useSignOut();
+  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
   useEffect(() => setMobileOpen(false), [pathname]);
 
   const queueCount = useAppStore((s) => s.orders.filter((o) => o.status === 'pending_dispatch' || o.status === 'dispatch_expired').length);
@@ -112,6 +112,7 @@ export function AdminLayout() {
           >
             <LogOut className="h-4 w-4" /> خروج
           </button>
+          {signOutDialog}
         </header>
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-6">
           <Outlet />

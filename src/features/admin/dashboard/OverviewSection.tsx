@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CheckCircle2, Hourglass, PackageSearch, Store, Truck, UserCheck, Users } from 'lucide-react';
+import { CheckCircle2, Hourglass, PackageSearch, Store, Truck, Users } from 'lucide-react';
 import type { OperationalKpis, PlatformKpis } from '@/application/dashboard';
 import { StatCard } from '@/shared/components/ui';
 
@@ -27,20 +27,11 @@ export function OperationalKpiSection({ kpis }: { kpis: OperationalKpis }) {
   );
 }
 
-/** «حسابات المنصة»: quieter account counts, three even columns. */
+/** «حسابات المنصة»: quieter account counts, two even columns. */
 export function PlatformKpiSection({ kpis }: { kpis: PlatformKpis }) {
   return (
     <DashboardSection id="platform-kpis" title="حسابات المنصة">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-        <div className="col-span-2 sm:col-span-1">
-        <StatCard
-          label="الكباتن المتاحون الآن"
-          value={<>{kpis.availableNow} <span className="text-sm font-bold text-ink-muted">/ {kpis.activeCaptainAccounts}</span></>}
-          icon={<UserCheck className="h-5 w-5" />}
-          tone="secondary"
-          hint="متاح من الحسابات المفعّلة"
-        />
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <StatCard label="إجمالي التجار" value={kpis.merchants} icon={<Store className="h-5 w-5" />} hint="كل حسابات التجار" />
         <StatCard label="إجمالي الكباتن" value={kpis.captains} icon={<Users className="h-5 w-5" />} hint="كل حسابات الكباتن" />
       </div>

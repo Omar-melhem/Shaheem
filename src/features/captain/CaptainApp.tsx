@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useSignOut } from '@/features/auth/hooks/useSignOut';
+import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
 import { useSession } from '@/application/session';
 import { Bell, History, LogOut, Navigation, Package, User, Wallet } from 'lucide-react';
 import { useAppStore } from '@/application/store';
@@ -21,7 +21,7 @@ type Tab = 'offers' | 'active' | 'history' | 'wallet' | 'profile';
  */
 export function CaptainApp() {
   const captainId = useSession((s) => s.session?.id);
-  const signOut = useSignOut();
+  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
   const now = useNow(1000);
   const views = useCaptainViews(now);
   const view = views.find((v) => v.captain.id === captainId);
@@ -74,6 +74,7 @@ export function CaptainApp() {
             <button onClick={signOut} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="تسجيل الخروج" title="تسجيل الخروج">
               <LogOut className="h-4 w-4" />
             </button>
+            {signOutDialog}
           </div>
           <div className="rounded-xl bg-white/10 px-3 py-2">
             <Toggle
