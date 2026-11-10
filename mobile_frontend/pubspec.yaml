@@ -1,0 +1,59 @@
+name: mobile_frontend
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+#A
+#B
+  bloc: ^9.2.1
+  
+#C
+#D
+  dropdown_search: ^7.0.0
+#E
+#F
+  flutter_bloc: ^9.1.1
+  flutter_localization: ^0.4.1
+#G
+  google_api_headers: ^5.3.5
+  geocoding: ^5.0.1
+  google_maps_flutter: ^2.18.1
+#H
+  http: ^1.6.0
+#I
+  intl: ^0.20.2
+#J
+#K
+#L
+  location: ^10.0.2
+#M
+#N
+#O
+#P
+  permission_handler: ^13.0.2
+#Q
+#R
+#S
+#T
+  toasty_box: ^1.0.4
+#U
+  url_launcher: ^6.3.3
+#V
+#X
+#Y
+#Z 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
