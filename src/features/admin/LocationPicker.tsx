@@ -32,6 +32,7 @@ export function LocationPicker({ value, onChange, focus, boundary }: { value: La
             position={[value.lat, value.lng]}
             icon={merchantIcon()}
             draggable
+            title="موقع الاستلام — اسحبه للتعديل"
             eventHandlers={{
               dragend: (e) => {
                 const ll = e.target.getLatLng();

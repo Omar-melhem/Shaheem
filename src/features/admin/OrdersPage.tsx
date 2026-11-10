@@ -131,13 +131,13 @@ export function OrdersPage() {
         <div className="flex items-center justify-between border-t border-cream-dark px-4 py-3 text-sm">
           <span className="text-ink-muted">{filtered.length} طلب</span>
           <div className="flex items-center gap-2">
-            <button className="rounded-lg px-3 py-1 font-bold hover:bg-cream disabled:opacity-40" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            <button className="h-9 rounded-lg px-3 font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-40" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
               السابق
             </button>
             <span className="text-ink-muted">
               {page + 1} / {pages}
             </span>
-            <button className="rounded-lg px-3 py-1 font-bold hover:bg-cream disabled:opacity-40" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>
+            <button className="h-9 rounded-lg px-3 font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-40" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>
               التالي
             </button>
           </div>

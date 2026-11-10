@@ -23,6 +23,7 @@ export function MerchantOrdersPage() {
   return (
     <div className="min-h-screen">
       <MerchantHeader merchant={merchant} page="orders" />
+      <h1 className="sr-only">سجل الطلبات — {merchant.businessName}</h1>
       <main className="mx-auto max-w-3xl px-4 py-6">
         <Card>
           <CardHeader

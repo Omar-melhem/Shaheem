@@ -67,7 +67,7 @@ export function CustomerLocationSection({
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-sm font-bold text-ink">
             موقع العميل على الخريطة
-            <span className="rounded-full bg-cream-dark px-2 py-0.5 text-[11px] font-medium text-ink-muted">اختياري</span>
+            <span className="rounded-full bg-cream px-2 py-0.5 text-[11px] font-medium text-ink-soft">اختياري</span>
           </p>
           {location ? (
             <button type="button" onClick={removePin} className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">

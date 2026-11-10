@@ -11,8 +11,8 @@ export function StatCard({ label, value, icon, tone = 'neutral', hint }: { label
     danger: 'bg-red-50 text-red-700',
   };
   return (
-    <Card className="flex items-center gap-4 p-4">
-      {icon && <div className={cn('rounded-xl p-2.5', tones[tone])}>{icon}</div>}
+    <Card className="flex h-full flex-col items-start gap-2 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+      {icon && <div className={cn('shrink-0 rounded-xl p-2 sm:p-2.5', tones[tone])}>{icon}</div>}
       <div className="min-w-0">
         <p className="text-xs font-medium text-ink-muted">{label}</p>
         <p className="text-2xl font-extrabold leading-tight text-ink">{value}</p>

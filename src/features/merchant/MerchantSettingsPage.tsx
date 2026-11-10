@@ -53,7 +53,7 @@ export function MerchantSettingsPage() {
           <SettingsRow label="العنوان" readOnly>{merchant.address}</SettingsRow>
           <div className="p-4">
             <BaseMap className="h-48" center={merchant.pickup} zoom={15} label="موقع الاستلام">
-              <Marker position={[merchant.pickup.lat, merchant.pickup.lng]} icon={merchantIcon()} />
+              <Marker position={[merchant.pickup.lat, merchant.pickup.lng]} icon={merchantIcon()} title="موقع الاستلام" />
             </BaseMap>
           </div>
         </SettingsSection>

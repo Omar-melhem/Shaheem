@@ -55,16 +55,16 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
 
       <BaseMap className="h-56" label="خريطة الطلب">
         <FitBounds points={points} fitKey={order.id} />
-        <Marker position={[order.pickup.position.lat, order.pickup.position.lng]} icon={merchantIcon()}>
+        <Marker position={[order.pickup.position.lat, order.pickup.position.lng]} icon={merchantIcon()} title="موقع الاستلام">
           <Popup>استلام: {merchant?.businessName}</Popup>
         </Marker>
         {dest && (
-          <Marker position={[dest.lat, dest.lng]} icon={destinationIcon()}>
+          <Marker position={[dest.lat, dest.lng]} icon={destinationIcon()} title="موقع العميل">
             <Popup>{order.areaName} — {order.destination.approximate ? 'موقع تقريبي (مركز المنطقة)' : order.destination.label}</Popup>
           </Marker>
         )}
         {active && captain?.lastLocation && (
-          <Marker position={[captain.lastLocation.position.lat, captain.lastLocation.position.lng]} icon={captainIcon('busy', freshness)}>
+          <Marker position={[captain.lastLocation.position.lat, captain.lastLocation.position.lng]} icon={captainIcon('busy', freshness)} title={captain.fullName}>
             <Popup>{captain.fullName}</Popup>
           </Marker>
         )}

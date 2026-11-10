@@ -92,7 +92,7 @@ export function LiveMapPage() {
                   key={f}
                   onClick={() => setFilter(f)}
                   aria-pressed={filter === f}
-                  className={cn('rounded-full px-3 py-1 text-xs font-bold ring-1', filter === f ? 'bg-primary text-white ring-primary' : 'bg-white text-ink-soft ring-cream-deep hover:bg-cream')}
+                  className={cn('inline-flex h-8 items-center rounded-full px-3 text-xs font-bold ring-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300', filter === f ? 'bg-primary text-white ring-primary' : 'bg-white text-ink-soft ring-cream-deep hover:bg-cream')}
                 >
                   {label} ({views.filter((v) => matches(v, f)).length})
                 </button>

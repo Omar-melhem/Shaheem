@@ -69,9 +69,9 @@ export function ActiveDeliveryTab({ captain, order, freshness, now }: { captain:
 
       <BaseMap className="h-44" label="خريطة التوصيل">
         <FitBounds points={[order.pickup.position, ...(dest ? [dest] : []), ...(loc ? [loc] : [])]} fitKey={`${order.id}-${order.status}`} />
-        <Marker position={[order.pickup.position.lat, order.pickup.position.lng]} icon={merchantIcon()} />
-        {dest && <Marker position={[dest.lat, dest.lng]} icon={destinationIcon()} />}
-        {loc && <Marker position={[loc.lat, loc.lng]} icon={captainIcon('busy', freshness)} zIndexOffset={500} />}
+        <Marker position={[order.pickup.position.lat, order.pickup.position.lng]} icon={merchantIcon()} title="موقع الاستلام" />
+        {dest && <Marker position={[dest.lat, dest.lng]} icon={destinationIcon()} title="موقع العميل" />}
+        {loc && <Marker position={[loc.lat, loc.lng]} icon={captainIcon('busy', freshness)} zIndexOffset={500} title="موقعك" />}
         {loc && target && <Polyline positions={[[loc.lat, loc.lng], [target!.lat, target!.lng]]} pathOptions={{ color: '#8C2335', dashArray: '5 8', weight: 2 }} />}
       </BaseMap>
       {loc && target && (

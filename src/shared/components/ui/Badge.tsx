@@ -4,7 +4,7 @@ import type { StatusTone } from '@/domain/orderStatus';
 
 const badgeTones: Record<StatusTone, string> = {
   neutral: 'bg-gray-100 text-gray-700 ring-gray-200',
-  sand: 'bg-sand-light/60 text-sand-dark ring-sand/40',
+  sand: 'bg-sand-light/60 text-sand-ink ring-sand/40',
   warning: 'bg-amber-50 text-amber-800 ring-amber-200',
   primary: 'bg-primary-50 text-primary-700 ring-primary-200',
   info: 'bg-sky-50 text-sky-800 ring-sky-200',

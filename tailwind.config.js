@@ -18,7 +18,8 @@ export default {
         },
         ink: { DEFAULT: '#242424', soft: '#4A4A4A', muted: '#6E6A64' },
         cream: { DEFAULT: '#F5F0E8', dark: '#EDE5D8', deep: '#E3D8C6' },
-        sand: { DEFAULT: '#C8A98A', light: '#E6D6C5', dark: '#A88866' },
+        // ink: sand-family text colour with ≥4.5:1 contrast on cream/sand-light (dark is decorative only).
+        sand: { DEFAULT: '#C8A98A', light: '#E6D6C5', dark: '#A88866', ink: '#7A5B3A' },
       },
       fontFamily: {
         sans: ['Tajawal', 'system-ui', 'sans-serif'],

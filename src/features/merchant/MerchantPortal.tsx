@@ -25,6 +25,7 @@ export function MerchantPortal() {
   return (
     <div className="min-h-screen">
       <MerchantHeader merchant={merchant} page="home" />
+      <h1 className="sr-only">بوابة التاجر — {merchant.businessName}</h1>
 
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">
         <div className="min-w-0">

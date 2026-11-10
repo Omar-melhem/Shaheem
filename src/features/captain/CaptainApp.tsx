@@ -65,11 +65,13 @@ export function CaptainApp() {
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-lg font-extrabold">{c.fullName.charAt(0)}</div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-bold">{c.fullName}</p>
-              <p className="text-xs text-white/75">كابتن شهم</p>
+              <h1 className="truncate font-bold">{c.fullName}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-white/80">كابتن شهم</span>
+                <GpsChip captain={c} freshness={view.freshness} hasActive={!!activeOrder} />
+              </div>
             </div>
-            <GpsChip captain={c} freshness={view.freshness} hasActive={!!activeOrder} />
-            <button onClick={signOut} className="rounded-full bg-white/15 p-1.5 hover:bg-white/25" aria-label="تسجيل الخروج" title="تسجيل الخروج">
+            <button onClick={signOut} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="تسجيل الخروج" title="تسجيل الخروج">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
@@ -79,7 +81,7 @@ export function CaptainApp() {
               disabled={c.status !== 'active'}
               onChange={(v) => reportResult(setCaptainAvailability(c.id, v), v ? 'أنت متاح الآن لاستقبال الطلبات' : 'أنت غير متاح الآن')}
               label={<span className="text-white">{c.availability === 'available' ? 'متاح لاستقبال الطلبات' : 'غير متاح'}</span>}
-              description={<span className="text-white/70">{c.status !== 'active' ? 'الحساب موقوف من الإدارة' : activeOrder ? 'لديك توصيل نشط' : 'بدّل لاستقبال العروض'}</span>}
+              description={<span className="text-white/90">{c.status !== 'active' ? 'الحساب موقوف من الإدارة' : activeOrder ? 'لديك توصيل نشط' : 'بدّل لاستقبال العروض'}</span>}
             />
           </div>
         </header>
@@ -102,7 +104,7 @@ export function CaptainApp() {
             >
               <t.icon className="h-5 w-5" aria-hidden />
               {t.label}
-              {t.badge && <span className="absolute end-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-white">{t.badge}</span>}
+              {t.badge && <span className="absolute end-3 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] text-white">{t.badge}</span>}
             </button>
           ))}
         </nav>

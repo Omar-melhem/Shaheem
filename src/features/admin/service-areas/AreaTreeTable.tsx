@@ -79,7 +79,7 @@ export function AreaTreeTable({
         <td className="px-4 py-3">{orderCount(a.id)}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            <Toggle checked={a.status === 'active'} onChange={() => onToggle(a)} label={<span className="sr-only">تفعيل {a.name}</span>} />
+            <Toggle checked={a.status === 'active'} onChange={() => onToggle(a)} aria-label={`تفعيل ${a.name}`} />
             <Badge tone={a.status === 'active' && !parentOff ? 'success' : 'neutral'}>{a.status !== 'active' ? 'متوقفة' : parentOff ? 'المنطقة الأم متوقفة' : 'نشطة'}</Badge>
           </div>
         </td>

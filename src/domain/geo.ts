@@ -1,4 +1,4 @@
-import type { LatLng, ServiceArea } from './types';
+import type { LatLng } from './types';
 
 const EARTH_RADIUS_M = 6_371_000;
 const toRad = (deg: number) => (deg * Math.PI) / 180;

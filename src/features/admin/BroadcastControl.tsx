@@ -16,9 +16,9 @@ export function BroadcastControl() {
         <div className={cn('rounded-2xl p-3', enabled ? 'bg-white/15' : 'bg-amber-100 text-amber-800')}>
           {enabled ? <RadioTower className="h-7 w-7" /> : <Radio className="h-7 w-7" />}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[12rem] flex-1">
           <p className={cn('text-xs font-bold', enabled ? 'text-white/80' : 'text-amber-800')}>البث العام للطلبات</p>
-          <p className={cn('text-xl font-extrabold', !enabled && 'text-ink')}>{enabled ? 'مفعّل — الطلبات الجديدة تُعرض على الكباتن المؤهلين' : 'متوقف — الطلبات الجديدة تبقى في طابور الإدارة'}</p>
+          <p className={cn('text-base font-extrabold sm:text-xl', !enabled && 'text-ink')}>{enabled ? 'مفعّل — الطلبات الجديدة تُعرض على الكباتن المؤهلين' : 'متوقف — الطلبات الجديدة تبقى في طابور الإدارة'}</p>
         </div>
         <div className={cn('rounded-xl px-3 py-2', enabled ? 'bg-white/10' : 'bg-white')}>
           <Toggle checked={enabled} tone="primary" onChange={(v) => setPending(v)} label={<span className={enabled ? 'text-white' : ''}>{enabled ? 'إيقاف' : 'تفعيل'}</span>} />

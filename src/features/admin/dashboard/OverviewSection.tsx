@@ -17,7 +17,7 @@ export function DashboardSection({ id, title, children }: { id: string; title: s
 export function OperationalKpiSection({ kpis }: { kpis: OperationalKpis }) {
   return (
     <DashboardSection id="ops-kpis" title="مؤشرات التشغيل">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard label="بانتظار التوزيع" value={kpis.queue} icon={<Hourglass className="h-5 w-5" />} tone={kpis.queue ? 'warning' : 'neutral'} hint="تحتاج إسناداً من الإدارة" />
         <StatCard label="معروضة على الكباتن" value={kpis.offered} icon={<PackageSearch className="h-5 w-5" />} tone="warning" hint="بث عام أو عرض خاص قائم" />
         <StatCard label="توصيلات نشطة" value={kpis.activeDeliveries} icon={<Truck className="h-5 w-5" />} tone="primary" hint="من القبول حتى التسليم" />
@@ -31,7 +31,8 @@ export function OperationalKpiSection({ kpis }: { kpis: OperationalKpis }) {
 export function PlatformKpiSection({ kpis }: { kpis: PlatformKpis }) {
   return (
     <DashboardSection id="platform-kpis" title="حسابات المنصة">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1">
         <StatCard
           label="الكباتن المتاحون الآن"
           value={<>{kpis.availableNow} <span className="text-sm font-bold text-ink-muted">/ {kpis.activeCaptainAccounts}</span></>}
@@ -39,6 +40,7 @@ export function PlatformKpiSection({ kpis }: { kpis: PlatformKpis }) {
           tone="secondary"
           hint="متاح من الحسابات المفعّلة"
         />
+        </div>
         <StatCard label="إجمالي التجار" value={kpis.merchants} icon={<Store className="h-5 w-5" />} hint="كل حسابات التجار" />
         <StatCard label="إجمالي الكباتن" value={kpis.captains} icon={<Users className="h-5 w-5" />} hint="كل حسابات الكباتن" />
       </div>

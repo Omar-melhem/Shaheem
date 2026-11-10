@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn';
 /** Marks simulated data/behaviour so it is never mistaken for production (SRS §19.3). */
 export function SimTag({ children = 'محاكاة', className }: { children?: ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-md border border-dashed border-sand-dark/60 bg-sand-light/40 px-1.5 py-0.5 text-[11px] font-bold text-sand-dark', className)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-md border border-dashed border-sand-dark/60 bg-sand-light/40 px-1.5 py-0.5 text-[11px] font-bold text-sand-ink', className)}>
       <FlaskConical className="h-3 w-3" aria-hidden />
       {children}
     </span>

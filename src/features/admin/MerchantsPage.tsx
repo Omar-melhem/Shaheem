@@ -148,7 +148,7 @@ function MerchantDetailDrawer({ merchantId, onClose, onEdit }: { merchantId: str
         <Toggle checked={merchant.status === 'active'} onChange={() => setConfirm(true)} label="حساب التاجر مفعّل" description="التاجر غير المفعّل لا يستطيع طلب كابتن" />
       </Card>
       <BaseMap className="h-48" center={merchant.pickup} zoom={15} label="موقع الاستلام">
-        <Marker position={[merchant.pickup.lat, merchant.pickup.lng]} icon={merchantIcon()} />
+        <Marker position={[merchant.pickup.lat, merchant.pickup.lng]} icon={merchantIcon()} title="موقع الاستلام" />
       </BaseMap>
       <Card className="px-4 py-2">
         <dl className="divide-y divide-cream-dark">

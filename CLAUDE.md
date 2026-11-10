@@ -7,7 +7,7 @@ OPEN decision as if approved — make it a labelled demo assumption with its O-x
 
 ## Rules
 - React 18 + TypeScript + Vite + Tailwind. Arabic-first, RTL; use logical classes (`ms-`, `pe-`, `start-`, `end-`).
-- Brand colours come from `tailwind.config.js` tokens (primary #8C2335, secondary #263D34, ink #242424, cream #F5F0E8, sand #C8A98A). Use the logo via `<Logo />`; do not alter the artwork.
+- Brand colours come from `tailwind.config.js` tokens (primary #8C2335, secondary #263D34, ink #242424, cream #F5F0E8, sand #C8A98A). Use the logo via `<Logo />`; do not alter the artwork. Sand-coloured **text** uses `text-sand-ink` (≥4.5:1); `sand-dark` is for borders/decoration only.
 - Layering: `domain` (pure rules) ← `application` (use cases/store) ← `features` (UI). UI never owns pricing, dispatch, wallet or order-transition rules.
 - Use cases return `Result`; surface them with `reportResult()` toasts.
 - Money is integer fils (`jodToFils`, `formatMoney`). No floats for money.

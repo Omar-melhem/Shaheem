@@ -32,12 +32,13 @@ export function DestinationMapPicker({ value, pickup, area, onChange }: { value:
         </>
       )}
       <FollowPoint point={value} zoom={16} />
-      <Marker position={[pickup.lat, pickup.lng]} icon={merchantIcon()} interactive={false} />
+      <Marker position={[pickup.lat, pickup.lng]} icon={merchantIcon()} interactive={false} title="موقع الاستلام" />
       {value && (
         <Marker
           position={[value.lat, value.lng]}
           icon={destinationIcon()}
           draggable
+          title="موقع العميل — اسحبه لتعديل الموقع"
           eventHandlers={{
             dragend: (e) => {
               const ll = e.target.getLatLng();

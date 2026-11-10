@@ -43,7 +43,7 @@ export function DeliveryProgress({ order, compact }: { order: DeliveryOrder; com
               <span
                 className={cn(
                   'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
-                  done ? 'bg-secondary text-white' : 'bg-cream-dark text-ink-muted',
+                  done ? 'bg-secondary text-white' : 'bg-cream-dark text-ink-soft',
                   i === currentIdx && order.status !== 'delivered' && 'ring-4 ring-secondary-100',
                 )}
               >
@@ -54,7 +54,7 @@ export function DeliveryProgress({ order, compact }: { order: DeliveryOrder; com
             {!compact && (
               <>
                 <span className={cn('mt-1 text-[11px] leading-tight', done ? 'font-bold text-ink' : 'text-ink-muted')}>{ORDER_STATUS_LABEL[s]}</span>
-                {at && <span className="text-[10px] text-ink-muted">{formatTime(at)}</span>}
+                {at && <span className="text-[11px] text-ink-muted">{formatTime(at)}</span>}
               </>
             )}
           </li>
