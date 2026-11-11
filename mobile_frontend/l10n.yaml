@@ -1,0 +1,11 @@
+# gen_l10n configuration (Flutter's official localization workflow).
+# Arabic is the template and the only active language for now; add a new
+# app_<locale>.arb next to app_ar.arb to support another language later.
+# Generated files go to lib/helper/translation/generated/ — never edit them.
+arb-dir: lib/helper/translation
+template-arb-file: app_ar.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/helper/translation/generated
+# AppLocalizations.of(context) returns a non-null instance.
+nullable-getter: false
