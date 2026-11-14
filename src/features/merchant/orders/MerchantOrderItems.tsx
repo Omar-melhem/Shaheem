@@ -45,7 +45,7 @@ export function ActiveOrderItem({ order }: { order: DeliveryOrder }) {
           <Bike className="h-5 w-5 text-primary" aria-hidden />
           <span className="flex-1 text-sm">الكابتن <b>{captain.fullName}</b></span>
           {isValidPhone(captain.phone) && (
-            <a href={`tel:${captain.phone}`} className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">
+            <a href={`tel:${captain.phone}`} className="-my-3 inline-flex min-h-11 items-center gap-1 text-sm font-bold text-primary hover:underline">
               <Phone className="h-4 w-4" aria-hidden /> اتصال
             </a>
           )}

@@ -102,14 +102,17 @@ export function MerchantAreaPriceTable({ merchant }: { merchant: Merchant }) {
                   return (
                     <tr key={a.id} className={cn(!active && 'opacity-70')}>
                       <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 accent-[#8C2335]"
-                          checked={isCovered}
-                          disabled={!active && !isCovered}
-                          onChange={(e) => toggleOne(a, e.target.checked)}
-                          aria-label={`تفعيل ${areaLabel(a, areas)} للتاجر`}
-                        />
+                        {/* 44px tap area around the 16px checkbox; negative margins keep the row height. */}
+                        <label className="-my-3 -ms-3.5 inline-flex h-11 w-11 cursor-pointer items-center justify-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-[#8C2335]"
+                            checked={isCovered}
+                            disabled={!active && !isCovered}
+                            onChange={(e) => toggleOne(a, e.target.checked)}
+                            aria-label={`تفعيل ${areaLabel(a, areas)} للتاجر`}
+                          />
+                        </label>
                       </td>
                       <td className="px-4 py-3">
                         <p className={cn('font-bold', a.parentId && 'ps-4')}>{areaLabel(a, areas)}</p>

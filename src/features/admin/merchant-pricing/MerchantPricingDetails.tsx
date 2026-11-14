@@ -18,7 +18,7 @@ export function MerchantPricingDetails({ backTo }: { backTo: { path: string; lab
   if (!merchant) return <Navigate to={backTo.path} replace />;
   return (
     <>
-      <Link to={backTo.path} className="mb-3 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">
+      <Link to={backTo.path} className="-my-3 mb-0 inline-flex min-h-11 items-center gap-1 py-3 text-sm font-bold text-primary hover:underline">
         <ArrowRight className="h-4 w-4" /> {backTo.label}
       </Link>
       <PageHeader

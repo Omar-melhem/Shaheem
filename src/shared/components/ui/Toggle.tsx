@@ -41,7 +41,7 @@ export function Toggle({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-50',
+          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full before:absolute before:-inset-y-2 before:inset-x-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-50',
           checked ? (tone === 'primary' ? 'bg-primary' : 'bg-secondary') : 'bg-gray-300',
         )}
       >

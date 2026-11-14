@@ -17,7 +17,7 @@ export function ForgotPasswordHelp() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md py-1 text-sm font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+        className="-my-2 rounded-md py-3 text-sm font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
       >
         نسيت كلمة المرور؟
       </button>

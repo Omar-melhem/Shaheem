@@ -48,7 +48,7 @@ export function InfoTooltip({
         onClick={() => setOpen(true) /* not a toggle: focus/hover already opened it on a real click or tap */}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-muted transition-colors hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+        className="relative inline-flex h-6 w-6 items-center justify-center rounded-full before:absolute before:-inset-2.5 text-ink-muted transition-colors hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
       >
         <Icon className="h-4 w-4" aria-hidden />
       </button>
