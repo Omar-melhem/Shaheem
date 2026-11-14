@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, Info } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { pickupLocationError, isUnchangedLegacyLocation } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
 import { cityName } from '@/domain/cities';

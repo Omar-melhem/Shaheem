@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { Merchant, MerchantAreaPrice, ServiceArea } from '@/domain/types';
 import { filsToJod, formatMoney, parseJodInput } from '@/domain/money';
 import { Button, Dialog, Field, Input } from '@/shared/components/ui';

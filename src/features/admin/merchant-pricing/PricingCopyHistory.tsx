@@ -1,5 +1,5 @@
 import { History } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { Card, CardHeader } from '@/shared/components/ui';
 import { formatDateTime } from '@/shared/lib/format';
 

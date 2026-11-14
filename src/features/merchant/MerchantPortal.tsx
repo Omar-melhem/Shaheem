@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Bike, History, Truck } from 'lucide-react';
-import { useSession } from '@/application/session';
-import { useAppStore } from '@/application/store';
+import { useSession } from '@/app/session';
+import { useAppStore } from '@/app/state';
 import { MERCHANT_RECENT_PREVIEW, merchantOrderOverview } from '@/application/dashboard';
 import { Card, CardHeader, EmptyState } from '@/shared/components/ui';
 import { RequestCaptainPanel } from './request-captain/RequestCaptainPanel';

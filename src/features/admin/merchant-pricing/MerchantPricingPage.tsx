@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { RotateCcw, Tags } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { merchantZoneOptions, pricedAreaIds } from '@/application/queries';
 import { areaLabel } from '@/domain/regions';
 import { Button, Card, EmptyState, Field, Input, PageHeader, SearchField, Select } from '@/shared/components/ui';
@@ -50,7 +50,7 @@ export function MerchantPricingPage() {
     <>
       <PageHeader title="أسعار التجار حسب المنطقة" description="اختر تاجراً لعرض رسوم التوصيل الخاصة به لكل منطقة. لكل تاجر جدول رسوم مستقل." />
       <Card className="mb-4 flex flex-wrap items-end gap-3 p-4">
-        <SearchField label="بحث عن تاجر" className="min-w-[200px] max-w-sm flex-1" placeholder="ابحث باسم التاجر أو موقعه" value={q} onChange={(e) => setQ(e.target.value)} />
+        <SearchField label="بحث عن تاجر" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-sm flex-1" placeholder="ابحث باسم التاجر أو موقعه" value={q} onChange={(e) => setQ(e.target.value)} />
         <Field label="له سعر في منطقة" className="w-56">
           <Select aria-label="له سعر في منطقة" value={areaId} onChange={(e) => setAreaId(e.target.value)}>
             <option value="">كل المناطق</option>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { previewPricingCopy, type PricingCopyMode } from '@/application/pricingCopy';
 import type { Merchant } from '@/domain/types';
 import { Button, Dialog, EmptyState, SearchField, Toggle } from '@/shared/components/ui';

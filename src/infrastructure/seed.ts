@@ -25,26 +25,8 @@ import { jodToFils } from '@/domain/money';
 // Fictional demo fixtures for Amman (SRS §19.6). Names, phones and prices are
 // illustrative only — not real business data or approved prices.
 
-export interface AppData {
-  merchants: Merchant[];
-  captains: Captain[];
-  areas: ServiceArea[];
-  routes: DeliveryRoute[];
-  prices: MerchantAreaPrice[];
-  coverage: MerchantCoverage[];
-  pricingAudit: PricingCopyAudit[];
-  orders: DeliveryOrder[];
-  offers: DispatchOffer[];
-  walletTx: WalletTransaction[];
-  supportContacts: SupportContact[];
-  alerts: OpsAlert[];
-  settings: PlatformSettings;
-  demo: DemoSettings;
-  seq: number;
-}
-
-export const ADMIN_ACTOR: ActorRef = { role: 'admin', id: 'admin-demo', name: 'مدير النظام (تجريبي)' };
-export const SYSTEM_ACTOR: ActorRef = { role: 'system', name: 'النظام' };
+import { ADMIN_ACTOR, SYSTEM_ACTOR, type AppData } from '@/application/data';
+export { ADMIN_ACTOR, SYSTEM_ACTOR, type AppData } from '@/application/data';
 
 export const DEFAULT_DEMO_SETTINGS: DemoSettings = {
   walletThreshold: jodToFils(2),

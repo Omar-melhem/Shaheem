@@ -1,6 +1,6 @@
 import { Bike, Phone } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import type { DeliveryOrder } from '@/domain/types';
 import { isActiveDelivery } from '@/domain/orderStatus';
 import { isValidPhone } from '@/domain/phone';

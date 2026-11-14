@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAppStore, type CaptainInput } from '@/application/store';
+import { useAppStore, type CaptainInput } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';

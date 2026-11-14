@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
 import { BellOff, Check, MapPin, Store, Timer, X, AlertCircle, Lock } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import type { CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import type { CaptainView } from '@/shared/hooks/application';
 import { describeReasons } from '@/domain/eligibility';
 import { formatMoney } from '@/domain/money';
 import { formatAmmanDateTime } from '@/domain/time';

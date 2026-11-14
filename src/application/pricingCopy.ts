@@ -1,5 +1,5 @@
 import type { ID, Money } from '@/domain/types';
-import type { AppData } from '@/infrastructure/seed';
+import type { AppData } from '@/application/data';
 
 type PricingData = Pick<AppData, 'areas' | 'prices'>;
 

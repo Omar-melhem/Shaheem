@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, Headphones, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { SupportChannel, SupportContact } from '@/domain/types';
 import { Badge, Button, Card, CardHeader, ConfirmDialog, Dialog, EmptyState, Field, Input, PageHeader, PhoneField, PHONE_HINT, Select, Toggle } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

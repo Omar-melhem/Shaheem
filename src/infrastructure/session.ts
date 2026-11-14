@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Session } from './store';
+import type { Session } from '@/application/store';
 
 /**
  * Demo login session, kept in sessionStorage so each browser tab can be signed

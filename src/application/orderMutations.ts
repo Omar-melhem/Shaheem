@@ -1,5 +1,5 @@
 import type { ActorRef, AlertKind, DeliveryOrder, ID, OrderStatus } from '@/domain/types';
-import type { AppData } from '@/infrastructure/seed';
+import type { AppData } from '@/application/data';
 
 // Small mutation helpers used inside store use cases (immer drafts).
 

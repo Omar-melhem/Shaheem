@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ListPlus, Plus, Route, Shapes } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { ServiceArea } from '@/domain/types';
 import { governorateName } from '@/domain/governorates';
 import { topLevelAreas } from '@/domain/regions';
@@ -58,7 +58,7 @@ export function ServiceAreasPage() {
             <Field label="المحافظة" htmlFor="areas-gov" className="w-48">
               <GovernorateSelect id="areas-gov" placeholder="كل المحافظات" value={governorateId} onChange={(e) => setGovernorateId(e.target.value)} />
             </Field>
-            <SearchField label="بحث في المناطق والأقسام" className="min-w-[220px] max-w-sm flex-1" placeholder="ابحث بالاسم أو الاسم البديل" value={q} onChange={(e) => setQ(e.target.value)} />
+            <SearchField label="بحث في المناطق والأقسام" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-sm flex-1" placeholder="ابحث بالاسم أو الاسم البديل" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           {roots.length === 0 ? (
             <EmptyState icon={<Shapes className="h-6 w-6" />} title="لا توجد مناطق" description={governorateId ? `لا توجد مناطق في ${governorateName(governorateId)} بعد.` : undefined} />

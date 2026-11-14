@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marker } from 'react-leaflet';
 import { Eye, History, Plus, Power, Store, Pencil, Tags } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { MERCHANT_CATEGORIES, type Merchant, type MerchantCategory } from '@/domain/types';
 import { cityName } from '@/domain/cities';
 import { formatMoney } from '@/domain/money';
@@ -55,7 +55,7 @@ export function MerchantsPage() {
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing('new')}>إضافة تاجر</Button>}
       />
       <Card className="mb-4 flex flex-wrap gap-3 p-4">
-        <SearchField label="بحث في التجار" className="min-w-[220px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف أو العنوان" value={q} onChange={(e) => setQ(e.target.value)} />
+        <SearchField label="بحث في التجار" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف أو العنوان" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="w-full sm:w-56">
           <Select aria-label="تصفية حسب فئة النشاط" value={category} onChange={(e) => setCategory(e.target.value as MerchantCategory | 'none' | '')}>
           <option value="">كل الفئات</option>

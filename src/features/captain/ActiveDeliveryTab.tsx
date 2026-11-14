@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Marker, Polyline } from 'react-leaflet';
 import { ExternalLink, MapPin, Navigation, Phone, Store, WifiOff, PackageCheck } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { Captain, DeliveryOrder } from '@/domain/types';
 import type { LocationFreshness } from '@/domain/location';
 import { CAPTAIN_NEXT_ACTION_LABEL } from '@/domain/orderStatus';

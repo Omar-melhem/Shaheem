@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSession } from '@/application/session';
+import { useSession } from '@/app/session';
 
 /** Ends the demo session for this tab and returns to the login page. */
 export function useSignOut() {

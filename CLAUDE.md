@@ -8,7 +8,7 @@ OPEN decision as if approved — make it a labelled demo assumption with its O-x
 ## Rules
 - React 18 + TypeScript + Vite + Tailwind. Arabic-first, RTL; use logical classes (`ms-`, `pe-`, `start-`, `end-`).
 - Brand colours come from `tailwind.config.js` tokens (primary #8C2335, secondary #263D34, ink #242424, cream #F5F0E8, sand #C8A98A). Use the logo via `<Logo />`; do not alter the artwork. Sand-coloured **text** uses `text-sand-ink` (≥4.5:1); `sand-dark` is for borders/decoration only.
-- Layering: `domain` (pure rules) ← `application` (use cases/store) ← `features` (UI). UI never owns pricing, dispatch, wallet or order-transition rules.
+- Layering: `domain` (pure rules) ← `application` (use cases/store) ← `features` (UI). UI never owns pricing, dispatch, wallet or order-transition rules. `domain`/`application` import no React, zustand/react or browser APIs; the store is a vanilla `createApplicationStore(seed, repository)` over the `AppRepository` port. Concrete adapters (`infrastructure/browserState.ts` localStorage, `infrastructure/session.ts`) are wired only in the composition root `src/app/state.ts` / `src/app/session.ts`; features import `@/app/state`, `@/app/session` and `@/shared/hooks/application`, never `@/infrastructure` (except `placeSearch`).
 - Use cases return `Result`; surface them with `reportResult()` toasts.
 - Money is integer fils (`jodToFils`, `formatMoney`). No floats for money.
 - Pricing: fixed fee per merchant + zone (Zone-Based Pricing Spec), read-only and locked on the order (`resolveZoneFee`, re-checked in `createOrder`). Never distance-based, and a pin never changes the fee.

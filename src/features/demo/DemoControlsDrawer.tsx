@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RotateCcw, SatelliteDish, WifiOff, MapPin } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { Button, ConfirmDialog, Drawer, Field, Input, OpenDecision, Select, SimTag, Toggle } from '@/shared/components/ui';
 import { reportResult, toast } from '@/shared/components/toast';
 import { formatMoney, parseJodInput, filsToJod } from '@/domain/money';

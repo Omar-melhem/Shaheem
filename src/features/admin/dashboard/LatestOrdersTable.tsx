@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Ban, Eye, Inbox } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryOrder } from '@/domain/types';
 import { CANCELLABLE_STATUSES } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';

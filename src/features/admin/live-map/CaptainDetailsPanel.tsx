@@ -1,5 +1,5 @@
-import { useAppStore } from '@/application/store';
-import { OP_STATUS_LABEL, type CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { OP_STATUS_LABEL, type CaptainView } from '@/shared/hooks/application';
 import { ORDER_STATUS_LABEL } from '@/domain/orderStatus';
 import { Card, DetailRow, Drawer } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';

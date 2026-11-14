@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useCaptainViews, useNow } from '@/shared/hooks/application';
 import type { DeliveryOrder } from '@/domain/types';
 import { haversineMeters, formatDistance } from '@/domain/geo';
 import { describeReasons } from '@/domain/eligibility';

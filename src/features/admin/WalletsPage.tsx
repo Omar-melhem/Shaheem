@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Wallet, PlusCircle } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow, type CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useCaptainViews, useNow, type CaptainView } from '@/shared/hooks/application';
 import { formatMoney } from '@/domain/money';
 import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
 import { describeReasons } from '@/domain/eligibility';

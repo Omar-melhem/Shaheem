@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Headphones, Info, Languages, LogOut, Map as MapIcon, RadioTower, Store, UserCog, Wallet } from 'lucide-react';
 import { version } from '../../../package.json';
-import { useAppStore, DEMO_ADMIN } from '@/application/store';
+import { useAppStore, DEMO_ADMIN } from '@/app/state';
 import { MERCHANT_CATEGORIES } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';

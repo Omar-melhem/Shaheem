@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
+import { createStore } from 'zustand/vanilla';
+import type { AppRepository } from './ports/AppRepository';
+import { produce } from 'immer';
 import type {
   ActorRef,
   Captain,
@@ -17,7 +17,7 @@ import type {
   SupportContact,
 } from '@/domain/types';
 import { isMerchantCategory } from '@/domain/types';
-import { ADMIN_ACTOR, SYSTEM_ACTOR, createSeedData, type AppData } from '@/infrastructure/seed';
+import { ADMIN_ACTOR, SYSTEM_ACTOR, type AppData } from './data';
 import { describeReasons } from '@/domain/eligibility';
 import { isValidLatLng, moveTowards, haversineMeters } from '@/domain/geo';
 import { isAutoDispatchEligible } from '@/domain/dispatch';
@@ -205,22 +205,30 @@ interface Actions {
 export type AppState = AppData & Actions;
 
 // v8: no merchant contact person, no captain vehicle data, no customer name on orders (older saved demo data is discarded).
-export const STORAGE_KEY = 'shahm-demo-v8';
 
-export const useAppStore = create<AppState>()(
-  persist(
-    immer((set, get) => {
+
+export const createApplicationStore = (createSeedData: () => AppData, repository: AppRepository) => createStore<AppState>()(
+    (setState, get) => {
+      // Persist the complete next snapshot before notifying any subscriber. Failure leaves memory unchanged.
+      const set = (recipe: (draft: AppState) => void | Partial<AppState>) => {
+        const next = produce(get(), (draft) => { const patch = recipe(draft); if (patch) Object.assign(draft, patch); });
+        if (next === get()) return;
+        repository.save(next);
+        setState(next, true);
+      };
       /** Runs a mutation and returns its result (immer draft inside). */
       const run = <T,>(fn: (d: AppData, now: number) => Result<T>): Result<T> => {
         let result: Result<T> = fail('لم يتم تنفيذ العملية');
-        set((draft) => {
-          result = fn(draft as unknown as AppData, Date.now());
-        });
+        try {
+          set((draft) => {
+            result = fn(draft as unknown as AppData, Date.now());
+          });
+        } catch { return fail('تعذّر حفظ البيانات. لم يُطبَّق أي تغيير، حاول مرة أخرى.'); }
         return result;
       };
 
       return {
-        ...createSeedData(),
+        ...(repository.load() ?? createSeedData()),
 
         resetDemo: () => set(() => ({ ...createSeedData() })),
 
@@ -575,7 +583,7 @@ export const useAppStore = create<AppState>()(
             const m = d.merchants.find((x) => x.id === merchantId);
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
-            if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
+            if (!isValidPhone(input.customerPhone ?? '')) return fail(PHONE_ERROR);
             const requestType: RequestType = input.requestType ?? 'immediate';
             if (requestType === 'scheduled') {
               const at = input.scheduledPickupAt;
@@ -835,29 +843,8 @@ export const useAppStore = create<AppState>()(
             return done;
           }),
       };
-    }),
-    {
-      name: STORAGE_KEY,
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (s) => {
-        const { merchants, captains, areas, routes, prices, coverage, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq } = s;
-        return { merchants, captains, areas, routes, prices, coverage, pricingAudit, orders, offers, walletTx, supportContacts, alerts, settings, demo, seq };
-      },
     },
-  ),
 );
-
-/** Same-browser tab sync: rehydrate when another tab writes (single-browser demo only). */
-export function enableCrossTabSync() {
-  const handler = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY) void useAppStore.persist.rehydrate();
-  };
-  window.addEventListener('storage', handler);
-  return () => window.removeEventListener('storage', handler);
-}
-
-export const getAppData = (): AppData => useAppStore.getState();
 
 export type { AppData, ServiceArea, DispatchOffer };
 export { formatMoney };

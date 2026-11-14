@@ -7,7 +7,7 @@ import {
   isAutoDispatchEligible,
   rankByProximity,
 } from '@/domain/dispatch';
-import { SYSTEM_ACTOR, type AppData } from '@/infrastructure/seed';
+import { SYSTEM_ACTOR, type AppData } from '@/application/data';
 import { captainEligibility } from './captainQueries';
 import { note, pushAlert, transition, uid } from './orderMutations';
 

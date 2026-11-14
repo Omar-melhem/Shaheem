@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
-import { useSession } from '@/application/session';
+import { useSession } from '@/app/session';
 import { Bell, History, LogOut, Navigation, Package, User, Wallet } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useCaptainViews, useNow } from '@/shared/hooks/application';
 import { SimTag, Toggle } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { cn } from '@/shared/lib/cn';
@@ -46,13 +46,13 @@ export function CaptainApp() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-4 bg-gradient-to-b from-cream to-cream-dark px-4 py-6 lg:flex-row lg:items-start lg:justify-center lg:gap-10">
-      <aside className="max-w-xs space-y-2 text-center lg:mt-24 lg:text-start">
+    <div className="flex min-h-screen flex-col items-center gap-4 bg-gradient-to-b from-cream to-cream-dark px-0 py-0 sm:px-4 sm:py-6 lg:flex-row lg:items-start lg:justify-center lg:gap-10">
+      <aside className="hidden max-w-xs space-y-2 text-center sm:block lg:mt-24 lg:text-start">
         <SimTag>معاينة محاكاة لتطبيق الكابتن</SimTag>
         <p className="text-sm text-ink-muted">التطبيق الفعلي تطبيق جوال مخصص لنظامي Android و iOS. هذه المعاينة تعرض التدفق نفسه داخل المتصفح لأغراض العرض.</p>
       </aside>
 
-      <div className="relative flex h-[min(820px,calc(100vh-90px))] w-full max-w-[400px] flex-col overflow-hidden rounded-[2.5rem] border-[10px] border-ink bg-cream shadow-pop">
+      <div className="relative flex h-[100dvh] sm:h-[min(820px,calc(100dvh-90px))] w-full max-w-[400px] flex-col overflow-hidden sm:rounded-[2.5rem] sm:border-[10px] border-ink bg-cream shadow-pop">
         {/* status bar */}
         <div className="flex items-center justify-between bg-ink px-6 pb-1 pt-1.5 text-[11px] font-bold text-cream" dir="ltr">
           <span>{new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(now)}</span>
@@ -87,7 +87,7 @@ export function CaptainApp() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {effectiveTab === 'offers' && <OffersTab view={view} now={now} />}
           {effectiveTab === 'active' && <ActiveDeliveryTab captain={c} order={activeOrder} freshness={view.freshness} now={now} />}
           {effectiveTab === 'history' && <HistoryTab captainId={c.id} />}
@@ -95,13 +95,13 @@ export function CaptainApp() {
           {effectiveTab === 'profile' && <ProfileTab captain={c} />}
         </main>
 
-        <nav className="grid grid-cols-5 border-t border-cream-deep bg-white pb-2" aria-label="تنقل تطبيق الكابتن">
+        <nav className="grid grid-cols-5 border-t border-cream-deep bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))]" aria-label="تنقل تطبيق الكابتن">
           {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               aria-current={effectiveTab === t.id ? 'page' : undefined}
-              className={cn('relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', effectiveTab === t.id ? 'text-primary' : 'text-ink-muted')}
+              className={cn('relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-bold', effectiveTab === t.id ? 'text-primary' : 'text-ink-muted')}
             >
               <t.icon className="h-5 w-5" aria-hidden />
               {t.label}

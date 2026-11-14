@@ -18,9 +18,9 @@ export function MerchantHeader({ merchant, page }: { merchant: Merchant; page: k
 
   return (
     <header className="border-b border-cream-deep bg-white">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-4">
-        <Logo className="h-11" />
-        <div className="min-w-0 flex-1 border-s border-cream-deep ps-4">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-1 px-3 py-3 sm:flex-nowrap sm:gap-2 sm:px-4 sm:gap-4">
+        <Logo className="h-9 sm:h-11" />
+        <div className="min-w-0 basis-[calc(100%-5rem)] flex-1 border-s border-cream-deep ps-2 sm:basis-auto sm:ps-4">
           <p className="truncate font-extrabold text-ink">{merchant.businessName}</p>
           <p className="truncate text-xs text-ink-muted">{SUBTITLE[page]}</p>
         </div>

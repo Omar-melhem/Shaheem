@@ -1,7 +1,7 @@
 import { Marker, Polyline, Popup } from 'react-leaflet';
 import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import { formatMoney } from '@/domain/money';
 import { formatAmmanDateTime } from '@/domain/time';
 import { formatDistance } from '@/domain/geo';

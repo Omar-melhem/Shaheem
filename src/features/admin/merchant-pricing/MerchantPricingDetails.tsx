@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowRight, Copy, MapPin } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { Button, PageHeader } from '@/shared/components/ui';
 import { MerchantAreaPriceTable } from './MerchantAreaPriceTable';
 import { CopyMerchantPricingDialog } from './CopyMerchantPricingDialog';

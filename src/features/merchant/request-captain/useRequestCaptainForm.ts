@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { AREA_REQUIRED, AREA_UNAVAILABLE, destinationPinError } from '@/domain/destination';
-import { PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
+import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { ammanDayKey, ammanWallTimeToEpoch } from '@/domain/time';
 import type { ID, Merchant, RequestType } from '@/domain/types';
 import { toast } from '@/shared/components/toast';
@@ -90,7 +90,7 @@ export function useRequestCaptainForm(merchant: Merchant) {
   /** Validates everything and opens the review; returns false when a field needs fixing. */
   const openReview = (): boolean => {
     const next: Errors = {};
-    if (!isValidOptionalPhone(form.customerPhone)) next.customerPhone = PHONE_ERROR;
+    if (!isValidPhone(form.customerPhone)) next.customerPhone = PHONE_ERROR;
     if (!form.areaId) next.areaId = AREA_REQUIRED;
     let scheduledAt: number | undefined;
     if (form.requestType === 'scheduled') {

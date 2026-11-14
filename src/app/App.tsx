@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { enableCrossTabSync } from '@/application/store';
-import { useSimulationClock } from '@/application/hooks';
+import { enableCrossTabSync } from '@/app/state';
+import { useSimulationClock } from '@/shared/hooks/application';
 import { Toaster } from '@/shared/components/toast';
 import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 import { LoginPage } from '@/features/auth/LoginPage';

@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import type { LocationFreshness } from '@/domain/location';
-import type { CaptainView } from '@/application/hooks';
+import type { CaptainView } from '@/shared/hooks/application';
 
 // Custom map markers (SRS §4.6): Captain = person in a delivery helmet,
 // Merchant = storefront. Shape (circle vs square) and colour both differ.

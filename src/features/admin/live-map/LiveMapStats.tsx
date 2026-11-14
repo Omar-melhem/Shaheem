@@ -1,5 +1,5 @@
 import { Bike, Radio, SignalLow, Truck } from 'lucide-react';
-import type { CaptainView } from '@/application/hooks';
+import type { CaptainView } from '@/shared/hooks/application';
 import { StatCard } from '@/shared/components/ui';
 
 /**
@@ -12,7 +12,7 @@ export function LiveMapStats({ views }: { views: CaptainView[] }) {
   const available = views.filter((v) => v.opStatus === 'available').length;
   const stale = views.filter((v) => v.freshness === 'stale').length;
   return (
-    <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard label="كباتن متصلون" value={busy + available} icon={<Radio className="h-5 w-5" />} tone="secondary" hint="متاح أو في توصيل" />
       <StatCard label="في توصيل نشط" value={busy} icon={<Truck className="h-5 w-5" />} tone="primary" hint="يُتتبع موقعهم" />
       <StatCard label="متاحون بلا توصيل" value={available} icon={<Bike className="h-5 w-5" />} hint="موقع غير متتبَّع" />

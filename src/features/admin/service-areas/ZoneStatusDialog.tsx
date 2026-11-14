@@ -1,4 +1,4 @@
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { ServiceArea } from '@/domain/types';
 import { Button, Dialog } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

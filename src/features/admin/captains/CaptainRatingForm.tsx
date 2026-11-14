@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { Button, OpenDecision, Textarea } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

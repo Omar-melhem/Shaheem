@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore, type MerchantInput } from '@/application/store';
+import { useAppStore, type MerchantInput } from '@/app/state';
 import { isUnchangedLegacyLocation, pickupLocationError } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';

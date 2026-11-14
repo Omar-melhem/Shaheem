@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -37,20 +37,20 @@ export function Dialog({
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={trapTabKey}
-        className={cn('relative flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-pop focus:outline-none sm:rounded-2xl', widths[size])}
+        className={cn('relative flex min-h-0 max-h-[92dvh] w-full flex-col rounded-t-2xl bg-white shadow-pop focus:outline-none sm:rounded-2xl', widths[size])}
       >
         <div className="flex items-start justify-between gap-4 border-b border-cream-dark px-5 py-4">
-          <div>
+          <div className="min-w-0 break-words">
             <h2 id={titleId} className="text-lg font-bold text-ink">
               {title}
             </h2>
             {description && <p className="mt-0.5 text-sm text-ink-muted">{description}</p>}
           </div>
-          <button data-close onClick={onClose} className="rounded-lg p-1.5 text-ink-muted hover:bg-cream" aria-label="إغلاق">
+          <button data-close onClick={onClose} className="shrink-0 rounded-lg p-3 text-ink-muted hover:bg-cream" aria-label="إغلاق">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="overflow-y-auto px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">{children}</div>
         {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-cream-dark px-5 py-3">{footer}</div>}
       </div>
     </div>,
@@ -71,7 +71,7 @@ export function ConfirmDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | boolean | null | Promise<void | boolean | null>;
   title: ReactNode;
   description?: ReactNode;
   confirmLabel?: string;
@@ -79,23 +79,37 @@ export function ConfirmDialog({
   variant?: ButtonVariant;
   children?: ReactNode;
 }) {
+  const lock = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const close = () => { if (!lock.current) { setError(null); onClose(); } };
+  const confirm = async () => {
+    if (lock.current) return;
+    lock.current = true;
+    setPending(true);
+    setError(null);
+    try {
+      const success = await onConfirm();
+      if (success !== false) { lock.current = false; onClose(); }
+    } catch {
+      setError('تعذّر تنفيذ العملية. حاول مرة أخرى.');
+    } finally { lock.current = false; setPending(false); }
+  };
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       title={title}
       size="sm"
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={close} disabled={pending}>
             {cancelLabel}
           </Button>
           <Button
             variant={variant}
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
+            loading={pending}
+            onClick={confirm}
           >
             {confirmLabel}
           </Button>
@@ -104,6 +118,7 @@ export function ConfirmDialog({
     >
       {description && <p className="text-sm text-ink-soft">{description}</p>}
       {children}
+      {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
     </Dialog>
   );
 }

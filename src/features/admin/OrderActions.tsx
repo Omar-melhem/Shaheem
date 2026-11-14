@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Ban, Megaphone, UserCheck } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryOrder } from '@/domain/types';
 import { CANCELLABLE_STATUSES, isInQueue } from '@/domain/orderStatus';
 import { isAutoDispatchEligible } from '@/domain/dispatch';

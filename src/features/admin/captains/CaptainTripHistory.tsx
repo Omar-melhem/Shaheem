@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { formatMoney } from '@/domain/money';
 import { areaLabel } from '@/domain/regions';
 import { ammanDayKey, formatAmmanTime, lastThreeAmmanDays } from '@/domain/time';

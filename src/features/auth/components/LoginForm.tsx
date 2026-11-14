@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { AlertCircle, LockKeyhole, UserRound } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { Button, Field, INPUT_ICON_PAD, Input, InputIcon, PasswordField, fieldMessageId } from '@/shared/components/ui';
 import { useDemoSignIn } from '../hooks/useDemoSignIn';
 import { ForgotPasswordHelp } from './ForgotPasswordHelp';

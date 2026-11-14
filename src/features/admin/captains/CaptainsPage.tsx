@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Eye, MapPin, Pencil, Plus, Power, RotateCcw, Star, Users, Wallet } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow, type CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useCaptainViews, useNow, type CaptainView } from '@/shared/hooks/application';
 import type { Captain } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { describeReasons } from '@/domain/eligibility';
@@ -77,7 +77,7 @@ export function CaptainsPage() {
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing('new')}>إضافة كابتن</Button>}
       />
       <Card className="mb-4 flex flex-wrap items-end gap-3 p-4">
-        <SearchField label="بحث في الكباتن" className="min-w-[220px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف" value={q} onChange={(e) => setQ(e.target.value)} />
+        <SearchField label="بحث في الكباتن" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="w-full sm:w-44">
         <Select aria-label="حالة الحساب" value={account} onChange={(e) => setAccount(e.target.value as AccountFilter)}>
           <option value="">كل الحسابات</option>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, CheckSquare, Pencil, Plus, XSquare } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
 import type { Merchant, ServiceArea } from '@/domain/types';
 import { areaLabel, childrenOf, isDestinationActive, topLevelAreas } from '@/domain/regions';
@@ -79,7 +79,7 @@ export function MerchantAreaPriceTable({ merchant }: { merchant: Merchant }) {
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-cream-dark p-4">
-          <SearchField label="بحث في المناطق" className="min-w-[200px] max-w-sm flex-1" placeholder="ابحث عن منطقة أو قسم" value={q} onChange={(e) => setQ(e.target.value)} />
+          <SearchField label="بحث في المناطق" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-sm flex-1" placeholder="ابحث عن منطقة أو قسم" value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" icon={<CheckSquare className="h-4 w-4" />} disabled={toEnable.length === 0} onClick={() => setBulk('select')}>
               تحديد جميع المناطق

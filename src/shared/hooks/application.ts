@@ -1,5 +1,6 @@
+import { startDemoClock } from '@/app/state';
 import { useEffect, useMemo, useState } from 'react';
-import { useAppStore, captainActiveOrder, captainBalance, captainEligibility } from './store';
+import { useAppStore, captainActiveOrder, captainBalance, captainEligibility } from '@/app/state';
 import { locationFreshness, type LocationFreshness } from '@/domain/location';
 import type { Captain, ID } from '@/domain/types';
 import type { Eligibility } from '@/domain/eligibility';
@@ -56,26 +57,4 @@ export const OP_STATUS_LABEL: Record<CaptainView['opStatus'], string> = {
   inactive: 'موقوف',
 };
 
-/**
- * Drives the simulation clock (offer expiry + simulated trip GPS). When several
- * tabs are open, only one "leader" tab ticks so they don't overwrite each other.
- */
-export function useSimulationClock() {
-  useEffect(() => {
-    const tabId = Math.random().toString(36).slice(2);
-    const LEADER_KEY = 'shahm-demo-tick-leader';
-    const t = setInterval(() => {
-      const now = Date.now();
-      try {
-        const raw = localStorage.getItem(LEADER_KEY);
-        const leader = raw ? (JSON.parse(raw) as { id: string; at: number }) : null;
-        if (leader && leader.id !== tabId && now - leader.at < 3000) return;
-        localStorage.setItem(LEADER_KEY, JSON.stringify({ id: tabId, at: now }));
-      } catch {
-        // Storage unavailable — tick locally.
-      }
-      useAppStore.getState().tick(now);
-    }, 1000);
-    return () => clearInterval(t);
-  }, []);
-}
+export function useSimulationClock() { useEffect(() => startDemoClock(), []); }

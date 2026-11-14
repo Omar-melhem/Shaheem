@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { governorateName } from '@/domain/governorates';
 import { Button, Dialog, Field, OpenDecision } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

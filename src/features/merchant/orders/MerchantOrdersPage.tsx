@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { History } from 'lucide-react';
-import { useSession } from '@/application/session';
-import { useAppStore } from '@/application/store';
+import { useSession } from '@/app/session';
+import { useAppStore } from '@/app/state';
 import { merchantOrderOverview } from '@/application/dashboard';
 import { Card, CardHeader, EmptyState, Tabs } from '@/shared/components/ui';
 import { MerchantHeader } from '../MerchantHeader';

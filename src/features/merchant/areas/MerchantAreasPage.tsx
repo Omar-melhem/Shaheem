@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Printer, Tags } from 'lucide-react';
-import { useSession } from '@/application/session';
-import { useAppStore } from '@/application/store';
+import { useSession } from '@/app/session';
+import { useAppStore } from '@/app/state';
 import { merchantZoneOptions, type MerchantZoneOption } from '@/application/queries';
 import { governorateName } from '@/domain/governorates';
 import { cityName } from '@/domain/cities';

@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, Hourglass, Radio, TriangleAlert } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { ACTIVE_DELIVERY_STATUSES, isInQueue } from '@/domain/orderStatus';
 import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { StatCard } from '@/shared/components/ui';
@@ -16,7 +16,7 @@ export function DispatchSummary() {
   const intervention = count((s) => s === 'dispatch_expired');
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4 lg:grid-cols-5">
       <StatCard label="بانتظار التوزيع" value={waiting} icon={<Hourglass className="h-5 w-5" />} tone={waiting ? 'warning' : 'neutral'} hint="لم تُعرض بعد" />
       <StatCard label="معروضة الآن" value={offering} icon={<Radio className="h-5 w-5" />} tone="warning" hint="جولة قائمة على الكباتن" />
       <StatCard label="تم القبول" value={accepted} icon={<CheckCircle2 className="h-5 w-5" />} tone="secondary" hint="مُسندة لكابتن وقيد التوصيل" />

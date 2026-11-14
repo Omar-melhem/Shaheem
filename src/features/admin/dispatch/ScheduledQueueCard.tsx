@@ -1,5 +1,5 @@
 import { CalendarClock, Copy } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryOrder } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { areaLabel } from '@/domain/regions';

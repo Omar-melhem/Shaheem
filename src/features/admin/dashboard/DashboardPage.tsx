@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Send, Store, UserPlus } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import { operationalKpis, platformKpis } from '@/application/dashboard';
 import { PageHeader } from '@/shared/components/ui';
 import { OperationalKpiSection, PlatformKpiSection } from './OverviewSection';

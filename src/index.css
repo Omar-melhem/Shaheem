@@ -12,6 +12,27 @@
   :focus-visible {
     outline-color: #8c2335;
   }
+  :focus-visible { outline-style: solid; outline-width: 2px; outline-offset: 3px; }
+  img, video, canvas { max-width: 100%; }
+  input, select, textarea { min-width: 0; }
+}
+
+/* The same semantic table becomes labelled rows on phones; desktop keeps its columns. */
+.responsive-table table { min-width: var(--table-min-width); }
+.table-mobile-label { display: none; }
+.table-cell-content { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .responsive-table table { display: block; min-width: 0; }
+  .responsive-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .responsive-table tbody { display: block; }
+  .responsive-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: .75rem; gap: .35rem; }
+  .responsive-table tbody td { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: start; gap: .5rem; width: auto; max-width: none; min-width: 0; padding: .4rem .25rem; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .responsive-table tbody td[colspan] { display: block; }
+  .responsive-table td.truncate { overflow: visible; white-space: normal; }
+  .table-mobile-label { display: block; color: #6e6a64; font-size: .75rem; font-weight: 700; }
+  .responsive-table td > div { min-width: 0; flex-wrap: wrap; }
+  .responsive-table td button, .responsive-table td a { min-height: 44px; }
+  input, select, textarea { font-size: 1rem !important; }
 }
 
 /* Leaflet is LTR internally; keep its controls/tiles stable inside the RTL app. */

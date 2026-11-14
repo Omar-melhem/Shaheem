@@ -1,5 +1,5 @@
 import { Headphones, Mail, MessageCircle, Phone, Link2 } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { SupportChannel, SupportContact } from '@/domain/types';
 import { EmptyState } from '@/shared/components/ui';
 

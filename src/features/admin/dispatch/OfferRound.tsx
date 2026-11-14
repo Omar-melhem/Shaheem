@@ -1,4 +1,4 @@
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryOrder, DispatchOffer } from '@/domain/types';
 import { MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
 import { formatDistance } from '@/domain/geo';

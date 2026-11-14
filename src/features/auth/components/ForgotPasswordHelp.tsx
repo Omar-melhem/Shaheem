@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import { Button, Dialog } from '@/shared/components/ui';
 import { SupportContactList } from '@/features/support/SupportContacts';
 

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Eye, ReceiptText } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import type { OrderStatus } from '@/domain/types';
 import { ORDER_STATUS_LABEL } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';

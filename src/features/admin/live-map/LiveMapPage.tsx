@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Marker, Tooltip } from 'react-leaflet';
-import { useAppStore } from '@/application/store';
-import { useCaptainViews, useNow, OP_STATUS_LABEL, type CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useCaptainViews, useNow, OP_STATUS_LABEL, type CaptainView } from '@/shared/hooks/application';
 import { Card, OpenDecision, PageHeader, SimTag, SearchField } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { BaseMap } from '@/shared/components/map/BaseMap';
@@ -56,9 +56,9 @@ export function LiveMapPage() {
 
       <LiveMapStats views={views} />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="relative self-start">
-          <BaseMap className="h-[64vh] min-h-[460px]" zoom={13} center={initialCenter} label="خريطة الكباتن">
+          <BaseMap className="h-[clamp(260px,55dvh,620px)]" zoom={13} center={initialCenter} label="خريطة الكباتن">
             {onMap.map((v) => {
               const loc = v.captain.lastLocation!;
               return (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Route, Trash2 } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryRoute } from '@/domain/types';
 import { governorateName } from '@/domain/governorates';
 import { Button, Card, CardHeader, ConfirmDialog, EmptyState } from '@/shared/components/ui';

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useAppStore, DEMO_ADMIN } from '@/application/store';
+import { useAppStore, DEMO_ADMIN } from '@/app/state';
 import { Button, Select, SimTag } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { useDemoSignIn } from '../hooks/useDemoSignIn';

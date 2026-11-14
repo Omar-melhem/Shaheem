@@ -20,8 +20,8 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 import { Logo } from '@/shared/components/Logo';
 import { cn } from '@/shared/lib/cn';
@@ -99,7 +99,7 @@ export function AdminLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-[700] flex items-center gap-3 border-b border-cream-deep bg-cream/95 px-4 py-2.5 backdrop-blur lg:px-6">
+        <header className="sticky top-0 z-[700] flex items-center gap-1 border-b sm:gap-3 border-cream-deep bg-cream/95 px-4 py-2.5 backdrop-blur lg:px-6">
           <button className="rounded-lg p-2 hover:bg-cream-dark lg:hidden" onClick={() => setMobileOpen(true)} aria-label="فتح القائمة">
             <Menu className="h-5 w-5" />
           </button>
@@ -114,7 +114,7 @@ export function AdminLayout() {
           </button>
           {signOutDialog}
         </header>
-        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-6">
+        <main className="mx-auto min-w-0 w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-6">
           <Outlet />
         </main>
       </div>
@@ -190,7 +190,7 @@ function AlertsMenu() {
         )}
       </button>
       {open && (
-        <div className="absolute end-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-cream-deep bg-white shadow-pop">
+        <div className="fixed inset-x-4 top-16 sm:absolute sm:inset-x-auto sm:end-0 sm:top-12 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cream-deep bg-white shadow-pop">
           <p className="border-b border-cream-dark px-4 py-3 text-sm font-bold">التنبيهات التشغيلية</p>
           <ul className="max-h-96 divide-y divide-cream-dark overflow-y-auto">
             {alerts.length === 0 && <li className="p-4 text-center text-sm text-ink-muted">لا توجد تنبيهات</li>}

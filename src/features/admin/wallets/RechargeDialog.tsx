@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAppStore } from '@/application/store';
-import type { CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import type { CaptainView } from '@/shared/hooks/application';
 import { formatMoney, parseJodInput } from '@/domain/money';
 import { Button, Dialog, Field, Input } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

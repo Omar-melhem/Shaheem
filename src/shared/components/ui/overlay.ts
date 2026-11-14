@@ -23,9 +23,11 @@ export function trapTabKey(e: ReactKeyboardEvent<HTMLElement>) {
 export function useEscape(open: boolean, onClose: () => void) {
   useEffect(() => {
     if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const handler = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); document.body.style.overflow = previousOverflow; };
   }, [open, onClose]);
 }
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Inbox, Timer, TriangleAlert } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import { useNow } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import { useNow } from '@/shared/hooks/application';
 import { dispatchQueues } from '@/application/dispatchQueues';
 import type { DeliveryOrder } from '@/domain/types';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
@@ -30,7 +30,7 @@ export function DispatchPage() {
   const merchantName = (id: string) => merchants.find((m) => m.id === id)?.businessName ?? '—';
 
   const summary = (o: DeliveryOrder) => (
-    <div className="min-w-[240px] flex-1">
+    <div className="min-w-0 basis-full flex-1 xl:basis-60">
       <div className="flex flex-wrap items-center gap-2">
         <button className="font-mono font-bold text-primary hover:underline" dir="ltr" onClick={() => setDetailId(o.id)}>
           {o.reference}

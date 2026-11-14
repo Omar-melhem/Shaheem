@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { homePathFor } from '@/application/session';
+import { homePathFor } from '@/app/session';
 import { useValidSession } from './RequireSession';
 import { LoginLayout } from './components/LoginLayout';
 import { BrandShowcase } from './components/BrandShowcase';

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { History, Wallet } from 'lucide-react';
-import { useAppStore } from '@/application/store';
-import type { CaptainView } from '@/application/hooks';
+import { useAppStore } from '@/app/state';
+import type { CaptainView } from '@/shared/hooks/application';
 import type { Captain } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { FINAL_STATUSES } from '@/domain/orderStatus';

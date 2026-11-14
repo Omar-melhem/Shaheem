@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { ServiceArea } from '@/domain/types';
 import { areaFullPath } from '@/domain/regions';
 import { Button, Dialog, Field, Input, Textarea } from '@/shared/components/ui';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, CornerDownLeft, Pencil, Plus } from 'lucide-react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { ServiceArea } from '@/domain/types';
 import { childrenOf } from '@/domain/regions';
 import { governorateName } from '@/domain/governorates';

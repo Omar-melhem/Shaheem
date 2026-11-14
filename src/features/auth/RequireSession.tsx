@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useSession, homePathFor } from '@/application/session';
-import { useAppStore } from '@/application/store';
-import type { Session } from '@/application/store';
+import { useSession, homePathFor } from '@/app/session';
+import { useAppStore } from '@/app/state';
+import type { Session } from '@/app/state';
 
 /** The tab's session, or null if it points at an account that no longer exists (e.g. after a demo reset). */
 export function useValidSession(): Session | null {

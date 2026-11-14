@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/cn';
 
 /** Shared input styling — change it here and every field follows. */
 export const inputBase =
-  'w-full rounded-xl border border-cream-deep bg-white px-3 text-sm transition-[border-color,box-shadow] duration-150 text-ink placeholder:text-ink-muted/70 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-cream disabled:text-ink-muted aria-[invalid=true]:border-red-400';
+  'min-w-0 max-w-full w-full rounded-xl border border-cream-deep bg-white px-3 text-sm transition-[border-color,box-shadow] duration-150 text-ink placeholder:text-ink-muted/70 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-cream disabled:text-ink-muted aria-[invalid=true]:border-red-400';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cn(inputBase, 'h-10', className)} {...rest} />;
@@ -22,7 +22,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
  */
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
   return (
-    <span className={cn('relative block w-full', className)}>
+    <span className={cn('relative block min-w-0 max-w-full w-full', className)}>
       <select ref={ref} className={cn(inputBase, 'h-10 cursor-pointer appearance-none truncate ps-4 pe-11 disabled:cursor-not-allowed')} {...rest}>
         {children}
       </select>

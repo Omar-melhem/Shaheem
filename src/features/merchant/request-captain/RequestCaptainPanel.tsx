@@ -60,8 +60,8 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         </FormSection>
 
         <FormSection step={2} title="بيانات التوصيل">
-          <Field label="رقم هاتف العميل" optional error={errors.customerPhone} hint={PHONE_HINT}>
-            <PhoneField value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
+          <Field label="رقم هاتف العميل" required error={errors.customerPhone} hint={PHONE_HINT}>
+            <PhoneField required value={form.customerPhone} onChange={(v) => set('customerPhone', v)} aria-invalid={!!errors.customerPhone} />
           </Field>
           <CustomerLocationSection
             key={request.resetCount}

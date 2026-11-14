@@ -1,4 +1,4 @@
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { ConfirmDialog } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';

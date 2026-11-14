@@ -1,7 +1,7 @@
 import type { Captain, DeliveryOrder, ID, Money } from '@/domain/types';
 import { evaluateEligibility } from '@/domain/eligibility';
 import { isActiveDelivery } from '@/domain/orderStatus';
-import type { AppData } from '@/infrastructure/seed';
+import type { AppData } from '@/application/data';
 
 // Pure reads over AppData, shared by the store, the dispatch rounds and selectors.
 

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore, type Result, type Session } from '@/application/store';
-import { useSession, homePathFor } from '@/application/session';
+import { useAppStore, type Result, type Session } from '@/app/state';
+import { useSession, homePathFor } from '@/app/session';
 
 /**
  * Credential check + session start + role redirect, kept out of the form UI.

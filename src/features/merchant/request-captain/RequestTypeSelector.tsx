@@ -10,7 +10,7 @@ const OPTIONS: Array<{ value: RequestType; label: string; hint: string; Icon: ty
 /** Immediate vs scheduled as two cards (CR v1.4 §6.1). A radio group, keyboard accessible. */
 export function RequestTypeSelector({ value, onChange }: { value: RequestType; onChange: (v: RequestType) => void }) {
   return (
-    <div role="radiogroup" aria-label="نوع الطلب" className="grid grid-cols-2 gap-3">
+    <div role="radiogroup" aria-label="نوع الطلب" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {OPTIONS.map(({ value: v, label, hint, Icon }) => {
         const selected = value === v;
         return (

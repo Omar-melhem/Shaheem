@@ -1,6 +1,6 @@
 import type { ID, Money, ServiceArea } from '@/domain/types';
 import { areaLabel, isDestinationActive } from '@/domain/regions';
-import type { AppData } from '@/infrastructure/seed';
+import type { AppData } from '@/application/data';
 
 type PricingData = Pick<AppData, 'areas' | 'prices' | 'coverage'>;
 

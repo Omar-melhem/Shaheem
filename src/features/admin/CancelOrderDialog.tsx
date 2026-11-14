@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '@/application/store';
+import { useAppStore } from '@/app/state';
 import type { DeliveryOrder } from '@/domain/types';
 import { Button, Dialog, Field, OpenDecision, Textarea } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
