@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Printer, Tags } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { useSession } from '@/app/session';
 import { useAppStore } from '@/app/state';
 import { merchantZoneOptions, type MerchantZoneOption } from '@/application/queries';
@@ -10,7 +10,6 @@ import { formatMoneyExact } from '@/domain/money';
 import { Logo } from '@/shared/components/Logo';
 import { Button, Card, EmptyState, SearchField } from '@/shared/components/ui';
 import { formatDate } from '@/shared/lib/format';
-import { MerchantHeader } from '../MerchantHeader';
 
 interface Group {
   key: string;
@@ -49,12 +48,7 @@ export function MerchantAreasPage() {
   if (!merchant) return <Navigate to="/login" replace />;
 
   return (
-    <div className="min-h-screen print:bg-white">
-      <div className="print:hidden">
-        <MerchantHeader merchant={merchant} page="areas" />
-      </div>
-
-      <main className="mx-auto max-w-4xl space-y-4 px-4 py-6 print:max-w-none print:p-0">
+    <div className="mx-auto max-w-4xl space-y-4 print:max-w-none">
         {/* Print-only heading: brand, merchant and date. */}
         <header className="hidden items-center justify-between border-b border-ink/20 pb-3 print:flex">
           <Logo className="h-14" />
@@ -80,10 +74,10 @@ export function MerchantAreasPage() {
 
         {options.length === 0 ? (
           <Card>
-            <EmptyState icon={<Tags className="h-6 w-6" />} title="لا توجد مناطق مسعّرة لحسابك بعد" description="سيحدد فريق شهم مناطقك ورسومها، وتظهر هنا تلقائياً." />
+            <EmptyState compact title="لا توجد مناطق مسعّرة لحسابك بعد. يحددها فريق شهم وتظهر هنا تلقائياً." />
           </Card>
         ) : visible.length === 0 ? (
-          <Card><EmptyState title="لا توجد منطقة مطابقة" /></Card>
+          <Card><EmptyState compact title="لا توجد منطقة مطابقة" /></Card>
         ) : (
           groupOptions(visible).map((g) => (
             <Card key={g.key} className="overflow-hidden print:break-inside-auto print:rounded-none print:shadow-none print:ring-1 print:ring-ink/20">
@@ -108,7 +102,6 @@ export function MerchantAreasPage() {
           ))
         )}
         <p className="text-xs text-ink-muted">عدد المناطق: {visible.length} · الأسعار الحالية لحسابك فقط.</p>
-      </main>
     </div>
   );
 }

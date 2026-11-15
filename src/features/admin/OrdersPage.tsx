@@ -109,7 +109,7 @@ export function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
                     <td className="px-4 py-3">
-                      {o.customerPhone ? <span dir="ltr">{o.customerPhone}</span> : <span className="text-ink-muted">—</span>}
+                      {o.customerPhone ? <span dir="ltr">{o.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}
                     </td>
                     <td className="px-4 py-3">
                       {o.destination.label}

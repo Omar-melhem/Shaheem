@@ -75,7 +75,7 @@ check(S().orders.find((o) => o.id === order1.id)!.deliveryPrice === 2000, 'first
 
 section('Request validation');
 check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-abdoun', location: at('a-abdoun') }).ok, 'zone not enabled for merchant rejected');
-check(!S().createOrder(mid, { customerPhone: '', areaId: 'a-khalda', location: at('a-khalda') }).ok, 'customer phone is optional (CR v1.3 §8.4)');
+check(S().createOrder(mid, { customerPhone: '', areaId: 'a-khalda', location: at('a-khalda') }).ok, 'customer phone is optional (owner decision 2026-11-15)');
 const noGoods = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda' });
 check(noGoods.ok && S().orders.find((x) => x.id === noGoods.value.id)!.mealValue === undefined, 'no goods/order value is collected (CR v1.4 §4)');
 S().setMerchantAreaPriceStatus(mid, 'a-tla', false);

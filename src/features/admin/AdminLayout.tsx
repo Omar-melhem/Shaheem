@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useConfirmedSignOut } from '@/features/auth/hooks/useConfirmedSignOut';
+import { Outlet } from 'react-router-dom';
 import {
   Bell,
   Headphones,
   LayoutDashboard,
-  LogOut,
   Map,
-  Menu,
   Radio,
   RadioTower,
   ReceiptText,
@@ -18,16 +15,16 @@ import {
   Tags,
   Users,
   Wallet,
-  X,
 } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import { useNow } from '@/shared/hooks/application';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 import { Logo } from '@/shared/components/Logo';
+import { AppShell, type ShellNavItem } from '@/shared/components/layout/AppShell';
 import { cn } from '@/shared/lib/cn';
 import { formatRelative } from '@/shared/lib/format';
 
-const NAV = [
+const NAV: Array<Extract<ShellNavItem, { to: string }>> = [
   { to: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard, end: true },
   { to: '/admin/dispatch', label: 'مركز التوزيع', icon: Send },
   { to: '/admin/map', label: 'الخريطة الحية', icon: Map },
@@ -41,84 +38,29 @@ const NAV = [
   { to: '/admin/settings', label: 'الإعدادات', icon: Settings },
 ];
 
+/**
+ * Admin shell: the shared right-side sidebar / phone drawer, with the broadcast pill and
+ * notifications in the top bar. Sign-out lives in Settings (with its confirmation), not here.
+ */
 export function AdminLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { pathname } = useLocation();
-  const { requestSignOut: signOut, signOutDialog } = useConfirmedSignOut();
-  useEffect(() => setMobileOpen(false), [pathname]);
-
   const queueCount = useAppStore((s) => s.orders.filter((o) => o.status === 'pending_dispatch' || o.status === 'dispatch_expired').length);
-
-  const nav = (
-    <nav className="space-y-1 p-3" aria-label="التنقل الرئيسي للإدارة">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors',
-              isActive ? 'bg-primary text-white shadow-sm' : 'text-ink-soft hover:bg-cream-dark',
-            )
-          }
-        >
-          <Icon className="h-[18px] w-[18px]" aria-hidden />
-          <span className="flex-1">{label}</span>
-          {to === '/admin/dispatch' && queueCount > 0 && (
-            <span className="rounded-full bg-amber-400 px-2 text-xs font-extrabold text-ink">{queueCount}</span>
-          )}
-        </NavLink>
-      ))}
-    </nav>
+  const nav = NAV.map((item) =>
+    item.to === '/admin/dispatch' && queueCount > 0
+      ? { ...item, badge: <span className="rounded-full bg-amber-400 px-2 text-xs font-extrabold text-ink" aria-label={`${queueCount} بانتظار الإدارة`}>{queueCount}</span> }
+      : item,
   );
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-cream-deep bg-white lg:flex">
-        <div className="flex items-center justify-center border-b border-cream-dark px-4 py-3">
-          <Logo className="h-14" />
-        </div>
-        <div className="flex-1 overflow-y-auto">{nav}</div>
-        <p className="border-t border-cream-dark p-3 text-[11px] text-ink-muted">مدير النظام (تجريبي)</p>
-      </aside>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-[850] lg:hidden">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute inset-y-0 start-0 w-72 overflow-y-auto bg-white shadow-pop">
-            <div className="flex items-center justify-between border-b border-cream-dark px-4 py-3">
-              <Logo className="h-12" />
-              <button onClick={() => setMobileOpen(false)} aria-label="إغلاق القائمة" className="rounded-lg p-1.5 hover:bg-cream">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            {nav}
-          </aside>
-        </div>
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-[700] flex items-center gap-1 border-b sm:gap-3 border-cream-deep bg-cream/95 px-4 py-2.5 backdrop-blur lg:px-6">
-          <button className="rounded-lg p-2 hover:bg-cream-dark lg:hidden" onClick={() => setMobileOpen(true)} aria-label="فتح القائمة">
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="flex-1" />
-          <BroadcastPill />
-          <AlertsMenu />
-          <button
-            onClick={signOut}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold text-ink-soft hover:bg-cream-dark"
-          >
-            <LogOut className="h-4 w-4" /> خروج
-          </button>
-          {signOutDialog}
-        </header>
-        <main className="mx-auto min-w-0 w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-6">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+    <AppShell
+      brand={<div className="flex justify-center"><Logo className="h-14" /></div>}
+      mobileBrand={<Logo className="h-9" />}
+      nav={nav}
+      navLabel="التنقل الرئيسي للإدارة"
+      headerActions={<><BroadcastPill /><AlertsMenu /></>}
+      sidebarFooter="مدير النظام (تجريبي)"
+    >
+      <Outlet />
+    </AppShell>
   );
 }
 

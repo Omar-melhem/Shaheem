@@ -5,7 +5,6 @@ import { useSession } from '@/app/session';
 import { useAppStore } from '@/app/state';
 import { merchantOrderOverview } from '@/application/dashboard';
 import { Card, CardHeader, EmptyState, Tabs } from '@/shared/components/ui';
-import { MerchantHeader } from '../MerchantHeader';
 import { HistoryItem } from './MerchantOrderItems';
 
 type Filter = 'all' | 'delivered' | 'cancelled';
@@ -21,10 +20,8 @@ export function MerchantOrdersPage() {
   const shown = history.filter((o) => filter === 'all' || o.status === filter);
 
   return (
-    <div className="min-h-screen">
-      <MerchantHeader merchant={merchant} page="orders" />
+    <div className="mx-auto max-w-4xl">
       <h1 className="sr-only">سجل الطلبات — {merchant.businessName}</h1>
-      <main className="mx-auto max-w-3xl px-4 py-6">
         <Card>
           <CardHeader
             title={`سجل الطلبات (${shown.length})`}
@@ -42,14 +39,13 @@ export function MerchantOrdersPage() {
             }
           />
           {shown.length === 0 ? (
-            <EmptyState title="لا توجد طلبات مطابقة" description="الطلبات المُسلّمة والملغاة تظهر هنا؛ الطلبات الجارية في الصفحة الرئيسية." />
+            <EmptyState compact title="لا توجد طلبات مطابقة. الطلبات الجارية تظهر في صفحة «طلب كابتن»." />
           ) : (
             <ul className="divide-y divide-cream-dark">
               {shown.map((o) => <HistoryItem key={o.id} order={o} />)}
             </ul>
           )}
         </Card>
-      </main>
     </div>
   );
 }

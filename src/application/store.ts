@@ -583,7 +583,8 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             const m = d.merchants.find((x) => x.id === merchantId);
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
-            if (!isValidPhone(input.customerPhone ?? '')) return fail(PHONE_ERROR);
+            // Customer phone is optional (owner decision, 2026-11-15); a supplied one must be 10 digits.
+            if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
             const requestType: RequestType = input.requestType ?? 'immediate';
             if (requestType === 'scheduled') {
               const at = input.scheduledPickupAt;

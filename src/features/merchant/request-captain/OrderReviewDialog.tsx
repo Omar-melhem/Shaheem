@@ -94,7 +94,7 @@ export function OrderReviewDialog({
             <DetailRow label="الموقع الدقيق">
               {details.exactLocation ?? <span className="text-amber-800">{NO_EXACT_LOCATION}</span>}
             </DetailRow>
-            {details.customerPhone && <DetailRow label="هاتف العميل"><span dir="ltr">{details.customerPhone}</span></DetailRow>}
+            <DetailRow label="هاتف العميل">{details.customerPhone ? <span dir="ltr">{details.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
           </dl>
           <dl className="mt-3 divide-y divide-cream-deep rounded-xl bg-cream px-3 text-sm">
             <DetailRow label="رسوم التوصيل"><span className="text-lg font-extrabold text-primary">{formatMoney(review.fee)}</span></DetailRow>
