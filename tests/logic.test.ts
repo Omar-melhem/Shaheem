@@ -1,4 +1,3 @@
-import './setup';
 import { useAppStore, captainEligibility } from '@/app/state';
 import { merchantZoneOptions, pricedAreaIds, resolveZoneFee } from '@/application/queries';
 import { polygonCentroid } from '@/domain/geo';

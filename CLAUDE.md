@@ -49,11 +49,15 @@ OPEN decision as if approved — make it a labelled demo assumption with its O-x
 - Logo: always `<Logo />` / `LogoWatermark` (transparent official PNG, no CSS cropping). Motion only via `motion-safe:animate-rise|fade`.
 
 ## Verify
-`npm test` (business-rule checks in `tests/`, esbuild + node, no framework) and `npm run build` (tsc incl. tests + vite build) must pass. Add a `check()` to `tests/logic.test.ts` when changing a store rule.
+`npm test` (Vitest) and `npm run build` (tsc incl. tests + vite build) must pass; `npm run coverage` enforces the floors in `vitest.config.ts` (raise, never lower).
+- `tests/logic.test.ts`: the end-to-end store scenario; each `check()` is one named test (`tests/harness.ts`).
+- `tests/unit/domain`, `tests/unit/application`, `tests/unit/infrastructure`: unit tests by layer. Store tests use a fresh isolated store per test (`tests/unit/application/storeHarness.ts`: `newStore()`, in-memory `AppRepository`), never the app singleton.
+- `tests/unit/shared`, `tests/unit/features`: component tests with Testing Library; add `// @vitest-environment jsdom` as the first line. Default environment is Node.
+- Builders in `tests/fixtures.ts`. Changing a rule → add or update the test in the layer that owns the rule.
 
 ## Agents (.claude/agents)
 Third-party agents from ECC (affaan-m/ECC) and claude-code-templates (davila7), licences alongside.
 Project rules above win over any agent or `~/.claude/rules/ecc` guidance. In particular:
 - Never delete `package-lock.json` or reinstall dependencies to "fix" a build; fix the error.
-- This is a prototype: don't impose 80% coverage/TDD or add test frameworks unasked; `npm test` + `npm run build` are the gate.
+- Test stack (owner request, 2026-11-15): Vitest + @vitest/coverage-v8 + jsdom + Testing Library, dev dependencies only. Don't add other test frameworks; `npm test` + `npm run build` are the gate.
 - Don't add libraries, backends or new business rules on an agent's suggestion.

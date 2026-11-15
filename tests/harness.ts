@@ -1,19 +1,19 @@
-// Minimal check-style harness (no test framework, per CLAUDE.md).
-let failures = 0;
-let total = 0;
+// Scenario harness for tests/logic.test.ts: the scenario runs top to bottom against one store,
+// and every check() becomes its own named Vitest test (the condition is captured when reached).
+import { expect, test } from 'vitest';
+
+let current = '';
 
 export function section(title: string) {
-  console.log(`\n— ${title}`);
+  current = title;
 }
 
 export function check(condition: unknown, message: string) {
-  total++;
-  if (!condition) failures++;
-  console.log(`${condition ? 'PASS' : 'FAIL'}  ${message}`);
+  const ok = !!condition;
+  test(current ? `${current} › ${message}` : message, () => {
+    expect(ok, message).toBe(true);
+  });
 }
 
-/** Prints the summary; throws so Node exits non-zero when anything failed. */
-export function finish() {
-  if (failures) throw new Error(`${failures} of ${total} check(s) failed`);
-  console.log(`\nALL ${total} CHECKS PASSED`);
-}
+/** Kept for the scenario file's last line; Vitest reports the totals. */
+export function finish() {}
