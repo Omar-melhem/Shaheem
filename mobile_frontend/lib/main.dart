@@ -9,16 +9,19 @@ import 'package:mobile_frontend/data/repositories/auth_repository_placeholder.da
 import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/order_offer_repository_placeholder.dart';
 import 'package:mobile_frontend/domain/repositories/active_order_repository.dart';
 import 'package:mobile_frontend/domain/repositories/auth_repository.dart';
 import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
 import 'package:mobile_frontend/domain/repositories/captain_availability_repository.dart';
 import 'package:mobile_frontend/domain/repositories/captain_location_repository.dart';
+import 'package:mobile_frontend/domain/repositories/order_offer_repository.dart';
 import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
 import 'package:mobile_frontend/domain/use_cases/check_auth_status.dart';
 import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
 import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
 import 'package:mobile_frontend/domain/use_cases/get_current_user.dart';
+import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_in.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
 import 'package:mobile_frontend/helper/network/internet_connection_service.dart';
@@ -65,6 +68,7 @@ class MainApp extends StatefulWidget {
         const CaptainAvailabilityRepositoryPlaceholder(),
     this.availabilityPermissions =
         const AvailabilityPermissionGatewayPlaceholder(),
+    this.orderOfferRepository = const OrderOfferRepositoryPlaceholder(),
     this.pickupMapBuilder,
     this.debugShellPreview,
   });
@@ -89,6 +93,11 @@ class MainApp extends StatefulWidget {
   /// to the placeholder, which reports "not configured" and shows no
   /// prompt (no native permission configuration exists yet).
   final AvailabilityPermissionGateway availabilityPermissions;
+
+  /// The captain's actionable order offers. Defaults to the placeholder,
+  /// which reports "backend not configured": no offer is ever shown or
+  /// answered until the real API exists.
+  final OrderOfferRepository orderOfferRepository;
 
   /// In-app map for an active order's pickup. Null until a maps provider is
   /// approved and configured; the screen then says the map is unavailable.
@@ -146,6 +155,9 @@ class _MainAppState extends State<MainApp> {
         widget.captainAvailabilityRepository,
       ),
       availabilityPermissions: widget.availabilityPermissions,
+      getEligibleOffers: GetEligibleOffers(widget.orderOfferRepository),
+      acceptOrderOffer: AcceptOrderOffer(widget.orderOfferRepository),
+      declineOrderOffer: DeclineOrderOffer(widget.orderOfferRepository),
       pickupMapBuilder: widget.pickupMapBuilder,
       debugShellPreview: widget.debugShellPreview,
     );

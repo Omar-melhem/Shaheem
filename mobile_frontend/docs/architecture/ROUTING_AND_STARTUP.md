@@ -204,6 +204,33 @@ bar is hidden with an open keyboard and is visible only in the main shell.
   opening Current Order; **no high-frequency polling**. Handle late replies
   and sign-out safely. Never display stale/fake active-order status.
 
+**Home re-entry (implemented, Tasks 28–29).** The indexed stack keeps every
+visited branch mounted, so returning to a tab runs no `initState` and no
+app resume. Home's read models (availability, pending offers) are therefore
+re-read by `HomeLifecycleBridge` at these moments only (counts per feature,
+from `test/home_tab_reentry_test.dart` through the real router):
+
+| Event | Loads per feature |
+|---|---|
+| First opening Home (mount) | 1 |
+| Another tab → Home tab | 1 (before Task 28: 0) |
+| Re-selecting the visible Home tab | 0 |
+| Rebuilds (text scale, size, display name, Cubit state) | 0 |
+| App resume with Home visible | 1, no permission prompt |
+| App resume while another tab is visible | 0 (owner decision, Task 29; before: 1), then 1 on returning to Home |
+| App resume while a full page covers Home | 0, then 1 when the page closes |
+| Resume and switching to Home close together | 1 (the Cubit ignores a load while one runs) |
+| Trigger while a load is running | 0 (the Cubit ignores it) |
+| Sign-out | 0; the Cubits close with the shell and late answers are dropped; the next session gets new Cubits |
+
+The re-entry signal is go_router's per-branch `TickerMode` (off for hidden
+branches). An opaque page covering Home inside its branch also turns it
+off, so returning from such a page re-reads once; a dialog does not. App
+resume reads again only while Home is visible (the bridge caches the last
+`TickerMode` value; a resume never changes it). No
+such Home page exists yet. Nothing is polled and no TTL is applied; the
+server still decides whether an offer is actionable.
+
 ### 7.1 Current Order and merchant pickup
 
 Opening the center destination fetches the server's single current active

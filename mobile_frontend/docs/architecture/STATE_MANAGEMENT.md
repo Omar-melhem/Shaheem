@@ -36,6 +36,7 @@ D-A13, D-A20, D-A38, D-A41, D-R06, D-R07, C-33.
 | `LoginCubit` | Feature (Login) | The `/login` route builder (`BlocProvider`); closed when Login leaves the tree | Login form values, field errors, submission (§3) |
 | `CurrentOrderCubit` | Main shell (one instance while the shell is open) | The shell route builder (`BlocProvider`); closed on sign-out | The captain's active order, its pickup state and the captain's location (§3.2). Read by the Current Order screen and by `AppNavBar` |
 | `HomeAvailabilityCubit` (Task 24) | Feature (Home route inside the shell) | The Home route builder (`BlocProvider`); closed on sign-out | The captain's **server-confirmed** availability and the enable/disable flow (§3.3). Read only by the Home availability card |
+| `PendingOffersCubit` (Task 26) | Feature (Home route inside the shell) | The Home route builder (`BlocProvider`); closed on sign-out | The offers the server says this captain can still accept, and the accept/decline commands (§3.3). Read only by Home's «طلبات بانتظار القبول» |
 | Future wallet/order feature state | Feature | Feature route or screen | Server-backed wallet summary and ledger; choose Cubit or Bloc based on workflow complexity. No client-side wallet calculations or holds (D-A25, D-A28, D-A50) |
 
 - **Making state app-wide** needs real cross-feature demand.
@@ -180,7 +181,21 @@ the bar's indicator; only its map is unavailable (C-33).
     notice;
   - a generation counter, `isClosed` and the session check drop late
     answers;
-  - Home reloads on open and on resume, without prompting.
+  - Home reloads on open, on returning to the Home tab and on resume
+    while Home is visible, without prompting.
+
+  **Pending offers (Task 26):** `PendingOffersCubit`.
+  - The list is exactly the server's last answer: nothing is filtered or
+    expired locally, and an id the server didn't list is never sent.
+  - "Not configured" and "confirmed empty" are distinct states.
+  - One command at a time; a card leaves the list only after a
+    server-confirmed accept or decline, and then the list is re-read.
+  - A confirmed accept asks `CurrentOrderCubit` to refresh (no
+    navigation).
+  - Unknown outcomes and "no longer available" disable that card until a
+    refresh.
+  - Loaded on open, on returning to the Home tab, on resume while Home is
+    visible and on explicit refresh; never polled.
 
   **Not implemented:** location tracking, 30 s uploads, the 90 s freshness
   rule, FCM/APNs, the real permission adapter and the backend.
@@ -193,6 +208,38 @@ the bar's indicator; only its map is unavailable (C-33).
   business error codes; use stable idempotency keys per attempted operation.
 - **Scheduled future commitments:** shown separately from the single active
   delivery, even though commission was reserved on Admin assignment.
+
+## 3.4 Screen composition vs Cubit state vs UI effects (Home, Task 27)
+
+A screen widget composes; Cubits own async business state; small widgets
+own Flutter-only resources and presentation side effects.
+
+| Concern | Owner on Home |
+|---|---|
+| Page layout (app bar, one `CustomScrollView`, sliver padding) | `HomeScreen`, a `StatelessWidget` (`view/home_screen.dart`) |
+| Availability and offers state, commands, stale-result and duplicate guards | `HomeAvailabilityCubit`, `PendingOffersCubit` (route-scoped, unchanged) |
+| Initial load (once per mount), reload when Home is shown again (Task 28) and on app resume only while Home is visible (Task 29), listener disposal | `HomeLifecycleBridge` (`widget/`), the only `StatefulWidget`: it owns one `AppLifecycleListener` and no business state |
+| Permission explanation popup | `HomeAvailabilityRationaleListener` (`BlocListener` + `showAppPopup`); the Cubit only exposes `pendingRationale` |
+| Section UI | `HomeGreeting`, `HomeAvailabilityCard` / `HomeAvailabilityNotice`, `PendingOffersHeader` / `PendingOffersSliver`, `HomeAppBar` / `WalletBalanceChip`, one per file in `widget/` |
+
+Rules:
+- **`StatefulWidget` is not forbidden.** Use it only when Flutter-local
+  lifecycle, animation, controller or focus state requires it, never for
+  business state.
+- **No `BuildContext`, widgets, ARB strings, popups or layout math in
+  Cubits;** no eligibility or request state in widgets. UI callbacks that
+  call `cubit.accept(id)`, `cubit.requestChange(value)` and similar are
+  correct; don't wrap them in extra Cubits (no `HomeCubit`).
+- **Subscribe where the data is used,** to the smallest value:
+  `HomeGreeting` uses `context.select` for the display name, and each
+  section watches only its own Cubit. A greeting change rebuilds only the
+  greeting (tested in `test/home_architecture_test.dart` with widget
+  identity). The availability and offers sections were already
+  independent.
+- **Keep lists lazy:** `SliverList.separated` with `ValueKey(offer.id)`;
+  no `shrinkWrap` lists or `children: offers.map(...)`.
+- **Load in one place:** never in `build`, and never twice (route plus
+  widget).
 
 ## 4. Testing state
 

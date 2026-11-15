@@ -33,6 +33,7 @@ Status key:
 | Main navigation (2026-11-11, D-A36; refined by R9) | `StatefulShellRoute.indexedStack` with five branches; `AppNavBar` shell (selection from the router, `goBranch`, system back, bar hidden with the keyboard); visual `MainNavigationBar` with the raised central **Current Order** button (map-pin icon), selected states, an unread-dot input (default: none; no data source yet), active-order and loading inputs fed by `CurrentOrderCubit`, two-line labels instead of shrinking, RTL, safe area applied once, accessibility | `lib/view/navigation/`, `lib/view/widget/navigation/` |
 | Current Order (2026-11-11, D-A41) | **Structure only; not functional end to end.** `CurrentOrderScreen` + shell-scoped `CurrentOrderCubit` with distinct states: loading, no active order, backend not connected (no Retry), failure with Retry, and the active order's pickup view (restaurant card, captain-location status, map area; the map area says when the restaurant location is unavailable). Domain boundaries `ActiveOrderRepository` / `GetActiveOrder` and `CaptainLocationRepository` / `GetCaptainLocation`, each with a placeholder that reports "not configured". **A real run shows «خدمة الطلبات غير مفعّلة في التطبيق بعد»**; the other states are reachable only with test fakes. No map widget, route, location provider or permission exists | `lib/view/screens/current_order_screen/`, `lib/domain/`, `lib/data/repositories/` |
 | Home header and availability (Task 24, 2026-11-15) | **UI and orchestration implemented; availability API-blocked.** App bar: «الرئيسية» when it fits, read-only total wallet chip (integer fils → JOD, «—» + "unavailable" label without data, never 0.000; no action until a Wallet route exists); no Profile button (still the fifth tab, D-A66 pending). Body: greeting from `AppUser.displayName` (no-name fallback; debug preview has no user) and availability card with `AppAvailabilityToggle`. `HomeAvailabilityCubit` + domain ports `CaptainAvailabilityRepository`, `AvailabilityPermissionGateway`, use cases; Available only after backend confirmation. **A real run shows «تفعيل استقبال الطلبات غير متاح بعد…» with the toggle disabled** (both placeholders report "not configured"; no prompt ever appears) | `lib/view/screens/home_screen/`, `lib/view/widget/toggle/`, `lib/domain/`, `lib/data/repositories/`, `lib/helper/money/` |
+| Home pending offers (Task 26, 2026-11-15) | **UI and orchestration implemented; offers API-blocked.** Section «طلبات بانتظار القبول» below the availability card: a lazily built `SliverList` of `AppOrderOfferCard` (any number of offers, full width inside the screen padding, content height); count only from a server list; distinct loading / not connected / no session / confirmed empty / offline / failure states; accept/decline server-confirmed only (one at a time; stale or unknown outcomes disable the card until refresh); a confirmed accept asks Current Order to refresh. `OrderOfferRepository` (TO SPECIFY) with a "not configured" placeholder: **a real run shows «خدمة الطلبات غير متصلة بعد…» and no cards**. Standalone design preview: `flutter run -t lib/preview/home_offers_preview.dart` (sample data only, caption «معاينة تصميم — بيانات افتراضية», commands report "nothing sent") | `lib/view/screens/home_screen/`, `lib/view/widget/order/`, `lib/domain/`, `lib/data/repositories/`, `lib/preview/` |
 | Debug-only preview (**temporary**, D-A40) | Login button «معاينة التطبيق» opens the real shell in debug builds without any session. Remove when a real sign-in exists (`TODO(debug-preview)`) | `lib/util/routes/debug_shell_preview.dart`, `route_guard.dart`, Login |
 | Startup flow | Internet check → `CheckAuthStatus` → `GetCurrentUser` → session published. Recoverable error states with Retry. Stale-result protection | `lib/view/screens/splash_screen/cubit/` |
 | Connectivity | One monitor, an app-wide Cubit, pause and resume with the lifecycle, a global offline banner | `lib/helper/network/`, `lib/view/app_state/connectivity/` |
@@ -180,6 +181,7 @@ Rules: `../ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md`. One component per task. "R" =
 | `AppStatusMessage` (`status/`) | Empty / error / loading / unavailable state | R `icon`, R `title`; `message`, `actionLabel`, `onAction`, `isLoading` | Current Order (6 call sites), `UnderConstructionPlaceholder` | Migrated (Task 20): asserts for `actionLabel`/`onAction` pairing (were dropped silently), blank title, empty/blank message. Layout, semantics, colors and callers unchanged. Open (owner): `icon` required while the spinner replaces it; loading has no semantic flag beyond the title | `custom_widgets_test` (36), Current Order, navigation | Done |
 | `UnderConstructionPlaceholder` (`placeholder/`) | Placeholder tab body | R `icon`, R `message` | Notifications, Order History, Profile | Audited (Task 21): **no defect, no production change**. Thin wrapper justified (shared ARB heading, consistent layout/semantics via `AppStatusMessage`, whose blank-message assert covers it). Temporary by design and a store blocker. Noted: the screens' AppBar titles truncate at text scale 3 (screen-level, not this widget) | `custom_widgets_test` (6), navigation tests | Done |
 | `MainNavigationBar`, `MainNavDestination` (`navigation/`) | Five-destination bar | R `selectedIndex`, R `onDestinationSelected`; `unreadCount`, `hasActiveOrder`, `isCheckingActiveOrder` | `AppNavBar` | Audited (Task 22): presentation-only boundary confirmed; asserts added for out-of-range `selectedIndex` and negative `unreadCount`. Fifth tab still Profile (D-A66 Wallet migration pending, not implemented). Open (owner): labels truncate with "…" at text scale ≥ 2 on 320/375 px (real font) | `main_navigation_bar_test` (39), navigation tests | Done (migration deferred) |
+| `AppOrderOfferCard` (`order/`, new in Task 26) | One order offer with accept/decline | R `offer`, R nullable `onAccept`, R nullable `onDecline`; `busyAction`, `notice` | Home pending offers | New; presentation only, intents only, theme error red for «رفض», one semantics summary, wraps at text scale 3 | `home_offers_test` | Done |
 | `AppAvailabilityToggle` (`toggle/`, new in Task 24) | Controlled switch row for an on/off command | R `value`, R nullable `onChanged`, R `label`; `supportingText`, `isBusy` | Home availability card | New; follows the standard (controlled value, intent callback, busy guard, one semantics node, 48 px) | `app_availability_toggle_test` (18) | Done |
 | Text widgets `AppTextWidget`, `Headline1`–`6`, `BodyText1`/`2`, `Subtitle1`/`2`, `Caption` (`text/`) | Typed text presets | R `title`; `style`, `maxLines`, `overflow`, `textAlign`, `textDecoration`, `color`, `fontSize` (+ `fontWeight` on 4) | **None** in screens (tests only) | Migrated (Task 23): `style` now merges (precedence dedicated > style > default); dedicated params no longer ignored when `style` is set. API, defaults and one-line/ellipsis default unchanged. Open (owner): keep / replace with `Text` + theme / smaller set; `maxLines: null` cannot mean "unlimited" | `text_widgets_test` (77), `shared_widgets_test`, brand theme | Done (keep/remove decision pending) |
 | `CustomePadding` (`padding/`) | Legacy padding wrapper | R `child`; `top`, `bottom`, `left`, `right` | `util/tools/android_loading.dart` only | Duplicates Flutter `Padding`; physical left/right, not logical; misspelled name. Part of the approved `util/tools` → `view/widget/loading/` move | None | With the loading move |
@@ -455,6 +457,74 @@ responsive test host) contain no tests.
 | Native files | **Not changed** (no manifest, `Info.plist`, Podfile, Gradle or dependency edit) |
 | Device / simulator check | **Not performed**; real OS prompts, background behaviour and screen readers need a physical device |
 
+**Home pending offers (Task 26), 2026-11-15** — run in this repository:
+
+| Command | Result |
+|---|---|
+| Task 25 debug demo removed (`debug_demo/`, its test, 23 ARB keys, router argument, Home branch, docs) | No reference left in `lib/`, `test/`, `docs/`; the D-A40 Login preview kept |
+| Baseline after removal `flutter test` | 716 passed |
+| `flutter gen-l10n` (23 new offer ARB keys) | OK |
+| New `test/home_offers_test.dart` (Cubit, use cases, placeholder, card, Home section, real app, preview) | 56 passed |
+| Mutation: card removed on tap (optimistic) | 9 tests fail; restored byte-identical |
+| `flutter analyze` | 1 issue: the same existing `SplashBloc` info |
+| `flutter test` (full suite) | **772 passed, 0 failed** |
+| `git diff --check` | Task files clean; new untracked files checked directly; `web_frontend/src/main.tsx` blank line at EOF is an owner edit (untouched) |
+
+**Home architecture refactor (Task 27), 2026-11-15** — run in this repository:
+
+| Command | Result |
+|---|---|
+| Baseline targeted tests (Home, offers, availability, toggle, navigation, Login, Current Order) before edits | 269 passed |
+| Refactor | `home_screen.dart` 643 → 83 lines, now a `StatelessWidget`; 9 section files in `home_screen/widget/`; moved classes verified identical except added `super.key` and the chip's local text measurement |
+| Same targeted tests after the refactor | 269 passed |
+| New `test/home_architecture_test.dart` | 8 passed: structure, one load per mount, one per resume, none after teardown, rebuild scope, lazy list. On the **original** file, 2 fail (structure, and the greeting-scope check: the old root `context.watch` rebuilt the app bar) |
+| `flutter analyze` | 1 issue: the same existing `SplashBloc` info |
+| `flutter test` (full suite) | **780 passed, 0 failed** |
+| Simulator (iPhone 17 Pro, design preview) | Home renders as before (screenshot compared) |
+
+**Home tab re-entry freshness (Task 28), 2026-11-15** — run in this repository:
+
+| Command | Result |
+|---|---|
+| Existing focused tests (Home, offers, availability, toggle, navigation, nav bar, Current Order, Login) before the fix | 316 passed |
+| New `test/home_tab_reentry_test.dart` (real `MainApp`, GoRouter indexed stack, `AppNavBar`, counting fakes) on the **pre-fix** code | 6 of 15 fail: returning to Home from each of the 4 other tabs loads 0 instead of 1 per feature; return after a resume elsewhere; return from a page covering Home |
+| Fix | `HomeLifecycleBridge` re-reads both features once when go_router's per-branch `TickerMode` turns back on (see `ROUTING_AND_STARTUP.md` §7). No new listener, timer, Cubit, dependency or public API |
+| Same 15 + 316 after the fix | 331 passed |
+| Lazy list (375×800, including the scroll cache area) | 100 and 500 offers: 2 cards built initially, during a card's command, after it and after tab re-entry. Counted work only; no wall-clock or memory benchmark |
+| `flutter analyze` | 1 issue: the same existing `SplashBloc` info |
+| `flutter test` (full suite) | **795 passed, 0 failed** |
+| Device/simulator | Not run for this task (widget tests only) |
+
+**Home visible-only refresh (Task 29), 2026-11-15** — owner decision: Home refreshes when it becomes visible, and on resume only while visible:
+
+| Command | Result |
+|---|---|
+| Focused tests before the change | 331 passed |
+| Updated/new tests in `test/home_tab_reentry_test.dart` on the **pre-fix** code | 2 fail: resume with another tab visible loads (2, 2) instead of (1, 1); resume with a full page covering Home loads (2, 2) instead of (1, 1). The overlapping resume + Home-tap test already passed (Cubit in-flight guard) |
+| Fix | `HomeLifecycleBridge`: the resume callback loads only when the cached `TickerMode` value says Home is visible. No new listener, timer, Cubit, dependency or public API |
+| Focused tests after the fix | 333 passed |
+| `flutter analyze` | 1 issue: the same existing `SplashBloc` info |
+| `flutter test` (full suite) | **797 passed, 0 failed** |
+| Device/simulator | Not run (widget tests only) |
+
+**Order card icons and soft divider (Task 31), 2026-11-15:**
+
+| Check | Result |
+|---|---|
+| Pictured card | The owner's `HomeOrderPreviewCard` (`home_screen/widget/order11.dart`), placed by the owner in `HomeScreen` above the real offers list; production offers use `AppOrderOfferCard` |
+| Change | Both cards: storefront / map pin / checkered flag / coins icons (Phosphor Regular, 20 px, `AppColor.secondary`, 8 px gap, no semantics) and a divider of `AppColor.border` at 55 %, 0.7 px. No constructor, callback, copy, button or color-token change |
+| Baseline full suite (owner preview present, before the change) | 765 passed, 32 failed. 22 fail because the preview pushes the real offers list down on Home; 10 because the preview's fee row overflowed at 320 px and text scale 2–3 |
+| New `test/order_card_icons_test.dart` | 39 passed (38 of them fail on the pre-change cards) |
+| Full suite after | 814 passed, 22 failed: the same 22, all caused by the preview being on Home (with the preview removed temporarily, 836/836 passed; `home_screen.dart` restored byte-identical). The 10 overflow failures are fixed (the fee label is now `Flexible`) |
+| `flutter analyze` | 1 issue: the same existing `SplashBloc` info |
+| Simulator (iPhone 17, design preview entry) | Both cards render with the icons and the soft line (screenshot checked) |
+
+**Custom widget standard rewrite + order-card pilot (Task 32), 2026-11-15:** `CUSTOM_WIDGET_CONTRACT_STANDARD.md` rewritten as a lean, idiomatic Flutter guide (when to create a widget, composition, `required` vs business validation, theme first, dumb UI, sizing/RTL, performance without myths, proportional tests, three examples, approval gate, checklist); `CLAUDE.md` rule and docs index updated. Pilot: `AppOrderOfferCard` already met the guide, so its code is **unchanged**; the design preview already renders it with typed fixtures. The owner's `HomeOrderPreviewCard` (`order11.dart`, rewritten by the owner and no longer placed on Home) is left untouched pending an owner decision; its 12 stale Task 31 tests were removed. Baseline 833 passed / 3 failed (those stale tests) → **824 passed, 0 failed**. `flutter analyze`: the existing `SplashBloc` info plus the owner's unused `order11.dart` import in `home_screen.dart` (left as is). No widget, token, dependency or behavior change.
+
+**One order card (Task 33), 2026-11-15:** owner-approved. The owner's `HomeOrderPreviewCard` design moved into `AppOrderOfferCard` (Material outlined storefront/location/flag/payments icons, owner spacing, soft line `AppColor.border` at 45 %, 0.7 px, forest fee amount, outlined «رفض»); ARB labels, money formatting, semantics, busy/disabled states and the public API kept. **Deleted:** `home_screen/widget/order11.dart` (`HomeOrderPreviewCard`) and the commented-out `widget/order/order_card.dart`; the unused import in `home_screen.dart` removed. Tests: baseline 824 passed (analyze: 2 issues incl. the unused import) → **825 passed**; one decline-color assertion updated to the outlined design, one outlined-states test added, two Home tests made to settle the lazy list before tapping/asserting (no assertion removed). `flutter analyze`: only the existing `SplashBloc` info. Simulator (iPhone 17, design preview): matches the owner design.
+
+**Blockers for real offers:** offers API contract (TO SPECIFY: endpoints, DTOs, error codes, `Idempotency-Key`), dispatch rounds/private offers and expiry on the backend, push/SignalR transport, the real Current Order API.
+
 **Blockers for real availability:** backend API contract (TO SPECIFY: endpoints, DTOs, Problem Details codes, `Idempotency-Key` handling); native permission setup (Android `ACCESS_BACKGROUND_LOCATION`, `POST_NOTIFICATIONS`; iOS `NSLocationWhenInUseUsageDescription` / `NSLocationAlwaysAndWhenInUseUsageDescription`, `UIBackgroundModes` `location`/`remote-notification`, `permission_handler` Podfile macros) with approved copy; a plugin-backed `AvailabilityPermissionGateway`; GPS uploads every 30 s with 90 s freshness; FCM/APNs registration; Play background-location declaration and prominent disclosure (G-04); physical-device validation.
 
 ## 6. History
@@ -466,6 +536,13 @@ responsive test host) contain no tests.
 | 2026-11-14 | **Post-validation review (Task 04, documentation only):** Task 03 source re-verified; Login-validation wording synced in routing, state-management, decisions, shared-UI and Claude Project docs; password length unit recorded as an open owner decision. No code or test changes |
 | 2026-11-14 | **AppTextFormField contract (Task 08):** owner-approved API implemented: required non-blank `label`, `AppTextFieldStyle` for every visual state (with working border widths), asserts for controller/initialValue, multi-line obscuring, `endIcon` vs visibility toggle and keyboard assistance on obscured fields; toggle disabled on disabled fields; unused arguments removed; `showObscureToggle` renamed `showVisibilityToggle`. Login layout, entry behavior and appearance unchanged. `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md` added |
 | 2026-11-15 | **Brand foundation (Task 10):** IBM Plex Sans Arabic bundled and applied through `AppTheme`, `TextThemeStyle`, text widgets and button labels; Ink default text; `AppColor.inputBorder` for a WCAG-compliant field border; `AppButton` height became a minimum so large text no longer clips. Login layout, copy, validation and auth unchanged |
+| 2026-11-15 | **One order card (Task 33):** owner preview design moved into `AppOrderOfferCard`; duplicate preview card and stub deleted |
+| 2026-11-15 | **Custom widget standard (Task 32):** policy rewritten as a concise idiomatic Flutter guide; `AppOrderOfferCard` pilot already compliant (no code change) |
+| 2026-11-15 | **Order card icons (Task 31):** storefront, pickup pin, checkered-flag delivery area and coins fee icons plus a softened sand divider on `AppOrderOfferCard` and the owner's Home preview card. No API, copy or token change |
+| 2026-11-15 | **Home visible-only refresh (Task 29):** app resume no longer reloads a hidden Home (another tab or a full page in front); becoming visible still reads once; visible-Home resume unchanged. No UI, copy, API or dependency change |
+| 2026-11-15 | **Home tab re-entry (Task 28):** returning to the retained Home tab re-reads availability and offers once (previously nothing, so a stale offers list could stay on screen); re-selecting Home, rebuilds and dialogs load nothing; resume behaviour unchanged. 15 routing tests through the real router. No UI, copy, API or dependency change |
+| 2026-11-15 | **Home architecture (Task 27):** `HomeScreen` became a thin `StatelessWidget`; sections moved to one file each under `home_screen/widget/`; `HomeLifecycleBridge` owns the single lifecycle listener and the loads; `HomeAvailabilityRationaleListener` owns the popup; the greeting selects only the display name. No UI, copy, API or behaviour change; 8 tests |
+| 2026-11-15 | **Home pending offers (Task 26):** «طلبات بانتظار القبول» with the new `AppOrderOfferCard`, `PendingOffersCubit`, `OrderOfferRepository` + "not configured" placeholder and a standalone design preview; 56 tests. The Task 25 debug availability demo (added earlier the same day) was removed; the D-A40 Login preview remains. No native, dependency, tab or route change |
 | 2026-11-15 | **Home header and availability (Task 24):** Task 15 Option A on Home (title when it fits, read-only wallet total with «—» fallback, greeting, availability card); new `AppAvailabilityToggle`; `HomeAvailabilityCubit` with server-confirmed state, staged permission flow behind ports and honest "not configured" placeholders; 89 new tests. No native, dependency, tab or route change |
 | 2026-11-15 | **Text widget family (Task 23):** `AppTextWidget` style precedence fixed (default, then `style`, then dedicated parameters) so a partial style keeps the font, weight and Ink and dedicated parameters are no longer ignored; `fontWeightOverride` hook in the 4 wrappers with `fontWeight`; 77 real-font tests. No API, default or caller change |
 | 2026-11-15 | **MainNavigationBar (Task 22):** audit; debug asserts for out-of-range `selectedIndex` and negative `unreadCount`; 15 tests (input contract, real-font label fit, text-scale cap). Fifth tab still Profile; label truncation at text scale ≥ 2 on narrow widths recorded for an owner decision. No API, visual, routing or caller change |

@@ -1,236 +1,302 @@
-# SHAHM Flutter — Custom Widget Contract Standard
+# SHAHM Flutter — Custom Widget Standard
 
-**Status:** owner-approved direction (Task 08, 2026-11-14; D-A32 supplement in
-`../decisions/ARCHITECTURAL_DECISIONS.md` §1.1), made permanent and extended
-by the owner-approved systematic widget cleanup (Task 12, 2026-11-15). This
-is the **only** custom-widget policy; improve this file instead of adding a
-second one. Applies to every shared widget under `lib/view/widget/` and to
-feature widgets reused by more than one screen. Reference implementations:
-`AppTextFormField` + `AppTextFieldStyle` (a widget that needs a style
-object, `SHARED_UI_COMPONENTS_REFERENCE.md` §3.7) and `AppTextButton` (a
-widget that does not, §3.9). The current inventory and migration order are
-in §12.
+**Status:** the **only** custom-widget policy for `mobile_frontend` (created
+Task 08, 2026-11-14; rewritten Task 32, 2026-11-15). Improve this file;
+don't add a second one.
 
-Use this as a checklist when creating a widget, changing its public API, or
-reviewing one. Each rule has a short "check" for review.
+**Principle: simple by default.** Compose Flutter widgets, style them with
+`ThemeData` and `AppColor`, and add an abstraction only for a need you can
+point to.
+
+> **Compatibility note.** Task 32 replaces the earlier checklist-style
+> wording (Tasks 08, 12, 23, 27), not their results. Approved contracts stay
+> as they are: D-A32, `AppTextFormField` + `AppTextFieldStyle`, the text
+> widget family, `AppButton`, `AppTextButton`, `AppPopup`, `AppToast`,
+> `AppStatusMessage`, `MainNavigationBar`, `AppAvailabilityToggle`,
+> `AppOrderOfferCard`, and the tested fixes made in those tasks. This guide
+> does not authorize reworking them.
 
 ---
 
-## 1. One responsibility, justified abstraction
+## 1. Do we need a custom widget?
 
-- State in one sentence what the widget does that plain Flutter does not:
-  SHAHM defaults, a reusable behavior, or a consistent composition.
-- A wrapper must not just re-export another widget's constructor. If the
-  only value is forwarding parameters, use the Flutter widget directly.
-- Business logic, Cubits, repositories, network, navigation and logging stay
-  out of shared widgets (D-A32). See §7: no API calls, no navigation, no
-  `get_it` or Cubit lookups, no silent data normalization.
+Decide in this order:
 
-**Check:** the class doc comment names its responsibility and what it does
-*not* own.
+1. **Use Flutter directly** (`Text`, `Row`, `Padding`, `Card`,
+   `FilledButton`, `TextButton`, `ListTile`, `Switch` …) when the code is
+   simple, readable and doesn't duplicate branded design or feature
+   behavior.
+2. **Extract a private, feature-local widget** when a cohesive section needs
+   clearer structure, its own rebuild scope, or is repeated **within the
+   feature**. A meaningful one-off section can justify it; a single `Row`,
+   `Padding`, `Icon` or `SizedBox` does not.
+3. **Create a shared `App*` widget** only when several features actually use
+   it, or an approved reusable design/behavior contract justifies one place.
 
-## 2. `required` means intrinsic
+A wrapper that only renames a Flutter widget's parameters is not a widget;
+use the Flutter widget. Check first whether the theme plus a standard
+Material widget already solves it.
 
-- Mark a parameter `required` only when the widget is invalid or
-  inaccessible without it (e.g. `label` as a field's accessible name, a
-  button's `label`).
-- Do not mark callbacks, controllers, icons or cosmetic values `required`
-  unless a concrete invariant needs them.
-- A business rule ("this value must be filled") belongs to validators,
-  use cases and Cubits, never to the Dart `required` keyword.
-- **A nullable callback can be intrinsic.** When `null` deliberately means
-  "disabled" (e.g. `AppTextButton.onPressed`), mark it
-  `required VoidCallback? onPressed`: every caller must decide, and the
-  disabled state stays available. Never replace it with a hidden non-null
-  action that removes the disabled state.
-- Every optional parameter has a documented default and a documented meaning
-  for `null` ("inherit", "off", "none" — never undefined).
+## 2. Compose, don't build frameworks
 
-**Check:** for each `required`, the doc says why the widget cannot work
-without it.
+- `const Foo({super.key, ...})`, `final` fields, a small `build` that
+  composes existing widgets.
+- **`StatelessWidget` by default** for presentation.
+- **`StatefulWidget` is normal Flutter.** Use it for local, short-lived UI
+  state or a resource the widget must own and dispose (an animation or focus
+  controller, an `AppLifecycleListener` — e.g. `HomeLifecycleBridge`). Keep
+  business state in Cubits; never create a Cubit just to avoid a
+  `StatefulWidget`.
+- **Business stays out of presentational widgets:** no repositories, server
+  commands, persistence, eligibility rules, navigation, `get_it`, and no
+  Cubit reads/creation inside a shared widget. A **feature** callback such as
+  `() => cubit.accept(offer.id)` is fine (see Example B).
+- **Files:** one public shared widget per file is a useful convention.
+  Private helpers (`_Foo`, a private method) may live in the same file when
+  they clarify a real section. Move a section to its own file when it grows
+  or is used elsewhere. Don't create a file per two-line helper.
+- No `Manager`, `Factory`, `BaseWidget`, `Utils`, `Service` or inheritance
+  layer created only "for organization".
 
-## 3. Lean API, predictable precedence
+## 3. Constructors and `required`
 
-- **Minimal and useful, not a quota.** Every public parameter needs a real
-  caller, an owner-approved near-term need, or a place in the widget's
-  essential generic behavior (e.g. disabled state, icon position, padding).
-  Remove speculative, duplicate, dead or silently ignored options and
-  migrate their callers in the same change. Parameter count is not a goal by
-  itself: **never delete an argument only because it has zero calls today**
-  when it represents important generic behavior, and never rename one just
-  to match a preference.
-- Do not wrap a Flutter widget only to rename its parameters; the wrapper
-  must add a SHAHM default, behavior or composition (§1).
-- No two parameters may control the same thing without a documented winner.
-- Real conflicts fail loudly with an `assert` and a message that names the
-  fix. Never silently discard a caller's value (icons, widths, colors,
-  validators).
-- Prefer `assert`s in the `const` constructor; checks that need non-constant
-  calls (e.g. `trim`) go in `build`.
-- Keep Flutter naming where the concept is Flutter's (`enabled`, `readOnly`,
-  `onChanged`); use logical names (`start`/`end`) for direction.
+- **`required` = the widget can't express its contract unless the caller
+  supplies it** (`required CaptainOrderOffer offer`, an intrinsic `label`).
+  Never for cosmetic styling.
+- **Required constructor data ≠ business validation.** `required` is a Dart
+  rule about the call site. "This field must be filled" belongs to
+  validators, use cases and Cubits.
+- Callbacks: `required VoidCallback? onPressed` makes every caller choose
+  enabled (`() {…}`) or disabled (`null`); plain optional `VoidCallback?`
+  is right when "disabled by default" is meaningful. Choose per component;
+  there is no global rule. Existing approved names (`onAccept`,
+  `onDecline`) stay; otherwise prefer Flutter names (`onPressed`,
+  `onChanged`, `onTap`).
+- Optional arguments have a useful default or a documented meaning for
+  `null`. One argument must not silently cancel another: document the
+  winner, or `assert` with a message that names the fix.
+- **Asserts are debug-only programmer checks.** They don't validate data in
+  release builds; external data is checked in its own layer.
+- No speculative width/height/style/behavior knobs. Equally, don't delete a
+  useful existing argument only because it has no caller today: removing or
+  renaming a public argument needs owner approval (§11).
+- A `child` slot is fine when flexibility is real. Don't offer `child` plus
+  several competing content parameters, and don't require both `label` and
+  `child` when only one can apply.
 
-**Check:** every parameter appears in a real call site or test with a
-stated purpose; every conflict has an assert and a test.
+## 4. Appearance: theme first
 
-## 4. Theme defaults with deliberate per-call overrides
+- Start from `Theme.of(context).colorScheme`, `textTheme`, component themes
+  and approved `AppColor` tokens. Keep IBM Plex Sans Arabic and the SHAHM
+  palette (D-A63). Local tweaks: `textTheme.titleMedium?.copyWith(...)`.
+- Use Flutter's own styling (`Card`, `DecoratedBox`, `Border`,
+  `ButtonStyle`, `OutlinedButton.styleFrom`). Centralize a default only
+  where it is truly shared.
+- Expose only the **few overrides the real design needs** (e.g. one
+  `Color? backgroundColor` or `EdgeInsetsGeometry? padding`). Width belongs
+  to the parent; height follows content.
+- **Style objects are the exception.** Use one only for a substantial,
+  cohesive, reused set of appearance options or several approved variants.
+  `AppTextFieldStyle` qualifies (many field states); it is **not** a
+  template every widget must copy.
+- A `ThemeExtension` or custom component theme is a later option for
+  repeated shared variants or dynamic theming, never for a single widget.
+- If a style object and direct arguments overlap, document precedence
+  (per-call value > theme/token > Flutter fallback; a per-call `TextStyle`
+  is merged, not replaced, unless documented). **Every override must
+  visibly work**: check it on the rendered widget.
+- No new hex colors, no hard-coded production Arabic strings, no invented
+  status/disabled/error tokens. `ColorScheme.error` is a Material fallback
+  in use today, **not** an approved SHAHM semantic token.
 
-- Defaults come from `ThemeData` / central `AppColor` semantic tokens, never
-  hard-coded colors in `build`. Screens never pass raw `Color(...)` values.
-- Expose per-call overrides for the **actually rendered elements** where a
-  real or approved need exists, and verify in tests that each override is
-  visible in the rendered UI. **No styling that silently fails to apply:**
-  if a value would be overridden internally (e.g. a button's foreground
-  color replacing `textStyle.color`), either honor it with a documented
-  precedence or assert against it.
-- Separate **behavior** (named arguments) from **appearance**. Use one
-  immutable, `const` style object (e.g. `AppTextFieldStyle`) when a widget
-  has **several cohesive style options** across states or reused visual
-  variants. **Not every widget needs a style file:** a few direct
-  arguments (`color`, `textStyle`, `padding`) are enough for a small widget
-  such as `AppTextButton`.
-- **Precedence is always:** per-call value > theme / semantic token >
-  documented Flutter fallback. A per-call `TextStyle` is **merged** over the
-  default (only the properties it sets change) unless the doc says it
-  replaces it.
-- The style object: every property nullable; `null` means inherit; a
-  `merge` where non-null values win; a `defaultsOf(ThemeData)` that states
-  the source of each default.
-- Do not offer a second, competing appearance API (e.g. a raw
-  `InputDecoration`) alongside the style object without owner approval.
-  When two inputs can set the same property (e.g. `color` and
-  `textStyle.color`), document the winner and test both.
-- Where a default is still a Material fallback (no approved token yet),
-  make it explicit, document it as technical debt and test it. Do not choose
-  new colors or tokens without owner approval (D-A63).
+## 5. Data and callbacks: dumb UI, smart feature layer
 
-**Check:** the reference doc has a defaults table with sources; tests cover
-each default and each override.
+- Shared presentational widgets take typed input plus callbacks. They never
+  fetch, normalize, trim, cache, persist or mutate authoritative data.
+- Prefer one typed object (`offer`) over parallel fields (name, pickup,
+  area, fee).
+- The widget may show caller-supplied busy, disabled or notice states.
+  Outcomes, race protection and server confirmation belong to the Cubit and
+  repository. Never simulate success in production.
+- **Command controls are controlled:** a control whose result belongs to
+  someone else (the server, the OS) shows only the owner's confirmed value;
+  its callback is an intent, and a busy state blocks repeats.
+- **Transient UI** (toasts, banners, sheets) runs each action at most once,
+  never after it started closing or was replaced.
+- **Sample data** lives in test fixtures or an explicitly labeled,
+  debug-only design preview, never in the real Home data. A preview renders
+  the **real** widget with typed sample input (Example C), not a second card.
 
-## 5. State ownership
+## 6. Sizing, responsiveness, accessibility, RTL
 
-- Controlled inputs (controllers, focus nodes, values) belong to the caller.
-  The widget never creates an object it does not dispose of, and never
-  recreates a caller's object.
-- The widget may own only short-lived UI state (e.g. password visibility),
-  and must keep it coherent when the parent changes the related parameter.
-- Business and form state live in Cubits (`STATE_MANAGEMENT.md`).
-- The widget never normalizes, trims or mutates the value it displays.
-- **Command controls are controlled (Task 24).** A control that starts a
-  command whose result belongs to someone else (a server, the OS), such as
-  an availability switch, shows only the owner's confirmed `value`. Its
-  callback is an intent, never an optimistic local flip; a busy state blocks
-  repeated intents.
+- A reusable card fills the **available** width (the parent sets padding and
+  constraints) and grows with its content. Don't read the screen size
+  inside it, and don't fix a height that can cut Arabic text.
+- `Expanded`/`Flexible` only where constraints need them; `Wrap` when items
+  can flow; a lazy scrollable parent for long lists.
+- `EdgeInsetsDirectional` / `AlignmentDirectional` and logical start/end;
+  RTL comes from the Arabic locale.
+- Text from ARB via `context.l10n`; money via `formatJodFils` inside an LTR
+  isolate.
+- Action controls are at least 48 px; non-text icon controls need a
+  semantic label; decorative icons add no semantics. Prefer native widgets'
+  built-in semantics over manual `Semantics` trees unless needed (e.g. one
+  summary for a card).
+- Works at 320 px and text scale 2–3 without overflow. Overlays that can
+  appear over a focused field are also tested with the keyboard open.
+- Widget tests don't prove screen-reader behavior on a device; say so.
 
-## 6. Direction, accessibility, input and layout
+## 7. Performance — no myths
 
-- Use logical `start`/`end` (`EdgeInsetsDirectional`, `AlignmentDirectional`)
-  so Arabic RTL works by default; a text-direction option affects only the
-  content it names.
-- Every interactive element has an accessible name (label or localized
-  tooltip); slots that accept caller widgets leave semantics to that widget
-  and document it.
-- Touch targets are at least 48 logical pixels.
-- Keyboard, focus, autofill and disabled/read-only behavior are explicit
-  and distinct (`enabled` ≠ `readOnly`).
-- The widget works at 320 px width and at text scale ≥ 2.0 without overflow
-  or clipped content. A widget that can appear while a field is focused
-  (dialogs, sheets, toasts) is also tested with the **software keyboard
-  open** (`tester.view.viewInsets`), without dismissing it.
+- No limits on lines, parameters, classes or files as a "performance" rule.
+  Long files are a readability concern, not proof of slow frames.
+- `const` where possible. Nothing expensive in `build`: no `TextPainter`
+  allocation per frame, I/O, subscriptions or side effects.
+- Long lists stay lazy (`SliverList.separated` / builders) with stable keys
+  where items can move. Never `shrinkWrap: true` with an eager nested
+  `ListView` for long content.
+- Subscribe narrowly (`BlocBuilder`, `BlocSelector`, `context.select`), but
+  add selectors, caches, keep-alives, memoization, timers, streams or
+  wrapper providers only for a demonstrated need.
+- A performance claim needs a measurement or a before/after rebuild or
+  work-count test.
 
-## 7. Localization, privacy and side effects
+## 8. Tests: proportional and concrete
 
-- All visible text comes from ARB via `context.l10n` (D-A30); shared widgets
-  take strings from the caller or use generic ARB keys (e.g. `showPassword`).
-- Never log or expose user input, especially secrets.
-- No hidden side effects: no network, storage, navigation or global state.
-- Transient UI (toasts, banners, sheets) runs each action callback **at
-  most once**, and never after that instance started closing or was replaced
-  by a newer one; a replacement drops queued instances instead of replaying
-  them later.
-- Shared presentational widgets never call APIs, navigate, read `get_it`
-  or a Cubit, or normalize/trim the data they display. The caller passes
-  values and callbacks; the screen or Cubit owns the outcome.
+For a new widget or a focused change, test the real risks:
 
-## 8. Tests
+1. Required data and the main UI render.
+2. A callback fires; disabled and busy states don't.
+3. Each **exposed** customization changes the rendered result.
+4. Long Arabic text at 320 px and text scale 2–3 doesn't overflow; RTL and
+   semantics where relevant.
+5. Existing callers still behave the same.
 
-For every shared widget, `test/` covers:
+Prefer widget tests of rendered behavior over source-string checks. Overflow
+and truncation tests load the bundled IBM Plex Sans Arabic (`FontLoader`);
+the default test font draws squares and both invents and hides overflow.
+Don't write 30 tests for a three-line wrapper. Run `dart format` on touched
+Dart files, `flutter analyze`, focused tests and the full suite for
+production changes; report only what actually ran.
 
-- each `required` argument (valid default invocation) and each `assert`;
-- each exposed visual override, checked on the **rendered** result (the
-  painted color, the merged text style, the laid-out size), not just the
-  constructor field;
-- defaults and each override, including precedence and `merge`;
-- every visual and interaction state (enabled, focused, error, disabled,
-  read-only, loading, as applicable);
-- semantics/accessible names and RTL/LTR placement;
-- narrow width and large text scale;
-- regression tests for each existing consumer (e.g. Login).
+## 9. Naming and placement
 
-Truncation and label-fit checks must load the bundled IBM Plex Sans Arabic
-(`FontLoader`, as in `brand_theme_test.dart`): the default test font draws
-every glyph as a square, so it both invents and hides truncation.
+- PascalCase classes, snake_case files, `_private` helpers in the same
+  library.
+- `App*` only for genuinely shared components in `lib/view/widget/<area>/`.
+  Feature sections use feature names (`HomeGreeting`,
+  `PendingOffersSliver`) under `lib/view/screens/<feature>/widget/` (public
+  only so the screen can import them).
+- One folder spelling: `widget/`, never `widgets/` beside it.
+- Keep the `domain` / `data` / `view` / Cubit boundaries; no "common
+  helpers" dumping ground.
 
-Report only tests that were actually run, with counts.
+## 10. Examples
 
-## 9. Migration and documentation
+**A — small presentational piece (no style object, no Bloc).** Inside the
+card's file it stays private:
 
-- A public API change updates every call site, its tests and
-  `SHARED_UI_COMPONENTS_REFERENCE.md` in the same change.
-- Document the actual constructor, defaults, precedence and collisions;
-  never document behavior that was not verified. Update the exact API in
-  the reference doc; never rewrite historical verification results.
-- Record what changed and the verification in
-  `../project/PROJECT_STATUS.md`.
-- **One component per migration:** inventory → select one widget → propose
-  its public contract → migrate its callers → test → report → stop. No
-  cascading refactors of other widgets by personal preference; the next
-  component is a separate task.
+```dart
+class _OfferDetailRow extends StatelessWidget {
+  const _OfferDetailRow({required this.icon, required this.text});
 
-## 10. Approval gate
+  final IconData icon;
+  final String text;
 
-Owner approval is required **before** implementation for:
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.secondary),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+      ],
+    );
+  }
+}
+```
 
-- a breaking public API change (removing, renaming or retyping a public
-  argument, or changing a default that callers can see);
-- a new package dependency;
-- a new or changed global design token, color or typography/font;
-- a visible change to product behavior or a screen's layout/copy;
-- anything that touches validation, auth, routing or backend contracts.
+**B — essential input, feature-supplied callbacks** (the real
+`PendingOffersSliver` call, shortened):
 
-An audit or proposal is not an approval. Record approvals in
-`../decisions/ARCHITECTURAL_DECISIONS.md`.
+```dart
+AppOrderOfferCard(
+  key: ValueKey(offer.id),
+  offer: offer,
+  busyAction: busy,
+  onAccept: enabled ? () => unawaited(cubit.accept(offer.id)) : null,
+  onDecline: enabled ? () => unawaited(cubit.decline(offer.id)) : null,
+)
+```
 
-## 11. Pre-implementation checklist and breaking-change review gate
+The **feature** reads the Cubit; `AppOrderOfferCard` never does. `null`
+disables an action; pending state comes from the Cubit, not from the card.
 
-**Before creating or changing a shared widget** (answer each in the plan or
-report):
+**C — previews reuse the production widget** (fixture data only):
 
-1. Responsibility: what does it add beyond the Flutter widget (§1)?
-2. Reuse: does an existing shared widget already cover it? Search `lib/`
-   and `test/`, not only the docs.
-3. Consumers: list every real call site and each argument it uses.
-4. Contract: for each argument, its type, nullability, default and meaning
-   of `null`; why each `required` one is intrinsic (§2).
-5. Appearance: theme/token default per rendered element; which overrides
-   are justified; style object or direct arguments (§4).
-6. Conflicts: which inputs overlap, the documented winner or the `assert`
-   (§3).
-7. States and accessibility: enabled, disabled, loading, error, focus,
-   semantics name, 48 px target, RTL/LTR, 320 px and text scale ≥ 2.0 (§6).
-8. Tests: the list from §8, including every real consumer.
+```dart
+const sampleOffer = CaptainOrderOffer(
+  id: 'preview-1',
+  merchantName: 'مطعم السنابل',
+  pickupLabel: 'الشميساني',
+  deliveryAreaName: 'تلاع العلي',
+  deliveryFeeFils: 2500,
+);
 
-**Breaking-change review gate.** If the change removes, renames or retypes
-a public argument, changes a visible default, or alters an approved
-appearance or behavior: stop **before** changing it, describe the smallest
-proposed contract (before/after table and every affected caller), and get
-specific owner approval (§10). Without approval, finish only the
-non-breaking part, and report the blocker.
+AppOrderOfferCard(offer: sampleOffer, onAccept: () {}, onDecline: () {})
+```
 
-## 12. Inventory and migration order
+`lib/preview/home_offers_preview.dart` does this through the real
+`HomeScreen`, with a visible "design preview" caption.
 
-The current inventory (Task 12, 2026-11-15) is in
-`../project/PROJECT_STATUS.md` §4 ("Custom widget inventory"). Migrated so
-far: `AppTextFormField` (Task 08), `AppTextButton` (Task 12), `AppPopup`
-(Task 17), `AppButton` (Task 18), `AppToast` (Task 19), `AppStatusMessage` (Task 20), `UnderConstructionPlaceholder` (Task 21, audited, no change), `MainNavigationBar` (Task 22), the text widget family `AppTextWidget` + 11 wrappers (Task 23), `AppAvailabilityToggle` (Task 24, new). One component
-per task (§9).
+**Why not something bigger:** one approved card look needs no
+`AppOrderOfferCardStyle`, base class or `ThemeExtension`; card state already
+lives in `PendingOffersCubit`, so no per-card Cubit or local cache; and a
+separate preview card would drift from the real one (padding, icons,
+divider, fee format, buttons).
+
+## 11. Approval gate and migration
+
+You may fix demonstrated non-breaking bugs, broken overrides, misleading
+docs and small local maintainability issues, with a regression test.
+
+**Stop and get owner approval first** for: deleting a public component;
+removing, renaming or retyping a public argument or a visible default;
+visual changes beyond an approved design; new semantic colors, tokens or
+fonts; new dependencies; changes to validation, auth, routing, navigation,
+business logic or backend contracts; a mass migration. Describe the
+smallest proposal (before/after and every affected caller) and finish only
+the non-breaking part meanwhile. A proposal or audit is not an approval;
+record approvals in `../decisions/ARCHITECTURAL_DECISIONS.md`.
+
+When a public API changes, update every caller, its tests and
+`SHARED_UI_COMPONENTS_REFERENCE.md` in the same change, and note the
+verification in `../project/PROJECT_STATUS.md`. **One component per task**;
+this guide does not retroactively authorize reworking other widgets.
+
+## 12. 60-second pre-build checklist
+
+1. What repeated pattern or meaningful section justifies this instead of a
+   Flutter widget?
+2. What is the smallest constructor, and which inputs are truly `required`?
+3. Can it be stateless? If not, which local resource does it own and
+   dispose?
+4. Can `ThemeData` and existing tokens handle the look without a style
+   class?
+5. Are layout ownership, labels, RTL, accessibility and callbacks clear?
+6. Is it free of business I/O, Cubits, navigation and duplicate preview
+   implementations?
+7. Which few tests catch real regressions, and does any caller break?
+
+**If the widget is harder to use or maintain than the Flutter code it
+replaces, simplify it or don't create it.**
+
+---
+
+Further reading (guidance, not requirements): Flutter UI
+(docs.flutter.dev/ui), themes (docs.flutter.dev/cookbook/design/themes),
+performance best practices (docs.flutter.dev/perf/best-practices). The
+inventory of shared widgets is in `../project/PROJECT_STATUS.md` §4 and the
+APIs in `SHARED_UI_COMPONENTS_REFERENCE.md`.

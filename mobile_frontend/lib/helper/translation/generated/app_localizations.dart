@@ -765,6 +765,149 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'لم يعد أحد الأذونات المطلوبة مسموحاً. قد لا تصلك عروض جديدة حتى تسمح به مجدداً.'**
   String get availabilityRequirementsLost;
+
+  /// Heading of the Home section listing order offers this captain can still accept (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات بانتظار القبول'**
+  String get offersSectionTitle;
+
+  /// Heading with the number of offers the server returned (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات بانتظار القبول ({count})'**
+  String offersSectionTitleWithCount(int count);
+
+  /// Explains which offers the section shows (server-confirmed, still actionable for this captain) (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'عروض ما زالت متاحة لك ولم يقبلها كابتن آخر بعد.'**
+  String get offersSectionSubtitle;
+
+  /// Shown while the offers are loading (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تحميل العروض...'**
+  String get offersLoading;
+
+  /// No offers backend is connected; nothing was checked (never shown as 'no offers') (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة الطلبات غير متصلة بعد، لذلك لا يمكن عرض العروض المتاحة.'**
+  String get offersNotConfigured;
+
+  /// No signed-in captain (e.g. the debug preview); offers are not loaded (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'سجّل الدخول لعرض العروض المتاحة لك.'**
+  String get offersNoSession;
+
+  /// The server confirmed there are no actionable offers (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد عروض متاحة لك الآن.'**
+  String get offersEmpty;
+
+  /// Offers could not be loaded because the device is offline (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تحقق من الاتصال ثم حدّث القائمة.'**
+  String get offersNoInternet;
+
+  /// Offers could not be loaded because the server failed (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل العروض. حاول التحديث بعد قليل.'**
+  String get offersLoadFailed;
+
+  /// Shown after the server confirmed this captain's acceptance; no automatic navigation (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'تم قبول الطلب. تابعه من «الطلب الحالي».'**
+  String get offersAcceptedMessage;
+
+  /// Shown after the server confirmed the decline (for this captain only) (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'تم رفض العرض.'**
+  String get offersDeclinedMessage;
+
+  /// Primary action of an order offer card: accept the offer (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'قبول'**
+  String get offerAccept;
+
+  /// Red action of an order offer card: decline the offer for this captain only (never cancels the merchant's order) (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'رفض'**
+  String get offerDecline;
+
+  /// Label of the merchant pickup information on an offer card (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'موقع المطعم'**
+  String get offerPickupLabel;
+
+  /// Neutral value when the server gave no verified pickup information (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متوفر'**
+  String get offerPickupUnknown;
+
+  /// Label of the customer delivery area (an area, never a coordinate) on an offer card (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'منطقة التسليم'**
+  String get offerDeliveryAreaLabel;
+
+  /// Label of the delivery fee snapshot (not the captain's profit or commission) (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'قيمة التوصيل'**
+  String get offerDeliveryFeeLabel;
+
+  /// Screen-reader summary of an offer card (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض طلب من {merchant}. موقع المطعم: {pickup}. منطقة التسليم: {area}. قيمة التوصيل: {fee} دينار أردني.'**
+  String offerCardSemantics(
+    String merchant,
+    String pickup,
+    String area,
+    String fee,
+  );
+
+  /// The server says the offer expired, was withdrawn or was taken (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يعد هذا العرض متاحاً لك. حدّث القائمة.'**
+  String get offerNoLongerAvailable;
+
+  /// The server refused the accept/decline command (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يوافق الخادم على هذه العملية حالياً.'**
+  String get offerRefused;
+
+  /// No offers backend is connected; the command was not sent (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة الطلبات غير متصلة بعد، لم يُرسل أي طلب.'**
+  String get offerNotConfigured;
+
+  /// The command's outcome is unknown; actions stay off until the list is refreshed (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تأكيد العملية. حدّث القائمة للتحقق من حالة العرض.'**
+  String get offerUnconfirmed;
+
+  /// Caption of the standalone design preview entrypoint (sample data only; not part of the app) (Task 26).
+  ///
+  /// In ar, this message translates to:
+  /// **'معاينة تصميم — بيانات افتراضية'**
+  String get previewCaption;
 }
 
 class _AppLocalizationsDelegate

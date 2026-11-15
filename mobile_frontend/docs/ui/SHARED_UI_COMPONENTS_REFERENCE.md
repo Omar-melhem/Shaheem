@@ -36,6 +36,10 @@ Covers:
   `MainNavDestination`, `UnderConstructionPlaceholder` and `AppStatusMessage`
   (§3.12–3.14).
 
+How to decide whether to create or change a widget, and what its API may
+contain: `CUSTOM_WIDGET_CONTRACT_STANDARD.md` (the only policy; rewritten in
+Task 32). This file records verified APIs only.
+
 Not covered here:
 - Colors, fonts, RTL, localization and responsive breakpoints: see
   `DESIGN_SYSTEM.md`.
@@ -857,6 +861,70 @@ repositories, routing or remembered state.
   when enabled.
 - **Tests:** `test/app_availability_toggle_test.dart` (18), including
   320/375/450 px × text scale 1, 2 and 3 with the real font.
+
+### 3.16 `AppOrderOfferCard` (`lib/view/widget/order/`, Task 26)
+
+```dart
+enum AppOfferCardAction { accept, decline }
+
+const AppOrderOfferCard({
+  Key? key,
+  required CaptainOrderOffer offer,
+  required VoidCallback? onAccept,
+  required VoidCallback? onDecline,
+  AppOfferCardAction? busyAction,
+  String? notice,
+});
+```
+
+One order offer, presentation only; the caller owns all state.
+
+| Argument | Rule |
+|---|---|
+| `offer` (required) | `CaptainOrderOffer`: `id`, `merchantName`, optional `pickupLabel` (null shows «غير متوفر»), `deliveryAreaName` (an **area**, never a customer coordinate), `deliveryFeeFils` (integer fils). A blank name or area and a negative fee assert. |
+| `onAccept` / `onDecline` (required, nullable) | Taps are **intents**; null disables that action. The card never removes itself or changes its look on a tap. «رفض» declines for this captain only. |
+| `busyAction` | The running action shows the `AppButton` spinner, and both actions ignore taps. |
+| `notice` | Optional localized line under the details (e.g. "no longer available"). Blank asserts. |
+
+- **Rendering:**
+  - **owner design (Task 33, taken from the owner's former preview card):**
+    theme surface on the cream page, radius 16, `AppColor.border`, 16 px
+    padding;
+  - the merchant in `titleMedium` bold beside `Icons.storefront_outlined`
+    (24 px, 10 px gap, vertically centered);
+  - «موقع المطعم: …» (`Icons.location_on_outlined`) and «منطقة التسليم: …»
+    (`Icons.flag_outlined`) in plain `bodyMedium`, icons 22 px with a
+    10 px gap, top-aligned; the lines wrap;
+  - vertical gaps: 20 px under the merchant, 14 px between the two
+    lines, 20 px above and below the line, 24 px above the buttons;
+  - **soft line:** `AppColor.border` (`sandLight`) at 45 % opacity,
+    0.7 px (the theme default would be black `outlineVariant`, 1 px). No
+    new color token;
+  - «قيمة التوصيل» beside `Icons.payments_outlined` (22 px, 8 px gap); the
+    fee, formatted by `formatJodFils` in an LTR isolate with «د.أ», in
+    `titleMedium` bold forest (`colorScheme.secondary`). A `Wrap` moves the
+    amount under the label at narrow widths and large text;
+  - all icons are forest, decorative (no semantics label), at the logical
+    start (Material icons, already bundled; no new dependency);
+  - «قبول» is the filled brand-primary `AppButton`;
+  - «رفض» is an **outlined** `AppButton`: surface fill, `colorScheme.error`
+    label and 1 px border while it can act or is running (error on white is
+    above 4.5:1); when disabled it uses `AppButton`'s shared disabled look
+    without the red border. `colorScheme.error` is a Material fallback,
+    not an approved SHAHM semantic red;
+  - full parent width and content height only; nothing is truncated at
+    text scale 3.
+- **Semantics:** one summary node («عرض طلب من … موقع المطعم … منطقة
+  التسليم … قيمة التوصيل … دينار أردني»), then the two named buttons, each
+  at least 48 px tall.
+- **Tests:** `test/home_offers_test.dart` (card group and the Home
+  section) and `test/order_card_icons_test.dart` (icons, divider, sizes,
+  lazy list).
+- **One card (Task 33):** this is the only order-offer card. The design
+  preview `lib/preview/home_offers_preview.dart` renders it through the
+  real `HomeScreen` with typed `CaptainOrderOffer` fixtures. The owner's
+  former `HomeOrderPreviewCard` and the commented-out `order_card.dart`
+  stub were deleted after their design moved here. Public API unchanged.
 
 ---
 

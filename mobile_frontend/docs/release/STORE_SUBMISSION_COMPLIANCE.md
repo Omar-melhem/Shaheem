@@ -76,7 +76,7 @@ This is what the **source** shows, not the approved target architecture.
 | Account creation | No self-registration; Admin creates captain accounts; Login shows "contact administration" | `login_screen.dart`, D-A39 |
 | Legal links | Terms action on Login, URL **not yet provided** (shows "not available yet"); **no Privacy Policy entry or link** | `lib/helper/legal/legal_links.dart`, `login_terms_action.dart` |
 | Debug shell preview | Compiled only in debug builds (`kDebugMode`) | `lib/util/routes/debug_shell_preview.dart`, `login_screen.dart`, tests "simulated release" |
-| Screens | Login complete; Home header (wallet total read-only, «—» without data), greeting and availability card (Task 24; availability API-blocked); Notifications, Order History, Profile placeholders; Current Order against placeholder data | `PROJECT_STATUS.md` §1 |
+| Screens | Login complete; Home header (wallet total read-only, «—» without data), greeting, availability card (Task 24; availability API-blocked) and «طلبات بانتظار القبول» (Task 26; offers backend not configured, no sample data in the app); Notifications, Order History, Profile placeholders; Current Order against placeholder data | `PROJECT_STATUS.md` §1 |
 | Device testing | iOS simulator only (Login); no Android device/emulator run; no physical device; no release build | `PROJECT_STATUS.md` |
 
 ## 4. Requirements for both stores

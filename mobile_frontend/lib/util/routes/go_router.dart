@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
 import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
 import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
 import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_in.dart';
 import 'package:mobile_frontend/util/routes/debug_shell_preview.dart';
@@ -15,6 +16,7 @@ import 'package:mobile_frontend/view/navigation/app_nav_bar.dart';
 import 'package:mobile_frontend/view/screens/authentication/cubit/login_cubit.dart';
 import 'package:mobile_frontend/view/screens/authentication/view/login_screen.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/home_availability_cubit.dart';
+import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
 import 'package:mobile_frontend/view/screens/notifications_screen/view/notifications_screen.dart';
@@ -41,7 +43,9 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 /// Current Order screen then shows a "map unavailable" state.
 ///
 /// [getCaptainAvailability], [changeCaptainAvailability] and
-/// [availabilityPermissions] build the Home-scoped `HomeAvailabilityCubit`.
+/// [availabilityPermissions] build the Home-scoped `HomeAvailabilityCubit`;
+/// [getEligibleOffers], [acceptOrderOffer] and [declineOrderOffer] build the
+/// Home-scoped `PendingOffersCubit`.
 ///
 /// [debugShellPreview] is the TEMPORARY debug-only preview switch; tests
 /// pass their own to simulate a non-debug build. It is inert outside debug
@@ -56,6 +60,9 @@ GoRouter createAppRouter({
   required GetCaptainAvailability getCaptainAvailability,
   required ChangeCaptainAvailability changeCaptainAvailability,
   required AvailabilityPermissionGateway availabilityPermissions,
+  required GetEligibleOffers getEligibleOffers,
+  required AcceptOrderOffer acceptOrderOffer,
+  required DeclineOrderOffer declineOrderOffer,
   PickupMapBuilder? pickupMapBuilder,
   DebugShellPreview? debugShellPreview,
 }) {
@@ -124,13 +131,31 @@ GoRouter createAppRouter({
                 // leaves the tree (sign-out), which drops late answers. The
                 // session check keeps the debug preview (no session) from
                 // asking for permissions or claiming availability.
-                builder: (context, state) => BlocProvider(
-                  create: (_) => HomeAvailabilityCubit(
-                    getCaptainAvailability,
-                    changeCaptainAvailability,
-                    availabilityPermissions,
-                    () => sessionCubit.state is SessionAuthenticated,
-                  ),
+                builder: (context, state) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (_) => HomeAvailabilityCubit(
+                        getCaptainAvailability,
+                        changeCaptainAvailability,
+                        availabilityPermissions,
+                        () => sessionCubit.state is SessionAuthenticated,
+                      ),
+                    ),
+                    // After a server-confirmed acceptance, Current Order is
+                    // asked to refresh (no automatic navigation).
+                    BlocProvider(
+                      create: (context) {
+                        final currentOrder = context.read<CurrentOrderCubit>();
+                        return PendingOffersCubit(
+                          getEligibleOffers,
+                          acceptOrderOffer,
+                          declineOrderOffer,
+                          () => sessionCubit.state is SessionAuthenticated,
+                          onAcceptConfirmed: currentOrder.load,
+                        );
+                      },
+                    ),
+                  ],
                   child: const HomeScreen(),
                 ),
               ),

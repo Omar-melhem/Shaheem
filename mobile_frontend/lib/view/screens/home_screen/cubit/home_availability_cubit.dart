@@ -53,7 +53,8 @@ class HomeAvailabilityCubit extends Cubit<HomeAvailabilityState> {
   /// dropped.
   int _generation = 0;
 
-  /// Reads the server status (on opening Home, on resume and on retry).
+  /// Reads the server status (on opening Home, on returning to it from
+  /// another tab, on resume and on retry).
   /// Never prompts. Ignored while other work is running.
   Future<void> load() async {
     if (state.isBusy || state.pendingRationale != null) return;

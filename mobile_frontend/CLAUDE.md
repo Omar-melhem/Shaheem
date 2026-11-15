@@ -101,7 +101,8 @@ Details: `docs/architecture/ARCHITECTURE.md`.
 - **No `AppUserCubit`:** the current user lives in `AppSessionCubit`.
 - Model loading, success, empty and failure states explicitly.
 
-Details: `docs/architecture/STATE_MANAGEMENT.md`.
+Details: `docs/architecture/STATE_MANAGEMENT.md` (§3.4: screen composition vs Cubit
+state vs lifecycle/presentation effects, with Home as the example).
 
 ## 6. Routing
 
@@ -163,10 +164,11 @@ Details: `docs/architecture/GLOBAL_SERVICES.md`.
 - **Reuse** shared widgets (`AppTextFormField`, `AppButton`,
   `AppTextButton`, `showAppPopup`, `showAppToast`, text widgets), tools and
   validators. Never put validators or business rules in `tools.dart`.
-- **Custom widget contract (mandatory):** creating or changing a shared
-  widget follows `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md`, including
-  its pre-implementation checklist, breaking-change review gate and one
-  component per migration.
+- **Custom widgets:** prefer built-in composition and `ThemeData`; make
+  only essential inputs `required`; no speculative API, style classes or
+  Cubits, and no duplicate preview implementation. Read
+  `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md` (incl. its approval gate)
+  before implementing.
 - **RTL:** comes from the Arabic locale; use start/end, never left/right.
 
 Details: `docs/ui/DESIGN_SYSTEM.md` and

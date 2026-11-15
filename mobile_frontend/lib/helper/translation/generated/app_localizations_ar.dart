@@ -389,4 +389,88 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get availabilityRequirementsLost =>
       'لم يعد أحد الأذونات المطلوبة مسموحاً. قد لا تصلك عروض جديدة حتى تسمح به مجدداً.';
+
+  @override
+  String get offersSectionTitle => 'طلبات بانتظار القبول';
+
+  @override
+  String offersSectionTitleWithCount(int count) {
+    return 'طلبات بانتظار القبول ($count)';
+  }
+
+  @override
+  String get offersSectionSubtitle =>
+      'عروض ما زالت متاحة لك ولم يقبلها كابتن آخر بعد.';
+
+  @override
+  String get offersLoading => 'جارٍ تحميل العروض...';
+
+  @override
+  String get offersNotConfigured =>
+      'خدمة الطلبات غير متصلة بعد، لذلك لا يمكن عرض العروض المتاحة.';
+
+  @override
+  String get offersNoSession => 'سجّل الدخول لعرض العروض المتاحة لك.';
+
+  @override
+  String get offersEmpty => 'لا توجد عروض متاحة لك الآن.';
+
+  @override
+  String get offersNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تحقق من الاتصال ثم حدّث القائمة.';
+
+  @override
+  String get offersLoadFailed => 'تعذّر تحميل العروض. حاول التحديث بعد قليل.';
+
+  @override
+  String get offersAcceptedMessage => 'تم قبول الطلب. تابعه من «الطلب الحالي».';
+
+  @override
+  String get offersDeclinedMessage => 'تم رفض العرض.';
+
+  @override
+  String get offerAccept => 'قبول';
+
+  @override
+  String get offerDecline => 'رفض';
+
+  @override
+  String get offerPickupLabel => 'موقع المطعم';
+
+  @override
+  String get offerPickupUnknown => 'غير متوفر';
+
+  @override
+  String get offerDeliveryAreaLabel => 'منطقة التسليم';
+
+  @override
+  String get offerDeliveryFeeLabel => 'قيمة التوصيل';
+
+  @override
+  String offerCardSemantics(
+    String merchant,
+    String pickup,
+    String area,
+    String fee,
+  ) {
+    return 'عرض طلب من $merchant. موقع المطعم: $pickup. منطقة التسليم: $area. قيمة التوصيل: $fee دينار أردني.';
+  }
+
+  @override
+  String get offerNoLongerAvailable =>
+      'لم يعد هذا العرض متاحاً لك. حدّث القائمة.';
+
+  @override
+  String get offerRefused => 'لم يوافق الخادم على هذه العملية حالياً.';
+
+  @override
+  String get offerNotConfigured =>
+      'خدمة الطلبات غير متصلة بعد، لم يُرسل أي طلب.';
+
+  @override
+  String get offerUnconfirmed =>
+      'تعذّر تأكيد العملية. حدّث القائمة للتحقق من حالة العرض.';
+
+  @override
+  String get previewCaption => 'معاينة تصميم — بيانات افتراضية';
 }

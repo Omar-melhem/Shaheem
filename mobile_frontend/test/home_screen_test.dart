@@ -9,17 +9,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/order_offer_repository_placeholder.dart';
 import 'package:mobile_frontend/domain/entities/app_user.dart';
 import 'package:mobile_frontend/domain/entities/captain_availability.dart';
 import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
 import 'package:mobile_frontend/domain/repositories/captain_availability_repository.dart';
 import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
+import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
 import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/main.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/home_availability_cubit.dart';
+import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/widget/toggle/app_availability_toggle.dart';
 
@@ -59,6 +62,15 @@ void main() {
       permissions ?? const AvailabilityPermissionGatewayPlaceholder(),
       () => session.state is SessionAuthenticated,
     );
+    // Task 26: the offers section with its default (not configured) source.
+    const offerRepo = OrderOfferRepositoryPlaceholder();
+    final offers = PendingOffersCubit(
+      const GetEligibleOffers(offerRepo),
+      const AcceptOrderOffer(offerRepo),
+      const DeclineOrderOffer(offerRepo),
+      () => session.state is SessionAuthenticated,
+    );
+    addTearDown(offers.close);
     addTearDown(cubit.close);
     addTearDown(session.close);
     await tester.pumpWidget(
@@ -67,6 +79,7 @@ void main() {
           providers: [
             BlocProvider.value(value: session),
             BlocProvider.value(value: cubit),
+            BlocProvider.value(value: offers),
           ],
           child: HomeScreen(walletTotalFils: walletTotalFils),
         ),
