@@ -6,6 +6,7 @@ export { Badge } from './Badge';
 export { SimTag, OpenDecision } from './DemoLabels';
 export { Field, fieldMessageId } from './Field';
 export { Input, Textarea, Select, inputBase } from './Inputs';
+export { DateTimeInput } from './DateTimeInput';
 export { SearchField } from './SearchField';
 export { PasswordField } from './PasswordField';
 export { PhoneField, PHONE_HINT } from './PhoneField';

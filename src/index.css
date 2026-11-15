@@ -35,6 +35,34 @@
   input, select, textarea { font-size: 1rem !important; }
 }
 
+/*
+ * Native date/time inputs (DateTimeInput). iOS WebKit draws them as a native control that
+ * centres/clips the value and shows nothing at all when empty; Chromium shows mm/dd/yyyy.
+ * Plain appearance + explicit text colour make the chosen value readable everywhere; while empty
+ * and unfocused the native text is hidden so the Arabic hint is the only empty state.
+ * Chromium's picker button is stretched (invisible) over the field so any tap opens the picker.
+ */
+.shahm-datetime {
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: light;
+  -webkit-text-fill-color: currentColor;
+  line-height: 1.5;
+}
+.shahm-datetime::-webkit-date-and-time-value { text-align: right; min-height: 1.5em; margin: 0; }
+.shahm-datetime::-webkit-datetime-edit { padding: 0; }
+.shahm-datetime::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.shahm-datetime[data-empty]:not(:focus) { color: transparent; }
+
 /* Leaflet is LTR internally; keep its controls/tiles stable inside the RTL app. */
 .leaflet-container {
   direction: ltr;
