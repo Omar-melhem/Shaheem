@@ -26,10 +26,14 @@ class BodyText2 extends AppTextWidget {
   /// Overrides the default font weight.
   final FontWeight? fontWeight;
 
+  /// Makes [fontWeight] win over a `style` weight (see [AppTextWidget]).
+  @override
+  FontWeight? get fontWeightOverride => fontWeight;
+
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.bodyText2.copyWith(
     fontWeight: fontWeight ?? FontWeight.bold,
-    color: color ?? AppColor.black,
+    color: color ?? AppColor.ink,
     fontSize: fontSize ?? 13,
   );
 }

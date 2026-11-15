@@ -1,4 +1,4 @@
-// The Login form: username, password and the submit button.
+// The Login form: username, password, forgot-password and the submit button.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,11 +6,14 @@ import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/util/validators/validation_error.dart';
 import 'package:mobile_frontend/util/validators/validation_messages.dart';
 import 'package:mobile_frontend/view/screens/authentication/cubit/login_cubit.dart';
+import 'package:mobile_frontend/view/screens/authentication/widget/forgot_password_popup.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 import 'package:mobile_frontend/view/widget/text_field/app_text_form_field.dart';
 
 /// Username and password fields plus the Login button, rendered from
-/// [LoginCubit] state.
+/// [LoginCubit] state. The Forgot Password action sits directly under the
+/// password field it belongs to, on the reading-start side.
 ///
 /// Owns only UI resources (text controllers and focus nodes). All values,
 /// validation and submission go through the Cubit:
@@ -18,6 +21,8 @@ import 'package:mobile_frontend/view/widget/text_field/app_text_form_field.dart'
 /// - Fields stay filled and read-only while a submission runs.
 /// - Field errors come from the Cubit and clear as soon as the field is
 ///   edited.
+/// - Both fields use the shared `AppTextFieldStyle` defaults (no per-call
+///   style), so their borders match in every state.
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
 
@@ -66,6 +71,13 @@ class _LoginFormState extends State<LoginForm> {
                 keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
+                // Usernames are Latin letters, digits, `_` and `.` (D-A65),
+                // so only the typed text runs LTR; label, error and icon
+                // stay RTL. Keyboard assistance is off so a username is
+                // never silently corrected or completed.
+                textDirection: TextDirection.ltr,
+                autocorrect: false,
+                enableSuggestions: false,
                 readOnly: busy,
                 startIcon: const Icon(Icons.person_outline),
                 onChanged: cubit.usernameChanged,
@@ -86,7 +98,15 @@ class _LoginFormState extends State<LoginForm> {
                 onChanged: cubit.passwordChanged,
                 onFieldSubmitted: (_) => _submit(context),
               ),
-              const SizedBox(height: 24),
+              // Start-aligned (right in Arabic), under the field's label.
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppTextButton(
+                  label: l10n.forgotPassword,
+                  onPressed: () => showForgotPasswordPopup(context),
+                ),
+              ),
+              const SizedBox(height: 8),
               AppButton(
                 label: l10n.loginButton,
                 expand: true,

@@ -1,4 +1,5 @@
-// Unit tests for SignIn and LoginCubit: local validation, every backend
+// Unit tests for SignIn and LoginCubit: local D-A65 validation, the exact
+// normalized username and unchanged password sent to SignIn, every backend
 // outcome, duplicate-submit protection, session hand-off and password
 // redaction.
 
@@ -53,12 +54,12 @@ void main() {
   });
 
   test('only username empty / only password empty', () async {
-    cubit.passwordChanged('x');
+    cubit.passwordChanged('secret123');
     await cubit.submit();
     expect(cubit.state.usernameError, ValidationError.usernameRequired);
     expect(cubit.state.passwordError, isNull);
 
-    cubit.usernameChanged('u');
+    cubit.usernameChanged('captain01');
     cubit.passwordChanged('');
     await cubit.submit();
     expect(cubit.state.usernameError, isNull);
@@ -79,11 +80,129 @@ void main() {
     expect(cubit.state.usernameError, isNull);
   });
 
-  test('valid input → use case called with the typed values', () async {
+  test('valid input → use case called once with the typed values', () async {
     fill();
+    repo.expectedPassword = 'p@ss word';
     await cubit.submit();
     expect(repo.signInCalls, 1);
     expect(repo.lastUsername, 'captain01');
+    expect(repo.lastPasswordMatched, isTrue);
+  });
+
+  // D-A65 rules and the owner-approved clarifications, through the Cubit.
+  group('D-A65 validation and submission', () {
+    test('whitespace-only username → usernameRequired, no request', () async {
+      cubit.usernameChanged('   ');
+      cubit.passwordChanged('secret123');
+      await cubit.submit();
+      expect(cubit.state.usernameError, ValidationError.usernameRequired);
+      expect(repo.signInCalls, 0);
+    });
+
+    test(
+      'malformed username / short password → their codes, no request',
+      () async {
+        cubit.usernameChanged('abc');
+        cubit.passwordChanged('1234567');
+        await cubit.submit();
+        expect(cubit.state.usernameError, ValidationError.usernameLength);
+        expect(cubit.state.passwordError, ValidationError.passwordLength);
+        expect(repo.signInCalls, 0);
+
+        cubit.usernameChanged('captain@shahm');
+        cubit.passwordChanged('a' * 129);
+        await cubit.submit();
+        expect(cubit.state.usernameError, ValidationError.usernameFormat);
+        expect(cubit.state.passwordError, ValidationError.passwordLength);
+        expect(repo.signInCalls, 0);
+      },
+    );
+
+    test('editing clears a new-rule error on that field only', () async {
+      cubit.usernameChanged('abc');
+      cubit.passwordChanged('short');
+      await cubit.submit();
+      cubit.usernameChanged('abcd');
+      expect(cubit.state.usernameError, isNull);
+      expect(cubit.state.passwordError, ValidationError.passwordLength);
+      cubit.passwordChanged('long enough');
+      expect(cubit.state.passwordError, isNull);
+    });
+
+    test(
+      'outer username spaces trimmed for SignIn; case and inside kept',
+      () async {
+        cubit.usernameChanged('  Captain.Name_1  ');
+        cubit.passwordChanged('secret123');
+        await cubit.submit();
+        expect(repo.signInCalls, 1);
+        expect(repo.lastUsername, 'Captain.Name_1');
+        // The state keeps what the user typed.
+        expect(cubit.state.username, '  Captain.Name_1  ');
+      },
+    );
+
+    final phones = {
+      'Latin': '0791234567',
+      'Arabic-Indic': '٠٧٩١٢٣٤٥٦٧',
+      'Extended Arabic-Indic': '۰۷۹۱۲۳۴۵۶۷',
+      'mixed scripts': '07٩١23۴٥6٧',
+    };
+    phones.forEach((script, typed) {
+      test('phone username ($script) → SignIn gets 10 Latin digits', () async {
+        cubit.usernameChanged(' $typed ');
+        cubit.passwordChanged('secret123');
+        await cubit.submit();
+        expect(cubit.state.usernameError, isNull);
+        expect(repo.signInCalls, 1);
+        expect(repo.lastUsername, '0791234567');
+      });
+    });
+
+    test('+962 phone is not shortened into a local username', () async {
+      cubit.usernameChanged('+962791234567');
+      cubit.passwordChanged('secret123');
+      await cubit.submit();
+      expect(cubit.state.usernameError, ValidationError.usernameFormat);
+      expect(repo.signInCalls, 0);
+    });
+
+    test(
+      'password with outer and inner spaces reaches SignIn unchanged',
+      () async {
+        for (final password in ['  pass word  ', ' ' * 8, '   abcde']) {
+          final repo = FakeAuthRepository()..expectedPassword = password;
+          final session = AppSessionCubit(SignOut(repo));
+          final cubit = LoginCubit(SignIn(repo, GetCurrentUser(repo)), session);
+          cubit.usernameChanged('captain01');
+          cubit.passwordChanged(password);
+          await cubit.submit();
+          expect(cubit.state.passwordError, isNull);
+          expect(repo.signInCalls, 1);
+          expect(repo.lastPasswordMatched, isTrue);
+          await cubit.close();
+          await session.close();
+        }
+      },
+    );
+
+    test('a common password is not rejected at sign-in', () async {
+      cubit.usernameChanged('captain01');
+      cubit.passwordChanged('password');
+      await cubit.submit();
+      expect(cubit.state.passwordError, isNull);
+      expect(repo.signInCalls, 1);
+    });
+
+    test('password never appears in state or toString', () async {
+      const secret = 'S3cret pass!';
+      cubit.usernameChanged('captain01');
+      cubit.passwordChanged(secret);
+      expect(cubit.state.toString(), isNot(contains(secret)));
+      repo.signInError = const InvalidCredentialsException();
+      await cubit.submit();
+      expect(cubit.state.toString(), isNot(contains(secret)));
+    });
   });
 
   test('success → session authenticated with the backend user', () async {
@@ -167,8 +286,9 @@ void main() {
       SignIn(placeholder, GetCurrentUser(placeholder)),
       session,
     );
-    realCubit.usernameChanged('u');
-    realCubit.passwordChanged('p');
+    // Valid under D-A65, so the request really reaches the placeholder.
+    realCubit.usernameChanged('captain01');
+    realCubit.passwordChanged('secret123');
     await realCubit.submit();
     expect(realCubit.state.failure, LoginFailure.backendNotConfigured);
     expect(session.state, isA<SessionUnknown>());

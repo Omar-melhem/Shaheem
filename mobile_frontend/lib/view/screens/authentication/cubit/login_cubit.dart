@@ -46,8 +46,14 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> submit() async {
     if (state.isSubmitting || state.status == LoginStatus.success) return;
 
-    // Local rules are "required" only: no email format, charset or length
-    // rules are approved for Login.
+    // D-A65 local rules. The username is validated on its normalized form
+    // (outer spaces trimmed; a 10-digit phone in Arabic-Indic digits turned
+    // into Latin digits) and that same normalized value is what gets
+    // submitted, so validation and the request can never disagree. The
+    // password is validated and submitted exactly as typed: never trimmed,
+    // and no weak-password check at sign-in (that is a backend rule for
+    // Admin create/reset).
+    final username = Validators.normalizeLoginUsername(state.username);
     final usernameError = Validators.loginUsername(state.username);
     final passwordError = Validators.loginPassword(_password);
     if (usernameError != null || passwordError != null) {
@@ -65,7 +71,7 @@ class LoginCubit extends Cubit<LoginState> {
     // response can't sign the user in afterwards.
     final token = _session.beginAttempt();
 
-    final result = await _signIn(username: state.username, password: _password);
+    final result = await _signIn(username: username, password: _password);
     if (isClosed || !_session.isCurrent(token)) return;
 
     switch (result) {

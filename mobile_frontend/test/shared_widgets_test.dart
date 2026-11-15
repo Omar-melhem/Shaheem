@@ -4,6 +4,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
+import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/util/tools/android_loading.dart';
 import 'package:mobile_frontend/util/tools/ios_loading.dart';
 import 'package:mobile_frontend/util/tools/tools.dart';
@@ -24,14 +25,15 @@ Text renderedText(WidgetTester tester) =>
 
 void main() {
   group('text widgets', () {
-    testWidgets('BodyText1 defaults: 15, bold, black, 1 line, ellipsis', (
+    testWidgets('BodyText1 defaults: 15, bold, Ink, 1 line, ellipsis, Plex', (
       tester,
     ) async {
       await tester.pumpWidget(host(const BodyText1(title: 'نص')));
       final text = renderedText(tester);
       expect(text.style!.fontSize, 15);
       expect(text.style!.fontWeight, FontWeight.bold);
-      expect(text.style!.color, AppColor.black);
+      expect(text.style!.color, AppColor.ink);
+      expect(text.style!.fontFamily, AppFonts.ibmPlexSansArabic);
       expect(text.style!.height, 1.2);
       expect(text.maxLines, 1);
       expect(text.overflow, TextOverflow.ellipsis);

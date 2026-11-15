@@ -40,7 +40,9 @@ final class LoginState {
     this.failureCount = 0,
   });
 
-  /// Current username, as typed.
+  /// Current username, exactly as typed. Normalization for sign-in
+  /// (`Validators.normalizeLoginUsername`) happens at submit time, so the
+  /// field never rewrites what the user sees.
   final String username;
 
   /// Local validation errors; null means no error shown.

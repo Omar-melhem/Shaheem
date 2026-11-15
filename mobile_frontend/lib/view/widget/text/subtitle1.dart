@@ -25,7 +25,7 @@ class Subtitle1 extends AppTextWidget {
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.subtitle1.copyWith(
     fontWeight: FontWeight.bold,
-    color: color ?? AppColor.black,
+    color: color ?? AppColor.ink,
     fontSize: fontSize ?? 10,
   );
 }

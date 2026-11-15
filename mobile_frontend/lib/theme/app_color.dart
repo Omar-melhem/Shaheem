@@ -54,6 +54,12 @@ class AppColor {
   static const Color textPrimary = ink;
   static const Color textSecondary = inkMuted;
   static const Color border = sandLight;
+
+  /// Resting border of text inputs. An existing neutral (inkMuted) chosen
+  /// because it reaches WCAG 1.4.11 non-text contrast on both sides of a
+  /// field: 5.37:1 on the white fill and 4.74:1 on the cream background.
+  /// No sand shade does (sandDark: 3.29:1 white, 2.90:1 cream).
+  static const Color inputBorder = inkMuted;
   static const Color splashBackground = cream;
 
   static const Color blackIcons = Color.fromRGBO(5, 5, 5, 1.0);

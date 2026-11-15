@@ -44,6 +44,8 @@ dependencies:
 #O
 #P
   permission_handler: ^13.0.2
+  # Icon family for the main navigation bar (Regular / Fill / Bold styles).
+  phosphor_icons: ^3.0.1
 #Q
 #R
   responsive_framework: ^1.5.1
@@ -69,3 +71,18 @@ flutter:
   generate: true
   assets:
     - assets/images/png/
+  # IBM Plex Sans Arabic (D-A63), official IBM release
+  # @ibm/plex-sans-arabic@1.1.0, SIL Open Font License 1.1 (OFL.txt).
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Light.ttf
+          weight: 300
+        - asset: assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Bold.ttf
+          weight: 700

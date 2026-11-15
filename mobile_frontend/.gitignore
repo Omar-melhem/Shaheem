@@ -44,8 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Local project documentation (not shared)
-/docs/
-
 # CocoaPods lockfile (generated per machine)
 /ios/Podfile.lock

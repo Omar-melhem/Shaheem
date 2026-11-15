@@ -29,6 +29,10 @@ class Headline4 extends AppTextWidget {
   /// Overrides the default font weight.
   final FontWeight? fontWeight;
 
+  /// Makes [fontWeight] win over a `style` weight (see [AppTextWidget]).
+  @override
+  FontWeight? get fontWeightOverride => fontWeight;
+
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.headline4.copyWith(
     fontWeight: fontWeight ?? FontWeight.bold,

@@ -13,9 +13,19 @@ listed for your task before implementing anything.**
   `../web_frontend/` is a separate project with its own `CLAUDE.md`.
 - **UI:** Arabic only, RTL. Default geography: Amman, Jordan. Currency: JOD
   (د.أ).
-- **Target roles still pending:** which roles the mobile app serves is
-  undecided. Don't assume captain-only or multi-role.
-- **No backend yet:** never invent endpoints, payloads, tokens or rules.
+- **Captains only (D-A42):** this Flutter app serves captains. Admin and
+  Merchant use separate web portals; never add their routes, destinations or
+  screens here.
+- **No backend yet:** the backend architecture is approved (D-A53–D-A56) but
+  not built, and concrete OpenAPI endpoints/DTOs are not written. Never
+  invent endpoints, payloads, tokens or rules.
+- **Authority:** the latest explicit owner approvals in
+  `docs/decisions/ARCHITECTURAL_DECISIONS.md` (§1.1 and the resolution
+  ledger) and `docs/project/PRODUCT_OVERVIEW.md` govern intended behavior.
+  `docs/project/PROJECT_STATUS.md` plus inspection of the source govern what
+  actually exists. An approved target is not proof of implemented code.
+  Historical prompts, archive material and C-entries are not implementation
+  contracts.
 
 ## 2. Working approach
 
@@ -40,12 +50,22 @@ listed for your task before implementing anything.**
 - Navigation: `go_router`.
 - Connectivity: `internet_connection_checker_plus`.
 - Localization: `gen_l10n` (ARB). Responsive: `responsive_framework`.
-- Dependency injection: plain constructor injection from `lib/main.dart`.
-  **No DI package** until one is approved.
+- Navigation icons: `phosphor_icons` (D-A37).
+- Dependency injection (D-A17, D-A64): approved target is `get_it`
+  registrations at the composition root (feature registration modules
+  allowed), with constructor injection into repositories, use cases and
+  Cubits; no `get_it` lookups inside them and no `injectable` code
+  generation. The current code still uses plain constructor wiring from
+  `lib/main.dart`; migrate only in a task that asks for it.
 - **Packages:** recommend one only with a reason (problem solved, why it fits,
   lighter alternatives, and `flutter pub add` command). Install only after
   approval.
-- Declared-but-unused packages (maps, http…) are Pending (D-P12): don't use.
+- **Declared packages:** approval is specific, not blanket. Google Maps
+  Flutter/Routes, `location`, `permission_handler` and `url_launcher`
+  (external navigation) are approved for their feature tasks (D-A57, D-A62).
+  Remove a declared package only after auditing `lib/`, `test/`, the
+  Android/iOS folders and transitive needs (D-A64, `docs/architecture/ARCHITECTURE.md` §6).
+  Never change dependencies outside a task that asks for it.
 
 ## 4. Architecture (Clean Architecture, adapted)
 
@@ -94,6 +114,21 @@ Details: `docs/architecture/STATE_MANAGEMENT.md`.
 - **Protected routes** open only when the session is authenticated and the
   profile is loaded.
 - `context.go` replaces the location; `context.push` stacks a page.
+- **Main shell (D-A36):** five branches of one
+  `StatefulShellRoute.indexedStack`. `AppNavBar` is the shell; the visual
+  `MainNavigationBar` knows no routes or feature state. The selected tab
+  always comes from the router. The bar's indicators are inputs: never
+  hard-code or fake them, and don't add a `NavBarCubit`.
+- **Current Order (center, D-A41):** the captain's shortcut to their active
+  order and its restaurant pickup map. It never creates an order and never
+  uses a plus icon. The server decides what is active (D-P25); the client
+  applies no status rule. The destination is the restaurant, never the
+  customer. `CurrentOrderCubit` (shell-scoped) is the only holder of that
+  state. No orders backend, map or location provider exists yet: never fake
+  an order, a coordinate or a map.
+- **Debug preview (temporary, D-A40):** the only unauthenticated way into the
+  shell, and only under `kDebugMode`. Never widen it; remove it when sign-in
+  is real (`TODO(debug-preview)`).
 
 Details: `docs/architecture/ROUTING_AND_STARTUP.md`.
 
@@ -128,6 +163,10 @@ Details: `docs/architecture/GLOBAL_SERVICES.md`.
 - **Reuse** shared widgets (`AppTextFormField`, `AppButton`,
   `AppTextButton`, `showAppPopup`, `showAppToast`, text widgets), tools and
   validators. Never put validators or business rules in `tools.dart`.
+- **Custom widget contract (mandatory):** creating or changing a shared
+  widget follows `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md`, including
+  its pre-implementation checklist, breaking-change review gate and one
+  component per migration.
 - **RTL:** comes from the Arabic locale; use start/end, never left/right.
 
 Details: `docs/ui/DESIGN_SYSTEM.md` and
@@ -166,7 +205,7 @@ flutter test
 
 - **Tests:** add or adjust them for domain rules, Cubits and key widgets.
   Use fakes from `test/fakes.dart`. Never put fake authenticated paths in
-  production code.
+  production code (the debug preview, D-A40, creates no session).
 - **Reporting:** report actual results. Separate existing issues from
   regressions. Never claim a device run or platform build that didn't
   happen.
@@ -195,6 +234,8 @@ flutter test
 | Navigation, startup, login, logout | `docs/architecture/ROUTING_AND_STARTUP.md` |
 | Connectivity, session, current user, lifecycle | `docs/architecture/GLOBAL_SERVICES.md` |
 | Forms and validation | `docs/ui/SHARED_UI_COMPONENTS_REFERENCE.md` §7 |
+| New or changed shared widget | `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md`, `docs/ui/SHARED_UI_COMPONENTS_REFERENCE.md` |
+| Any release-related task (store builds, signing, permissions, GPS, push, privacy/legal links, metadata) | `docs/release/STORE_SUBMISSION_COMPLIANCE.md` (consult **before** starting; re-verify store policies against the official sources it lists) |
 | History of requirements | `docs/archive/` |
 
 Full index: `docs/README.md`.

@@ -25,7 +25,7 @@ class Headline6 extends AppTextWidget {
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.headline6.copyWith(
     fontWeight: FontWeight.normal,
-    color: color ?? AppColor.black,
+    color: color ?? AppColor.ink,
     fontSize: fontSize ?? 14,
   );
 }

@@ -12,6 +12,9 @@ String validationMessage(AppLocalizations l10n, ValidationError error) =>
     switch (error) {
       ValidationError.required => l10n.fieldRequired,
       ValidationError.usernameRequired => l10n.usernameRequired,
+      ValidationError.usernameLength => l10n.usernameLengthInvalid,
+      ValidationError.usernameFormat => l10n.usernameFormatInvalid,
       ValidationError.passwordRequired => l10n.passwordRequired,
+      ValidationError.passwordLength => l10n.passwordLengthInvalid,
       ValidationError.invalidPhone => l10n.invalidPhone,
     };

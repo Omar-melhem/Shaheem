@@ -1,5 +1,6 @@
 // The single routing policy for startup and authenticated routes.
 
+import 'package:flutter/foundation.dart';
 import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/cubit/splash_cubit.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
@@ -10,6 +11,21 @@ const Set<String> publicRoutes = {
   RoutesString.noInternet,
   RoutesString.login,
 };
+
+/// Root paths of the main navigation shell's branches, in bar order.
+/// All of them are protected.
+const List<String> mainShellRoutes = [
+  RoutesString.home,
+  RoutesString.notifications,
+  RoutesString.currentOrder,
+  RoutesString.orderHistory,
+  RoutesString.profile,
+];
+
+/// Whether [location] is a main-shell branch root or a route nested in one.
+bool isMainShellRoute(String location) => mainShellRoutes.any(
+  (root) => location == root || location.startsWith('$root/'),
+);
 
 /// Decides where the user may be, given startup progress and session state.
 /// Returns the path to redirect to, or null to stay on [location].
@@ -22,10 +38,17 @@ const Set<String> publicRoutes = {
 /// - Signed out: everything leads to Login.
 /// - Unknown (startup running or failed): protected routes are closed and
 ///   the startup screen matching [startup] is shown.
+///
+/// [debugPreviewActive] is the TEMPORARY development exception (see
+/// `DebugShellPreview`): in a debug build, a signed-out developer who
+/// pressed the Login preview button may open the main-shell routes. It is
+/// ANDed with [kDebugMode] here as well, so in profile/release builds the
+/// argument has no effect whatever the caller passes.
 String? resolveRedirect({
   required String location,
   required SplashState startup,
   required AppSessionState session,
+  bool debugPreviewActive = false,
 }) {
   final isPublic = publicRoutes.contains(location);
 
@@ -33,7 +56,12 @@ String? resolveRedirect({
     case SessionAuthenticated():
       return isPublic ? RoutesString.home : null;
     case SessionUnauthenticated():
-      return location == RoutesString.login ? null : RoutesString.login;
+      if (location == RoutesString.login) return null;
+      // TODO(debug-preview): remove this rule with DebugShellPreview.
+      if (kDebugMode && debugPreviewActive && isMainShellRoute(location)) {
+        return null;
+      }
+      return RoutesString.login;
     case SessionUnknown():
       final String? target = switch (startup) {
         SplashOffline() => RoutesString.noInternet,

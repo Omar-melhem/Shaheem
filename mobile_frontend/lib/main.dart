@@ -4,9 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import 'package:mobile_frontend/data/repositories/active_order_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/auth_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
+import 'package:mobile_frontend/domain/repositories/active_order_repository.dart';
 import 'package:mobile_frontend/domain/repositories/auth_repository.dart';
+import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
+import 'package:mobile_frontend/domain/repositories/captain_availability_repository.dart';
+import 'package:mobile_frontend/domain/repositories/captain_location_repository.dart';
+import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
 import 'package:mobile_frontend/domain/use_cases/check_auth_status.dart';
+import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
 import 'package:mobile_frontend/domain/use_cases/get_current_user.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_in.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
@@ -14,11 +25,13 @@ import 'package:mobile_frontend/helper/network/internet_connection_service.dart'
 import 'package:mobile_frontend/helper/translation/generated/app_localizations.dart';
 import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
+import 'package:mobile_frontend/util/routes/debug_shell_preview.dart';
 import 'package:mobile_frontend/util/routes/go_router.dart';
 import 'package:mobile_frontend/util/routes/stream_refresh_listenable.dart';
 import 'package:mobile_frontend/view/app_state/connectivity/app_connectivity_cubit.dart';
 import 'package:mobile_frontend/view/app_state/connectivity/global_connectivity_banner.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/cubit/splash_cubit.dart';
 
 void main() {
@@ -45,10 +58,47 @@ class MainApp extends StatefulWidget {
     super.key,
     required this.connectivityService,
     required this.authRepository,
+    this.activeOrderRepository = const ActiveOrderRepositoryPlaceholder(),
+    this.captainLocationRepository =
+        const CaptainLocationRepositoryPlaceholder(),
+    this.captainAvailabilityRepository =
+        const CaptainAvailabilityRepositoryPlaceholder(),
+    this.availabilityPermissions =
+        const AvailabilityPermissionGatewayPlaceholder(),
+    this.pickupMapBuilder,
+    this.debugShellPreview,
   });
 
   final InternetConnectionService connectivityService;
   final AuthRepository authRepository;
+
+  /// Source of the captain's active order. Defaults to the placeholder,
+  /// which reports "backend not configured" (no orders backend exists yet).
+  final ActiveOrderRepository activeOrderRepository;
+
+  /// Source of the device location. Defaults to the placeholder, which
+  /// reports "not configured" and requests no permission.
+  final CaptainLocationRepository captainLocationRepository;
+
+  /// The captain's availability on the backend. Defaults to the
+  /// placeholder, which reports "backend not configured": nobody can be
+  /// made Available until the real API exists.
+  final CaptainAvailabilityRepository captainAvailabilityRepository;
+
+  /// Location and notification checks/requests for availability. Defaults
+  /// to the placeholder, which reports "not configured" and shows no
+  /// prompt (no native permission configuration exists yet).
+  final AvailabilityPermissionGateway availabilityPermissions;
+
+  /// In-app map for an active order's pickup. Null until a maps provider is
+  /// approved and configured; the screen then says the map is unavailable.
+  final PickupMapBuilder? pickupMapBuilder;
+
+  // TODO(debug-preview): remove with DebugShellPreview.
+  /// TEMPORARY debug-only preview switch. Left null in the app (the router
+  /// creates the default one); tests pass `DebugShellPreview(allowed: false)`
+  /// to simulate a non-debug build.
+  final DebugShellPreview? debugShellPreview;
 
   @override
   State<MainApp> createState() => _MainAppState();
@@ -87,6 +137,17 @@ class _MainAppState extends State<MainApp> {
       sessionCubit: _sessionCubit,
       refreshListenable: _routerRefresh,
       signIn: SignIn(widget.authRepository, getCurrentUser),
+      getActiveOrder: GetActiveOrder(widget.activeOrderRepository),
+      getCaptainLocation: GetCaptainLocation(widget.captainLocationRepository),
+      getCaptainAvailability: GetCaptainAvailability(
+        widget.captainAvailabilityRepository,
+      ),
+      changeCaptainAvailability: ChangeCaptainAvailability(
+        widget.captainAvailabilityRepository,
+      ),
+      availabilityPermissions: widget.availabilityPermissions,
+      pickupMapBuilder: widget.pickupMapBuilder,
+      debugShellPreview: widget.debugShellPreview,
     );
 
     // Background: stop probing. Foreground: fresh subscription + one check.
