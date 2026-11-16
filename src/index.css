@@ -32,6 +32,9 @@
   .table-mobile-label { display: block; color: #6e6a64; font-size: .75rem; font-weight: 700; }
   .responsive-table td > div { min-width: 0; flex-wrap: wrap; }
   .responsive-table td button, .responsive-table td a { min-height: 44px; }
+  .responsive-table td.row-actions { grid-template-columns: minmax(0, 1fr); gap: .35rem; }
+  .responsive-table td.row-actions > div { gap: .25rem; }
+  .responsive-table td.row-actions button, .responsive-table td.row-actions a { min-height: 40px; width: 40px; height: 40px; }
   input, select, textarea { font-size: 1rem !important; }
 }
 

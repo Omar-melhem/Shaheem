@@ -1,33 +1,39 @@
 import { Children, cloneElement, isValidElement, Fragment, type ReactElement, type ReactNode, type CSSProperties } from 'react';
+import { cn } from '@/shared/lib/cn';
 import { InfoTooltip } from './InfoTooltip';
+import { TableActionsHelp, type ActionLegendItem } from './TableActionsHelp';
 
 export const ACTIONS_HEADER = 'الإجراءات';
-
-export interface ActionLegendItem {
-  icon: ReactNode;
-  label: string;
-}
+export type { ActionLegendItem };
 
 /**
  * The one admin table standard (Master Prompt §13): labelled headers, a visible separator
  * between every column (RTL-safe logical borders), exactly two alternating row colours, and
  * an «الإجراءات» header whose help icon explains only the icons this table uses.
+ * With `legendTitle` that help moves to one ⓘ in a toolbar above the table (next to `toolbar`,
+ * e.g. a result count) and the header stays plain; the parent Card must then not clip overflow.
  * Rows are passed as children so each feature keeps its own cells; put actions in `<RowActions>`.
  */
 export function DataTable({
   headers,
   actionsLegend,
+  legendTitle,
+  toolbar,
   minWidth = 760,
   children,
 }: {
   /** Column labels, excluding the actions column (added when `actionsLegend` is set). */
   headers: ReactNode[];
   actionsLegend?: ActionLegendItem[];
+  /** Heading of the toolbar legend, e.g. «شرح إجراءات التجار». */
+  legendTitle?: string;
+  toolbar?: ReactNode;
   minWidth?: number;
   children: ReactNode;
 }) {
-  return (
-    <div className="responsive-table relative min-w-0 max-w-full overflow-x-auto" role="region" aria-label="جدول البيانات" tabIndex={0}>
+  const inToolbar = !!(legendTitle && actionsLegend);
+  const region = (
+    <div className={cn('responsive-table relative min-w-0 max-w-full overflow-x-auto', inToolbar && 'rounded-b-2xl')} role="region" aria-label="جدول البيانات" tabIndex={0}>
       <table
         className="w-full text-sm [&_td:first-child]:border-s-0 [&_td]:border-s [&_td]:border-cream-deep [&_th:first-child]:border-s-0 [&_th]:border-s [&_th]:border-cream-deep"
         role="table"
@@ -40,6 +46,7 @@ export function DataTable({
             ))}
             {actionsLegend && (
               <th scope="col" className="w-px whitespace-nowrap px-3 py-3 text-start font-bold">
+                {inToolbar ? ACTIONS_HEADER : (
                 <span className="inline-flex items-center gap-1">
                   {ACTIONS_HEADER}
                   <InfoTooltip
@@ -58,6 +65,7 @@ export function DataTable({
                     }
                   />
                 </span>
+                )}
               </th>
             )}
           </tr>
@@ -66,14 +74,24 @@ export function DataTable({
       </table>
     </div>
   );
+  if (!inToolbar) return region;
+  return (
+    <>
+      <div className="relative flex min-h-12 items-center justify-between gap-2 border-b border-cream-deep px-4 py-1">
+        <div className="min-w-0 text-sm text-ink-muted">{toolbar}</div>
+        <TableActionsHelp title={legendTitle!} items={actionsLegend!} />
+      </div>
+      {region}
+    </>
+  );
 }
 
 /** The actions cell: icon buttons only. */
 export function RowActions({ children, mobileLabel = ACTIONS_HEADER }: { children: ReactNode; mobileLabel?: ReactNode }) {
   return (
-    <td role="cell" className="w-px whitespace-nowrap px-3 py-2">
+    <td role="cell" className="row-actions w-px whitespace-nowrap px-3 py-2">
       <span className="table-mobile-label">{mobileLabel}</span>
-      <div className="flex items-center gap-0.5">{children}</div>
+      <div className="flex items-center justify-start gap-1">{children}</div>
     </td>
   );
 }

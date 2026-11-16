@@ -46,7 +46,7 @@ export function Drawer({
           </button>
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-cream-deep bg-white px-5 py-3">{footer}</div>}
+        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-cream-deep bg-white px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
     </div>,
     document.body,

@@ -25,12 +25,12 @@ const AVAILABILITY_LABEL = { available: 'متاح', busy: 'في توصيل', off
 
 const HEADERS = ['الكابتن', 'الحساب', 'التوفر', 'الأهلية للعروض', 'آخر موقع', 'المحفظة', 'التقييم', 'المكتملة'];
 const LEGEND = [
-  { icon: <Eye />, label: 'التفاصيل وسجل التوصيلات' },
-  { icon: <Pencil />, label: 'تعديل البيانات' },
-  { icon: <Wallet />, label: 'شحن المحفظة' },
-  { icon: <Star />, label: 'تقييم الكابتن' },
-  { icon: <MapPin />, label: 'فتح الموقع على الخريطة' },
-  { icon: <Power />, label: 'تفعيل / إيقاف الحساب' },
+  { icon: <Eye />, label: 'عرض التفاصيل', description: 'ملف الكابتن وسجل توصيلاته.' },
+  { icon: <Pencil />, label: 'تعديل البيانات', description: 'الاسم والهاتف وبيانات الدخول.' },
+  { icon: <Wallet />, label: 'شحن المحفظة', description: 'إضافة رصيد لمحفظة الكابتن.' },
+  { icon: <Star />, label: 'تقييم الكابتن', description: 'تقييم من 1 إلى 5 نجوم.' },
+  { icon: <MapPin />, label: 'فتح الموقع على الخريطة', description: 'يظهر على الخريطة الحية. غير متاح إن لم يُسجَّل للكابتن موقع بعد.' },
+  { icon: <Power />, label: 'تفعيل / إيقاف الحساب', description: 'يطلب تأكيداً أولاً. الكابتن الموقوف لا يستلم عروض الطلبات.' },
 ];
 
 export function CaptainsPage() {
@@ -94,13 +94,16 @@ export function CaptainsPage() {
         </Select>
         </div>
         {filtering && <Button variant="ghost" icon={<RotateCcw className="h-4 w-4" />} onClick={reset}>مسح الفلاتر</Button>}
-        <p className="ms-auto text-sm text-ink-muted" aria-live="polite">{filtered.length} من {views.length} كابتن</p>
       </Card>
-      <Card className="overflow-hidden">
+      <Card>
         {filtered.length === 0 ? (
-          <EmptyState icon={<Users className="h-6 w-6" />} title="لا يوجد كباتن مطابقون" />
+          <EmptyState
+            icon={<Users className="h-6 w-6" />}
+            title="لا يوجد كباتن مطابقون"
+            action={filtering && <Button variant="outline" icon={<RotateCcw className="h-4 w-4" />} onClick={reset}>مسح الفلاتر</Button>}
+          />
         ) : (
-          <DataTable headers={HEADERS} actionsLegend={LEGEND} minWidth={1080}>
+          <DataTable headers={HEADERS} actionsLegend={LEGEND} legendTitle="شرح إجراءات الكباتن" toolbar={<span aria-live="polite">{filtered.length} من {views.length} كابتن</span>} minWidth={1080}>
             {filtered.map((v) => {
               const c = v.captain;
               const avail = availabilityOf(v);
@@ -127,7 +130,7 @@ export function CaptainsPage() {
                     <IconAction icon={<Pencil />} label="تعديل البيانات" onClick={() => setEditing(c)} />
                     <IconAction icon={<Wallet />} label="شحن المحفظة" tone="secondary" onClick={() => setRecharging(v)} />
                     <IconAction icon={<Star />} label="تقييم الكابتن" onClick={() => setRating(c)} />
-                    <IconAction icon={<MapPin />} label="فتح الموقع على الخريطة" to={`/admin/map?captain=${c.id}`} disabled={!c.lastLocation} />
+                    <IconAction icon={<MapPin />} label="فتح الموقع على الخريطة" to={`/admin/map?captain=${c.id}`} disabled={!c.lastLocation} disabledReason="لا يوجد موقع مسجّل بعد" />
                     <IconAction icon={<Power />} label={c.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب'} tone={c.status === 'active' ? 'danger' : 'secondary'} onClick={() => setToggling(c)} />
                   </RowActions>
                 </tr>

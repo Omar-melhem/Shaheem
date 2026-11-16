@@ -127,6 +127,32 @@ describe('DataTable', () => {
     expect(cells[1]).toHaveTextContent('الحالةجديد');
     expect(screen.getByRole('button', { name: 'شرح أيقونات الإجراءات' })).toBeInTheDocument();
   });
+
+  it('with legendTitle: one ⓘ above the table opens the legend; the header stays plain', async () => {
+    render(
+      <DataTable headers={['الاسم']} actionsLegend={[{ icon: <span />, label: 'تعديل البيانات', description: 'الاسم والهاتف.' }]} legendTitle="شرح إجراءات التجار" toolbar="3 تاجر">
+        <tr><td>السنابل</td><RowActions><button aria-label="تعديل البيانات">o</button></RowActions></tr>
+      </DataTable>,
+    );
+    expect(screen.getAllByRole('columnheader')[1]).toHaveTextContent(/^الإجراءات$/);
+    expect(screen.queryByRole('button', { name: 'شرح أيقونات الإجراءات' })).not.toBeInTheDocument();
+    expect(screen.getByText('3 تاجر')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'شرح إجراءات الجدول' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(trigger);
+    const legend = screen.getByRole('dialog', { name: 'شرح إجراءات التجار' });
+    expect(legend).toHaveTextContent('تعديل البيانات');
+    expect(legend).toHaveTextContent('الاسم والهاتف.');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    await userEvent.click(trigger);
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'إغلاق الشرح' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });
 
 describe('status badges', () => {

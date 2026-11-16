@@ -13,6 +13,7 @@ export { PhoneField, PHONE_HINT } from './PhoneField';
 export { InfoTooltip } from './InfoTooltip';
 export { DataTable, RowActions, ACTIONS_HEADER, type ActionLegendItem } from './DataTable';
 export { IconAction } from './IconAction';
+export { TableActionsHelp, TABLE_HELP_LABEL } from './TableActionsHelp';
 export { InputIcon, INPUT_ICON_PAD } from './InputIcon';
 export { Toggle } from './Toggle';
 export { Dialog, ConfirmDialog } from './Dialog';

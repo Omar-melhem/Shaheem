@@ -74,8 +74,13 @@ describe('IconAction', () => {
   it('becomes a link with `to`, and a disabled button when disabled', () => {
     const { rerender } = render(<MemoryRouter><IconAction icon={<svg />} label="الأسعار" to="/admin/pricing" /></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'الأسعار' })).toHaveAttribute('href', '/admin/pricing');
-    rerender(<MemoryRouter><IconAction icon={<svg />} label="الأسعار" to="/admin/pricing" disabled /></MemoryRouter>);
-    expect(screen.getByRole('button', { name: 'الأسعار' })).toBeDisabled();
+    const onClick = vi.fn();
+    rerender(<MemoryRouter><IconAction icon={<svg />} label="الأسعار" to="/admin/pricing" onClick={onClick} disabled disabledReason="لا يوجد موقع" /></MemoryRouter>);
+    const button = screen.getByRole('button', { name: 'الأسعار — لا يوجد موقع' });
+    expect(button).toHaveAttribute('aria-disabled', 'true'); // stays focusable so the tooltip can explain why
+    fireEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
 

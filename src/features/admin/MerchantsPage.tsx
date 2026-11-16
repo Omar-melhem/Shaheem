@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marker } from 'react-leaflet';
-import { Eye, History, Plus, Power, Store, Pencil, Tags } from 'lucide-react';
+import { Eye, History, Plus, Power, RotateCcw, Store, Pencil, Tags } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import { MERCHANT_CATEGORIES, type Merchant, type MerchantCategory } from '@/domain/types';
 import { cityName } from '@/domain/cities';
@@ -19,11 +19,11 @@ import { MerchantFormDialog } from './merchants/MerchantFormDialog';
 
 const HEADERS = ['النشاط التجاري', 'الفئة', 'الهاتف', 'العنوان', 'الطلبات', 'الحالة'];
 const LEGEND = [
-  { icon: <Eye />, label: 'عرض التفاصيل' },
-  { icon: <Tags />, label: 'مناطق التوصيل والأسعار' },
-  { icon: <History />, label: 'طلبات التاجر' },
-  { icon: <Pencil />, label: 'تعديل البيانات' },
-  { icon: <Power />, label: 'تفعيل / إيقاف الحساب' },
+  { icon: <Eye />, label: 'عرض التفاصيل', description: 'ملف التاجر وموقع الاستلام وآخر طلباته.' },
+  { icon: <Tags />, label: 'المناطق والأسعار', description: 'تفعيل مناطق التوصيل وتحديد سعر كل منطقة لهذا التاجر.' },
+  { icon: <History />, label: 'طلبات التاجر', description: 'صفحة الطلبات مصفّاة على هذا التاجر.' },
+  { icon: <Pencil />, label: 'تعديل البيانات', description: 'الاسم والفئة والهاتف والعنوان وبيانات الدخول.' },
+  { icon: <Power />, label: 'تفعيل / إيقاف الحساب', description: 'يطلب تأكيداً أولاً. التاجر الموقوف لا يستطيع إنشاء طلبات جديدة.' },
 ];
 
 export function MerchantsPage() {
@@ -64,11 +64,15 @@ export function MerchantsPage() {
           </Select>
         </div>
       </Card>
-      <Card className="overflow-hidden">
+      <Card>
         {filtered.length === 0 ? (
-          <EmptyState icon={<Store className="h-6 w-6" />} title="لا يوجد تجار مطابقون" />
+          <EmptyState
+            icon={<Store className="h-6 w-6" />}
+            title="لا يوجد تجار مطابقون"
+            action={(q.trim() || category) && <Button variant="outline" icon={<RotateCcw className="h-4 w-4" />} onClick={() => { setQ(''); setCategory(''); }}>مسح الفلاتر</Button>}
+          />
         ) : (
-          <DataTable headers={HEADERS} actionsLegend={LEGEND} minWidth={900}>
+          <DataTable headers={HEADERS} actionsLegend={LEGEND} legendTitle="شرح إجراءات التجار" toolbar={<span aria-live="polite">{filtered.length} من {merchants.length} تاجر</span>} minWidth={900}>
             {filtered.map((m) => (
               <tr key={m.id}>
                 <td className="px-4 py-3">
