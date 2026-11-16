@@ -4,7 +4,7 @@ import { History } from 'lucide-react';
 import { useSession } from '@/app/session';
 import { useAppStore } from '@/app/state';
 import { merchantOrderOverview } from '@/application/dashboard';
-import { Card, CardHeader, EmptyState, Tabs } from '@/shared/components/ui';
+import { Card, CardHeader, EmptyState, PageHeader, SearchField, Tabs } from '@/shared/components/ui';
 import { HistoryItem } from './MerchantOrderItems';
 
 type Filter = 'all' | 'delivered' | 'cancelled';
@@ -15,16 +15,23 @@ export function MerchantOrdersPage() {
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === merchantId));
   const allOrders = useAppStore((s) => s.orders);
   const [filter, setFilter] = useState<Filter>('all');
+  const [q, setQ] = useState('');
   const { history } = useMemo(() => merchantOrderOverview(allOrders, merchantId), [allOrders, merchantId]);
   if (!merchant) return <Navigate to="/login" replace />;
-  const shown = history.filter((o) => filter === 'all' || o.status === filter);
+  const needle = q.trim().toLowerCase();
+  const shown = history.filter(
+    (o) => (filter === 'all' || o.status === filter) && (!needle || [o.reference, o.areaName, o.destination.label, o.customerPhone].some((v) => v?.toLowerCase().includes(needle))),
+  );
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="sr-only">سجل الطلبات — {merchant.businessName}</h1>
+      <PageHeader title="الطلبات" description="طلباتك المُسلّمة والملغاة. الطلبات الجارية تظهر في صفحة «طلب كابتن». اضغط على أي طلب لعرض تفاصيله." />
+      {history.length > 0 && (
+        <SearchField label="بحث في الطلبات" className="mb-4 max-w-md" placeholder="رقم الطلب، المنطقة، هاتف العميل" value={q} onChange={(e) => setQ(e.target.value)} />
+      )}
         <Card>
           <CardHeader
-            title={`سجل الطلبات (${shown.length})`}
+            title={`السجل (${shown.length})`}
             icon={<History className="h-5 w-5" />}
             actions={
               <Tabs

@@ -1,4 +1,5 @@
-import { Bike, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { Bike, ChevronLeft, Phone } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import { useNow } from '@/shared/hooks/application';
 import type { DeliveryOrder } from '@/domain/types';
@@ -9,6 +10,7 @@ import { formatAmmanDateTime } from '@/domain/time';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { DeliveryProgress } from '@/shared/components/OrderTimeline';
 import { formatDateTime, formatRelative } from '@/shared/lib/format';
+import { MerchantOrderDetail } from './MerchantOrderDetail';
 
 /** Wording while no Captain is assigned yet — never implies acceptance. */
 function waitingText(order: DeliveryOrder): string {
@@ -57,22 +59,32 @@ export function ActiveOrderItem({ order }: { order: DeliveryOrder }) {
   );
 }
 
-/** A finished order (delivered or cancelled) in a compact row. */
+/** A finished order (delivered or cancelled) in a compact row; the whole row opens its details. */
 export function HistoryItem({ order }: { order: DeliveryOrder }) {
   const captain = useAppStore((s) => s.captains.find((c) => c.id === order.captainId));
+  const [open, setOpen] = useState(false);
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-sm">
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={`عرض تفاصيل الطلب ${order.reference}`}
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-start text-sm transition-colors hover:bg-cream/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-300"
+      >
       <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
       <span className="min-w-0 flex-1 truncate text-ink-soft">
         {order.destination.label} · {order.areaName}
       </span>
       <span className="whitespace-nowrap font-bold">{formatMoney(order.deliveryPrice)}</span>
       <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
+      <ChevronLeft className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
       <span className="w-full text-xs text-ink-muted">
         {formatDateTime(order.createdAt)}
         {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && ` · مؤجل لـ ${formatAmmanDateTime(order.scheduledPickupAt)}`}
         {captain && ` · ${captain.fullName}`}
       </span>
+      </button>
+      {open && <MerchantOrderDetail order={order} onClose={() => setOpen(false)} />}
     </li>
   );
 }

@@ -58,7 +58,7 @@ export function OrdersPage() {
 
   return (
     <>
-      <PageHeader title="الطلبات" description="البحث في طلبات التوصيل ومتابعتها. اضغط على أي طلب لعرض التفاصيل والسجل ومحاولات التوزيع." />
+      <PageHeader title="الطلبات" description="البحث في طلبات التوصيل ومتابعتها. اضغط على رقم الطلب لعرض التفاصيل والسجل ومحاولات التوزيع." />
 
       <Card className="mb-4 grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-6">
         <SearchField label="بحث" className="md:col-span-3 xl:col-span-2" placeholder="رقم الطلب، هاتف العميل، الوجهة" value={q} onChange={(e) => resetPage(setQ)(e.target.value)} />
@@ -104,11 +104,13 @@ export function OrdersPage() {
                 {visible.map((o) => (
                   <tr key={o.id}>
                     <td className="px-4 py-3">
-                      <p className="font-mono font-bold text-ink" dir="ltr" style={{ textAlign: 'right' }}>{o.reference}</p>
+                      <button type="button" onClick={() => setDetailId(o.id)} className="font-mono font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300" aria-label={`عرض تفاصيل الطلب ${o.reference}`}>
+                        <span dir="ltr">{o.reference}</span>
+                      </button>
                       <p className="text-xs text-ink-muted">{formatDateTime(o.createdAt)}</p>
                     </td>
                     <td className="px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
-                    <td className="px-4 py-3">
+                    <td className="whitespace-nowrap px-4 py-3">
                       {o.customerPhone ? <span dir="ltr">{o.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}
                     </td>
                     <td className="px-4 py-3">

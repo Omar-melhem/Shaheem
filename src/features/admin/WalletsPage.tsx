@@ -91,7 +91,7 @@ export function WalletsPage() {
                 <tr key={t.id}>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">{formatDateTime(t.createdAt)}</td>
                   <td className="px-4 py-3 font-bold">{captainName(t.captainId)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 font-extrabold text-secondary" dir="ltr" style={{ textAlign: 'right' }}>+{formatMoney(t.amount)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-extrabold text-secondary"><span dir="ltr">+{formatMoney(t.amount)}</span></td>
                   <td className="px-4 py-3 text-xs">{t.reason}</td>
                   <td className="px-4 py-3 text-xs text-ink-muted">{t.actor.name}</td>
                 </tr>

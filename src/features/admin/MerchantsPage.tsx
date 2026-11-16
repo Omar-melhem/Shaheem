@@ -76,7 +76,7 @@ export function MerchantsPage() {
                   <p className="text-xs text-ink-muted">منذ {formatDate(m.createdAt)}</p>
                 </td>
                 <td className="px-4 py-3"><MerchantCategoryBadge category={m.category} /></td>
-                <td className="whitespace-nowrap px-4 py-3" dir="ltr" style={{ textAlign: 'right' }}>{m.phone}</td>
+                <td className="whitespace-nowrap px-4 py-3"><span dir="ltr">{m.phone}</span></td>
                 <td className="max-w-[220px] truncate px-4 py-3">{m.address}</td>
                 <td className="px-4 py-3">{orders.filter((o) => o.merchantId === m.id).length}</td>
                 <td className="px-4 py-3">

@@ -9,15 +9,19 @@ export function MapLegend() {
     </li>
   );
   return (
-    <div className="rounded-xl bg-white/95 p-3 text-xs shadow-card ring-1 ring-cream-deep">
-      <p className="mb-2 font-bold text-ink">دليل الخريطة</p>
-      <ul className="space-y-1.5 text-ink-soft">
+    <details open className="group rounded-xl bg-white/95 p-3 text-xs shadow-card ring-1 ring-cream-deep">
+      <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 font-bold text-ink [&::-webkit-details-marker]:hidden">
+        دليل الخريطة
+        <span className="text-[11px] font-medium text-primary group-open:hidden">إظهار</span>
+        <span className="hidden text-[11px] font-medium text-primary group-open:inline">إخفاء</span>
+      </summary>
+      <ul className="mt-2 space-y-1.5 text-ink-soft">
         {item(CAPTAIN_STATUS_COLOR.busy, 'كابتن في توصيل (تتبع نشط)')}
         {item(CAPTAIN_STATUS_COLOR.available, 'كابتن متاح — موقع غير متتبَّع')}
         {item(STALE_COLOR, 'موقع متأخر — انقطع GPS', 'dashed')}
         {item(CAPTAIN_STATUS_COLOR.offline, 'غير متاح')}
       </ul>
       <p className="mt-2 border-t border-cream-dark pt-2 text-[11px] text-ink-muted">جميع المواقع في هذا النموذج محاكاة. يُتتبع الموقع أثناء التوصيل النشط فقط.</p>
-    </div>
+    </details>
   );
 }
