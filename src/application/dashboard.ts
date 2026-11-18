@@ -7,6 +7,8 @@ export interface OperationalKpis {
   offered: number;
   activeDeliveries: number;
   deliveredToday: number;
+  /** «الطلبات المؤجلة اليوم»: see `scheduledForToday`. */
+  scheduledToday: number;
 }
 
 export interface PlatformKpis {
@@ -14,7 +16,19 @@ export interface PlatformKpis {
   captains: number;
 }
 
-/** «مؤشرات التشغيل»: the four live order counts. «Today» is the Amman calendar day. */
+/**
+ * Today's scheduled workload: scheduled (مؤجل) orders whose pickup falls on the Amman calendar
+ * day of `now` — by pickup time, never by creation time. Every status counts (waiting, offered,
+ * delivering, delivered) except cancelled. Immediate orders never count. Each order counts once.
+ */
+export function scheduledForToday(orders: DeliveryOrder[], now: number): number {
+  const today = ammanDayKey(now);
+  return orders.filter(
+    (o) => o.requestType === 'scheduled' && o.status !== 'cancelled' && o.scheduledPickupAt !== undefined && ammanDayKey(o.scheduledPickupAt) === today,
+  ).length;
+}
+
+/** «مؤشرات التشغيل»: the live order counts. «Today» is the Amman calendar day. */
 export function operationalKpis(orders: DeliveryOrder[], now: number): OperationalKpis {
   const today = ammanDayKey(now);
   return {
@@ -22,6 +36,7 @@ export function operationalKpis(orders: DeliveryOrder[], now: number): Operation
     offered: orders.filter((o) => isOffering(o.status)).length,
     activeDeliveries: orders.filter((o) => isActiveDelivery(o.status)).length,
     deliveredToday: orders.filter((o) => o.status === 'delivered' && o.deliveredAt !== undefined && ammanDayKey(o.deliveredAt) === today).length,
+    scheduledToday: scheduledForToday(orders, now),
   };
 }
 
