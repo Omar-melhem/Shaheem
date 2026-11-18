@@ -11,16 +11,22 @@ import { scheduledForToday } from '@/application/dashboard';
 describe('login brand copy and car', () => {
   beforeEach(() => useSession.getState().signOut());
 
-  it('shows «شهم درايف», the exact slogan and the branded car; the old line is gone', () => {
+  it('shows «شهم درايف» and the vowel-marked tagline; the old line is gone', () => {
     render(<MemoryRouter><LoginPage /></MemoryRouter>);
     expect(screen.getAllByText('شهم درايف').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('نوصلها بشهامه ونحفظها بأمانه').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('نُوصِلُهَا بِشَهَامَةٍ وَنَحْفَظُهَا بِأَمَانَةٍ').length).toBeGreaterThan(0);
     expect(screen.queryByText(/منصة تشغيل التوصيل للأعمال/)).not.toBeInTheDocument();
-    const cars = screen.getAllByRole('img', { name: 'سيارة شهم للتوصيل' });
-    expect(cars[0]).toHaveAttribute('src', '/brand/shahm-login-car.jpg');
-    expect(cars[0]).toHaveAttribute('width', '677');
     expect(screen.getByRole('heading', { level: 1, name: 'تسجيل الدخول' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'دخول' })).toBeInTheDocument();
+  });
+
+  it('keeps the original driving SHAHM car (decorative, behind the copy) and no framed photo', () => {
+    const { container } = render(<MemoryRouter><LoginPage /></MemoryRouter>);
+    const lane = container.querySelector('.shahm-car-lane');
+    expect(lane).toHaveAttribute('aria-hidden', 'true');
+    expect(lane?.querySelector('.shahm-car-run img.shahm-car')).toHaveAttribute('src', '/brand/shahm-car.png');
+    expect(container.querySelector('img[src="/brand/shahm-login-car.jpg"]')).toBeNull();
+    expect(container.querySelector('figure')).toBeNull();
   });
 });
 
