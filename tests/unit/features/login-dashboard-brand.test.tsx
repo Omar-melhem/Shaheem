@@ -11,10 +11,13 @@ import { scheduledForToday } from '@/application/dashboard';
 describe('login brand copy and car', () => {
   beforeEach(() => useSession.getState().signOut());
 
-  it('shows «شهم درايف» and the vowel-marked tagline; the old line is gone', () => {
+  it('shows «شهم درايف» and the unvocalized tagline; the old line is gone', () => {
     render(<MemoryRouter><LoginPage /></MemoryRouter>);
     expect(screen.getAllByText('شهم درايف').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('نُوصِلُهَا بِشَهَامَةٍ وَنَحْفَظُهَا بِأَمَانَةٍ').length).toBeGreaterThan(0);
+    const taglines = screen.getAllByText('نوصلها بشهامة ونحفظها بأمانة');
+    expect(taglines.length).toBeGreaterThan(0);
+    // No Arabic tashkeel anywhere in the rendered tagline (U+064B–U+0652, incl. shadda and sukun).
+    for (const t of taglines) expect(t.textContent).not.toMatch(/[ً-ْ]/);
     expect(screen.queryByText(/منصة تشغيل التوصيل للأعمال/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'تسجيل الدخول' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'دخول' })).toBeInTheDocument();

@@ -7,9 +7,9 @@ export function LoginHeader() {
   return (
     <header className="mb-6 md:mb-8">
       <div className="mb-6 md:hidden">
-        <Logo className="h-12" />
-        <p className="mt-3 text-2xl font-extrabold leading-snug text-secondary">{LOGIN_TITLE}</p>
-        <p className="mt-1 text-base font-bold leading-[2] text-primary">{LOGIN_SLOGAN}</p>
+        <Logo className="h-[3.375rem]" />
+        <p className="mt-3 text-2xl font-bold leading-snug text-secondary">{LOGIN_TITLE}</p>
+        <p className="mt-1 text-balance text-base font-medium leading-relaxed text-primary">{LOGIN_SLOGAN}</p>
       </div>
       <h1 className="text-[1.75rem] font-extrabold leading-tight text-ink">تسجيل الدخول</h1>
       <p className="mt-2 flex items-center gap-1.5 text-[15px] leading-relaxed text-ink-soft">
