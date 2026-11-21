@@ -1,9 +1,11 @@
 import type { DeliveryOrder, ID } from '@/domain/types';
-import { FINAL_STATUSES, isActiveDelivery, isInQueue, isOffering } from '@/domain/orderStatus';
+import { FINAL_STATUSES, countByGroup, isActiveDelivery } from '@/domain/orderStatus';
 import { ammanDayKey } from '@/domain/time';
 
+/** Group counts come from `countByGroup`, the same helper the distribution center uses. */
 export interface OperationalKpis {
-  queue: number;
+  pendingDispatch: number;
+  needsAdmin: number;
   offered: number;
   activeDeliveries: number;
   deliveredToday: number;
@@ -31,10 +33,12 @@ export function scheduledForToday(orders: DeliveryOrder[], now: number): number 
 /** «مؤشرات التشغيل»: the live order counts. «Today» is the Amman calendar day. */
 export function operationalKpis(orders: DeliveryOrder[], now: number): OperationalKpis {
   const today = ammanDayKey(now);
+  const groups = countByGroup(orders);
   return {
-    queue: orders.filter((o) => isInQueue(o.status)).length,
-    offered: orders.filter((o) => isOffering(o.status)).length,
-    activeDeliveries: orders.filter((o) => isActiveDelivery(o.status)).length,
+    pendingDispatch: groups.pending_dispatch,
+    needsAdmin: groups.needs_admin,
+    offered: groups.offered,
+    activeDeliveries: groups.active,
     deliveredToday: orders.filter((o) => o.status === 'delivered' && o.deliveredAt !== undefined && ammanDayKey(o.deliveredAt) === today).length,
     scheduledToday: scheduledForToday(orders, now),
   };
@@ -46,19 +50,26 @@ export function platformKpis(input: { merchantCount: number; captainCount: numbe
 }
 
 export interface MerchantOrderOverview {
-  /** Not delivered or cancelled yet, newest update first. */
+  /** Assigned to a Captain and on the way (accepted → on the way), newest update first. */
   active: DeliveryOrder[];
+  /** Not finished and no Captain yet (waiting, offered or back with Admin), newest update first. */
+  waiting: DeliveryOrder[];
   /** Delivered or cancelled, newest first. */
   history: DeliveryOrder[];
 }
 
 export const MERCHANT_RECENT_PREVIEW = 3;
 
-/** One Merchant's orders only (isolation), split into active and finished. */
+const hasCaptain = (o: DeliveryOrder) => !!o.captainId && isActiveDelivery(o.status);
+const byLatestUpdate = (a: DeliveryOrder, b: DeliveryOrder) => b.updatedAt - a.updatedAt;
+
+/** One Merchant's orders only (isolation), split into active (with a Captain), waiting for a Captain, and finished. */
 export function merchantOrderOverview(orders: DeliveryOrder[], merchantId: ID | undefined): MerchantOrderOverview {
   const mine = orders.filter((o) => o.merchantId === merchantId);
+  const open = mine.filter((o) => !FINAL_STATUSES.includes(o.status));
   return {
-    active: mine.filter((o) => !FINAL_STATUSES.includes(o.status)).sort((a, b) => b.updatedAt - a.updatedAt),
+    active: open.filter(hasCaptain).sort(byLatestUpdate),
+    waiting: open.filter((o) => !hasCaptain(o)).sort(byLatestUpdate),
     history: mine.filter((o) => FINAL_STATUSES.includes(o.status)).sort((a, b) => b.createdAt - a.createdAt),
   };
 }

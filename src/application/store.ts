@@ -37,11 +37,11 @@ import { AREA_REQUIRED, AREA_UNAVAILABLE, PINNED_LOCATION_LABEL, destinationPinE
 import { resolveZoneFee } from './queries';
 import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError } from './merchantLocation';
 import { previewPricingCopy, type PricingCopyMode } from './pricingCopy';
-import { captainActiveOrder, captainBalance, captainEligibility } from './captainQueries';
+import { captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains } from './captainQueries';
 import { pushAlert, transition, uid, withdrawPendingOffers } from './orderMutations';
 import { afterOfferResolved, startPublicDispatch } from './dispatchRounds';
 
-export { captainActiveOrder, captainBalance, captainEligibility };
+export { captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains };
 
 // Application layer: use cases operating on shared state. In the prototype this
 // stands in for the backend (source of truth); in production each action maps

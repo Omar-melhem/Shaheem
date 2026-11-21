@@ -54,7 +54,7 @@ export function LiveMapPage() {
         actions={<SimTag>جميع المواقع محاكاة</SimTag>}
       />
 
-      <LiveMapStats views={views} />
+      <LiveMapStats views={views} orders={orders} now={now} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="relative self-start">

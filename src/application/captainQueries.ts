@@ -13,10 +13,16 @@ export function captainActiveOrder(data: AppData, captainId: ID): DeliveryOrder 
   return data.orders.find((o) => o.captainId === captainId && isActiveDelivery(o.status));
 }
 
+/** The one eligibility check used by automatic rounds, the private-assign dialog, acceptance and every list. */
 export function captainEligibility(data: AppData, captain: Captain) {
   return evaluateEligibility(captain, {
     hasActiveDelivery: !!captainActiveOrder(data, captain.id),
     balance: captainBalance(data, captain.id),
     walletThreshold: data.demo.walletThreshold,
   });
+}
+
+/** Captains who may receive an offer right now (same check as `captainEligibility`). */
+export function eligibleCaptains(data: AppData): Captain[] {
+  return data.captains.filter((c) => captainEligibility(data, c).eligible);
 }

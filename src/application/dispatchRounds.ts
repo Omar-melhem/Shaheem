@@ -2,13 +2,13 @@ import type { ActorRef, DeliveryOrder, ID } from '@/domain/types';
 import {
   DISPATCH_ROUND_SEC,
   MAX_DISPATCH_ROUNDS,
-  NO_CANDIDATE_REASON,
   ROUNDS_EXHAUSTED_REASON,
   isAutoDispatchEligible,
   rankByProximity,
+  roundsEndedReason,
 } from '@/domain/dispatch';
 import { SYSTEM_ACTOR, type AppData } from '@/application/data';
-import { captainEligibility } from './captainQueries';
+import { eligibleCaptains } from './captainQueries';
 import { note, pushAlert, transition, uid } from './orderMutations';
 
 // Public dispatch rounds (FU-1.2 §5). In the prototype the browser simulation clock
@@ -34,10 +34,11 @@ function startRound(data: AppData, order: DeliveryOrder, now: number) {
   if (attempt > MAX_DISPATCH_ROUNDS) return returnToQueue(data, order, now, ROUNDS_EXHAUSTED_REASON);
 
   const alreadyOffered = new Set(data.offers.filter((o) => o.orderId === order.id && o.round === order.dispatchRound).map((o) => o.captainId));
-  const eligible = data.captains.filter((c) => !alreadyOffered.has(c.id) && captainEligibility(data, c).eligible);
+  const eligibleNow = eligibleCaptains(data);
+  const notYetOffered = eligibleNow.filter((c) => !alreadyOffered.has(c.id));
   const size = data.demo.offerPolicy === 'sequential' ? 1 : Math.max(1, data.demo.groupSize);
-  const batch = rankByProximity(eligible, order.pickup.position).slice(0, size);
-  if (batch.length === 0) return returnToQueue(data, order, now, NO_CANDIDATE_REASON);
+  const batch = rankByProximity(notYetOffered, order.pickup.position).slice(0, size);
+  if (batch.length === 0) return returnToQueue(data, order, now, roundsEndedReason(eligibleNow.length));
 
   order.dispatchAttempt = attempt;
   if (attempt > 1) note(order, SYSTEM_ACTOR, now, `لم يُقبل العرض — بدء الجولة ${attempt} من ${MAX_DISPATCH_ROUNDS}`);

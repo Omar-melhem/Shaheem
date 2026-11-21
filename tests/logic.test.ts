@@ -375,7 +375,7 @@ section('Admin overview and merchant dashboard (application/dashboard.ts)');
   const now = Date.now();
   const st = S();
   const ops = operationalKpis(st.orders, now);
-  check(ops.queue + ops.offered + ops.activeDeliveries <= st.orders.length, 'KPI groups never exceed the order count');
+  check(ops.pendingDispatch + ops.needsAdmin + ops.offered + ops.activeDeliveries <= st.orders.length, 'KPI groups never exceed the order count');
   check(ops.activeDeliveries === st.orders.filter((o) => ['accepted', 'heading_to_pickup', 'picked_up', 'on_the_way'].includes(o.status)).length, 'active deliveries KPI uses the delivery stages');
   const plat = platformKpis({ merchantCount: st.merchants.length, captainCount: st.captains.length });
   check(plat.merchants === st.merchants.length && plat.captains === st.captains.length, 'platform KPIs are the account totals');

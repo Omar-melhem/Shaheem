@@ -1,6 +1,6 @@
 import { startDemoClock } from '@/app/state';
 import { useEffect, useMemo, useState } from 'react';
-import { useAppStore, captainActiveOrder, captainBalance, captainEligibility } from '@/app/state';
+import { useAppStore, captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains } from '@/app/state';
 import { locationFreshness, type LocationFreshness } from '@/domain/location';
 import type { Captain, ID } from '@/domain/types';
 import type { Eligibility } from '@/domain/eligibility';
@@ -48,6 +48,16 @@ export function useCaptainViews(now: number): CaptainView[] {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captains, orders, walletTx, demo, now]);
+}
+
+/** How many Captains pass the shared eligibility check now — the same set the assign dialog enables. */
+export function useEligibleCaptainCount(): number {
+  const captains = useAppStore((s) => s.captains);
+  const orders = useAppStore((s) => s.orders);
+  const walletTx = useAppStore((s) => s.walletTx);
+  const demo = useAppStore((s) => s.demo);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => eligibleCaptains(useAppStore.getState()).length, [captains, orders, walletTx, demo]);
 }
 
 export const OP_STATUS_LABEL: Record<CaptainView['opStatus'], string> = {

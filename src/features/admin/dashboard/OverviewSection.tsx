@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { CalendarClock, CheckCircle2, Hourglass, PackageSearch, Store, Truck, Users } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Hourglass, PackageSearch, Store, TriangleAlert, Truck, Users } from 'lucide-react';
+import { ORDER_GROUP_LABEL } from '@/domain/orderStatus';
 import type { OperationalKpis, PlatformKpis } from '@/application/dashboard';
 import { StatCard } from '@/shared/components/ui';
 
@@ -14,20 +15,19 @@ export function DashboardSection({ id, title, children }: { id: string; title: s
 }
 
 /**
- * «مؤشرات التشغيل»: five live order counts (definitions in application/dashboard.ts).
- * Two columns on tablets with the fifth card spanning the row, one row of five from `xl`.
+ * «مؤشرات التشغيل»: six live order counts (definitions in application/dashboard.ts). Group labels
+ * come from ORDER_GROUP_LABEL so they read the same here and in the distribution center.
  */
 export function OperationalKpiSection({ kpis }: { kpis: OperationalKpis }) {
   return (
     <DashboardSection id="ops-kpis" title="مؤشرات التشغيل">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
-        <StatCard label="بانتظار التوزيع" value={kpis.queue} icon={<Hourglass className="h-5 w-5" />} tone={kpis.queue ? 'warning' : 'neutral'} hint="تحتاج إسناداً من الإدارة" />
-        <StatCard label="معروضة على الكباتن" value={kpis.offered} icon={<PackageSearch className="h-5 w-5" />} tone="warning" hint="بث عام أو عرض خاص قائم" />
-        <StatCard label="توصيلات نشطة" value={kpis.activeDeliveries} icon={<Truck className="h-5 w-5" />} tone="primary" hint="من القبول حتى التسليم" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+        <StatCard label={ORDER_GROUP_LABEL.pending_dispatch} value={kpis.pendingDispatch} icon={<Hourglass className="h-5 w-5" />} tone={kpis.pendingDispatch ? 'warning' : 'neutral'} hint="لم تُعرض بعد على الكباتن" />
+        <StatCard label={ORDER_GROUP_LABEL.needs_admin} value={kpis.needsAdmin} icon={<TriangleAlert className="h-5 w-5" />} tone={kpis.needsAdmin ? 'danger' : 'neutral'} hint="انتهت الجولات دون قبول" />
+        <StatCard label={ORDER_GROUP_LABEL.offered} value={kpis.offered} icon={<PackageSearch className="h-5 w-5" />} tone="warning" hint="بث عام أو عرض خاص قائم" />
+        <StatCard label={ORDER_GROUP_LABEL.active} value={kpis.activeDeliveries} icon={<Truck className="h-5 w-5" />} tone="primary" hint="من القبول حتى التسليم" />
         <StatCard label="تم التسليم اليوم" value={kpis.deliveredToday} icon={<CheckCircle2 className="h-5 w-5" />} tone="secondary" hint="حسب يوم عمّان" />
-        <div className="sm:col-span-2 xl:col-span-1">
-          <StatCard label="الطلبات المؤجلة اليوم" value={kpis.scheduledToday} icon={<CalendarClock className="h-5 w-5" />} tone="secondary" hint="موعد استلامها اليوم" />
-        </div>
+        <StatCard label="الطلبات المؤجلة اليوم" value={kpis.scheduledToday} icon={<CalendarClock className="h-5 w-5" />} tone="secondary" hint="موعد استلامها اليوم" />
       </div>
     </DashboardSection>
   );

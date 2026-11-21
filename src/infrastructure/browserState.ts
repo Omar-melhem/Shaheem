@@ -1,6 +1,6 @@
 import type { AppData } from '@/application/data';
 import type { AppRepository } from '@/application/ports/AppRepository';
-export const STORAGE_KEY = 'shahm-demo-v8';
+export const STORAGE_KEY = 'shahm-demo-v9';
 export const browserRepository: AppRepository = {
   load() {
     try { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return null; const saved = JSON.parse(raw); return saved.version === 1 ? saved.state : null; } catch { return null; }

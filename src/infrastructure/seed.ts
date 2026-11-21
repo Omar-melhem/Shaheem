@@ -80,7 +80,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     { id: 'c-ahmad', fullName: 'أحمد العمري', phone: '0790000101', status: 'active', availability: 'available', rating: 5, at: { lat: 32.018, lng: 35.865 } },
     { id: 'c-mohammad', fullName: 'محمد الخطيب', phone: '0790000102', status: 'active', availability: 'available', rating: 4, at: { lat: 31.993, lng: 35.835 } },
     { id: 'c-yazan', fullName: 'يزن الحسن', phone: '0790000103', status: 'active', availability: 'available', at: { lat: 32.0, lng: 35.858 } },
-    { id: 'c-omar', fullName: 'عمر الزعبي', phone: '0790000104', status: 'active', availability: 'available', rating: 4, at: { lat: 31.958, lng: 35.858 } },
+    { id: 'c-omar', fullName: 'عمر الزعبي', phone: '0790000104', status: 'active', availability: 'available', at: { lat: 31.958, lng: 35.858 } }, // no deliveries yet, so no rating
     { id: 'c-khaled', fullName: 'خالد النسور', phone: '0790000105', status: 'active', availability: 'offline', at: { lat: 31.972, lng: 35.9 } },
     { id: 'c-samer', fullName: 'سامر الربضي', phone: '0790000106', status: 'active', availability: 'available', rating: 5, at: { lat: 31.975, lng: 35.866 } },
     { id: 'c-firas', fullName: 'فراس المومني', phone: '0790000107', status: 'active', availability: 'available', at: { lat: 31.945, lng: 35.884 } },
@@ -148,7 +148,7 @@ export function createSeedData(now: number = Date.now()): AppData {
     thaqafa: { label: 'شارع الثقافة، مجمع النور التجاري', address: 'الشميساني، عمّان' },
   };
 
-  const defs: OrderDef[] = [
+  const unordered: OrderDef[] = [
     { merchant: 'm-sanabel', area: 'a-jubaiha', dest: D.khaled, mealJod: 12.5, captain: 'c-ahmad', status: 'delivered', ageMin: 6 * DAY / MIN },
     { merchant: 'm-hail', area: 'a-khalda', dest: D.city, captain: 'c-mohammad', status: 'delivered', ageMin: 5 * DAY / MIN },
     { merchant: 'm-taboon', area: 'a-tla', dest: D.waha, customerPhone: '0790000301', captain: 'c-samer', status: 'delivered', ageMin: 5 * DAY / MIN + 120 },
@@ -165,6 +165,9 @@ export function createSeedData(now: number = Date.now()): AppData {
     { merchant: 'm-yasmine', area: 'a-sweifieh', dest: D.wakalat, customerPhone: '0790000303', mealJod: 9, status: 'pending_dispatch', ageMin: 6 },
     { merchant: 'm-sanabel', area: 'a-uthaina', dest: D.uthaina, customerPhone: '0790000304', captain: 'c-samer', status: 'on_the_way', ageMin: 18 },
   ];
+
+  // References and ids follow creation time: the oldest order is SH-10001, the newest the highest.
+  const defs = [...unordered].sort((a, b) => b.ageMin - a.ageMin);
 
   let seq = 10000;
   const orders: DeliveryOrder[] = defs.map((d, i) => {
@@ -217,6 +220,9 @@ export function createSeedData(now: number = Date.now()): AppData {
   const samer = captains.find((c) => c.id === 'c-samer')!;
   samer.lastLocation = { position: { lat: 31.9885, lng: 35.8625 }, recordedAt: now, source: 'trip_simulated', activeOrderId: active.id };
 
+  const expired = orders.find((o) => o.status === 'dispatch_expired')!;
+  const newest = orders[orders.length - 1];
+
   return {
     merchants,
     captains,
@@ -232,8 +238,8 @@ export function createSeedData(now: number = Date.now()): AppData {
     // Official contact details are pending from the Product Owner (SRS §4.11) — start empty.
     supportContacts: [],
     alerts: [
-      { id: 'al-1', kind: 'no_candidate', message: `الطلب ${orders[11].reference}: ${ROUNDS_EXHAUSTED_REASON} — بحاجة إلى إجراء من الإدارة`, at: orders[11].updatedAt, orderId: orders[11].id, read: false },
-      { id: 'al-2', kind: 'new_order', message: `طلب جديد ${orders[13].reference} من ${merchants[3].businessName}`, at: orders[13].createdAt, orderId: orders[13].id, read: false },
+      { id: 'al-1', kind: 'no_candidate', message: `الطلب ${expired.reference}: ${ROUNDS_EXHAUSTED_REASON} — بحاجة إلى إجراء من الإدارة`, at: expired.updatedAt, orderId: expired.id, read: false },
+      { id: 'al-2', kind: 'new_order', message: `طلب جديد ${newest.reference} من ${merchants.find((m) => m.id === newest.merchantId)!.businessName}`, at: newest.createdAt, orderId: newest.id, read: false },
     ],
     settings: { publicBroadcast: true },
     demo: { ...DEFAULT_DEMO_SETTINGS },

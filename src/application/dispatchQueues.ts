@@ -1,6 +1,5 @@
 import type { DeliveryOrder } from '@/domain/types';
-import { isAutoDispatchEligible } from '@/domain/dispatch';
-import { isInQueue, isOffering } from '@/domain/orderStatus';
+import { orderStatusGroup, type OrderStatusGroup } from '@/domain/orderStatus';
 
 export interface DispatchQueues {
   /** Scheduled orders awaiting manual coordination (queue or a private offer), by pickup time. */
@@ -16,17 +15,16 @@ export interface DispatchQueues {
 const byAge = (a: DeliveryOrder, b: DeliveryOrder) => a.createdAt - b.createdAt;
 
 /**
- * Distribution Center queues (FU-1.2 §5, CR v1.4 §6). Every order lands in at most one list:
- * scheduled orders always stay in their own queue until accepted, and immediate orders are split
- * by status. The page renders these lists; it never classifies orders itself.
+ * Distribution Center queues (FU-1.2 §5, CR v1.4 §6). Membership is the shared `orderStatusGroup`,
+ * so every list matches the counts on the dashboard and the dispatch summary. Every order lands in
+ * at most one list. The page renders these lists; it never classifies orders itself.
  */
 export function dispatchQueues(orders: DeliveryOrder[]): DispatchQueues {
-  const isScheduledPending = (o: DeliveryOrder) => o.requestType === 'scheduled' && (isInQueue(o.status) || o.status === 'offered_privately');
-  const immediate = orders.filter(isAutoDispatchEligible);
+  const inGroup = (group: OrderStatusGroup) => orders.filter((o) => orderStatusGroup(o) === group);
   return {
-    scheduled: orders.filter(isScheduledPending).sort((a, b) => (a.scheduledPickupAt ?? 0) - (b.scheduledPickupAt ?? 0)),
-    intervention: immediate.filter((o) => o.status === 'dispatch_expired').sort(byAge),
-    waiting: immediate.filter((o) => o.status === 'pending_dispatch').sort(byAge),
-    offering: orders.filter((o) => isOffering(o.status) && !isScheduledPending(o)).sort(byAge),
+    scheduled: inGroup('scheduled_pending').sort((a, b) => (a.scheduledPickupAt ?? 0) - (b.scheduledPickupAt ?? 0)),
+    intervention: inGroup('needs_admin').sort(byAge),
+    waiting: inGroup('pending_dispatch').sort(byAge),
+    offering: inGroup('offered').sort(byAge),
   };
 }

@@ -71,3 +71,48 @@ export const SCHEDULED_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
 export const isActiveDelivery = (s: OrderStatus) => ACTIVE_DELIVERY_STATUSES.includes(s);
 export const isInQueue = (s: OrderStatus) => QUEUE_STATUSES.includes(s);
 export const isOffering = (s: OrderStatus) => OFFERING_STATUSES.includes(s);
+
+/**
+ * One grouping of order statuses for every count and group heading (dashboard, distribution
+ * center, orders, merchant). Scheduled orders awaiting manual coordination form their own group
+ * (CR v1.4 §6.2), so the immediate-order groups never silently include them. Each order belongs
+ * to exactly one group.
+ */
+export type OrderStatusGroup = 'pending_dispatch' | 'scheduled_pending' | 'offered' | 'needs_admin' | 'active' | 'delivered' | 'cancelled';
+
+export const ORDER_GROUP_LABEL: Record<OrderStatusGroup, string> = {
+  pending_dispatch: 'بانتظار التوزيع',
+  scheduled_pending: 'طلبات مؤجلة',
+  offered: 'معروضة على الكباتن',
+  needs_admin: 'بحاجة لتدخل الإدارة',
+  active: 'توصيلات نشطة',
+  delivered: 'تم التسليم',
+  cancelled: 'ملغاة',
+};
+
+export function orderStatusGroup(order: { status: OrderStatus; requestType?: 'immediate' | 'scheduled' }): OrderStatusGroup {
+  const { status } = order;
+  if (order.requestType === 'scheduled' && (isInQueue(status) || isOffering(status))) return 'scheduled_pending';
+  if (status === 'pending_dispatch') return 'pending_dispatch';
+  if (status === 'dispatch_expired') return 'needs_admin';
+  if (isOffering(status)) return 'offered';
+  if (isActiveDelivery(status)) return 'active';
+  return status === 'delivered' ? 'delivered' : 'cancelled';
+}
+
+export type OrderGroupCounts = Record<OrderStatusGroup, number>;
+
+export function countByGroup(orders: ReadonlyArray<{ status: OrderStatus; requestType?: 'immediate' | 'scheduled' }>): OrderGroupCounts {
+  const counts: OrderGroupCounts = { pending_dispatch: 0, scheduled_pending: 0, offered: 0, needs_admin: 0, active: 0, delivered: 0, cancelled: 0 };
+  for (const o of orders) counts[orderStatusGroup(o)] += 1;
+  return counts;
+}
+
+/**
+ * Demo assumption (no approved SLA): an active delivery whose status has not changed for this long
+ * is flagged as late on the live map, even when its simulated GPS is still updating.
+ */
+export const LATE_DELIVERY_AFTER_MIN = 60;
+
+export const isDeliveryLate = (order: { status: OrderStatus; updatedAt: number }, now: number) =>
+  isActiveDelivery(order.status) && now - order.updatedAt > LATE_DELIVERY_AFTER_MIN * 60_000;

@@ -4,6 +4,7 @@ import type { DeliveryOrder } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { areaLabel } from '@/domain/regions';
 import { formatAmmanDateTime } from '@/domain/time';
+import { ORDER_GROUP_LABEL } from '@/domain/orderStatus';
 import { Badge, Button, Card, CardHeader, EmptyState } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { toast } from '@/shared/components/toast';
@@ -44,7 +45,7 @@ export function ScheduledQueueCard({ orders, now, onOpen }: { orders: DeliveryOr
   return (
     <Card>
       <CardHeader
-        title={`طلبات مؤجلة — تنسيق يدوي (${orders.length})`}
+        title={`${ORDER_GROUP_LABEL.scheduled_pending} — تنسيق يدوي (${orders.length})`}
         description="لا تُعرض تلقائياً على الكباتن. نسّق عبر مجموعة واتساب ثم استخدم الإسناد الخاص."
         icon={<CalendarClock className="h-5 w-5" />}
       />

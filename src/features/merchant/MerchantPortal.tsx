@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { History, Truck } from 'lucide-react';
+import { Hourglass, History, Truck } from 'lucide-react';
 import { useSession } from '@/app/session';
 import { useAppStore } from '@/app/state';
 import { MERCHANT_RECENT_PREVIEW, merchantOrderOverview } from '@/application/dashboard';
@@ -9,15 +9,15 @@ import { RequestCaptainPanel } from './request-captain/RequestCaptainPanel';
 import { ActiveOrderItem, HistoryItem } from './orders/MerchantOrderItems';
 
 /**
- * Merchant Portal — one main screen (SRS §5.1): the request form first, then active deliveries,
- * then the latest three finished orders with a link to the full history. Only this Merchant's
+ * Merchant Portal — one main screen (SRS §5.1): the request form first, then active deliveries
+ * (a Captain is assigned), then orders still waiting for a Captain, then the latest three finished orders with a link to the full history. Only this Merchant's
  * data is read (isolation is enforced server-side in production — SRS §5.8).
  */
 export function MerchantPortal() {
   const merchantId = useSession((s) => s.session?.id);
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === merchantId));
   const allOrders = useAppStore((s) => s.orders);
-  const { active, history } = useMemo(() => merchantOrderOverview(allOrders, merchantId), [allOrders, merchantId]);
+  const { active, waiting, history } = useMemo(() => merchantOrderOverview(allOrders, merchantId), [allOrders, merchantId]);
   if (!merchant) return <Navigate to="/login" replace />;
   const recent = history.slice(0, MERCHANT_RECENT_PREVIEW);
 
@@ -35,13 +35,22 @@ export function MerchantPortal() {
           <Card>
             <CardHeader title={`التوصيلات النشطة (${active.length})`} icon={<Truck className="h-5 w-5" />} />
             {active.length === 0 ? (
-              <EmptyState compact title="لا توجد طلبات نشطة حالياً. عند طلب كابتن تظهر حالته هنا وتتحدث تلقائياً." />
+              <EmptyState compact title="لا توجد توصيلات نشطة حالياً. عند قبول كابتن لطلبك يظهر هنا وتتحدث حالته تلقائياً." />
             ) : (
               <ul className="max-h-[560px] divide-y divide-cream-dark overflow-y-auto">
                 {active.map((o) => <ActiveOrderItem key={o.id} order={o} />)}
               </ul>
             )}
           </Card>
+
+          {waiting.length > 0 && (
+            <Card>
+              <CardHeader title={`بانتظار كابتن (${waiting.length})`} description="لم يُسند لها كابتن بعد — فريق شهم يتابعها" icon={<Hourglass className="h-5 w-5" />} />
+              <ul className="divide-y divide-cream-dark">
+                {waiting.map((o) => <ActiveOrderItem key={o.id} order={o} />)}
+              </ul>
+            </Card>
+          )}
 
           <Card>
             <CardHeader

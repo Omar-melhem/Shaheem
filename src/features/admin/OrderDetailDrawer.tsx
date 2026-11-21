@@ -1,12 +1,12 @@
 import { Marker, Polyline, Popup } from 'react-leaflet';
 import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
 import { useAppStore } from '@/app/state';
-import { useNow } from '@/shared/hooks/application';
+import { useEligibleCaptainCount, useNow } from '@/shared/hooks/application';
 import { formatMoney } from '@/domain/money';
 import { formatAmmanDateTime } from '@/domain/time';
 import { formatDistance } from '@/domain/geo';
 import { isActiveDelivery } from '@/domain/orderStatus';
-import { MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
+import { MAX_DISPATCH_ROUNDS, describeQueueReason } from '@/domain/dispatch';
 import { locationFreshness } from '@/domain/location';
 import { Badge, Card, DetailRow, Drawer } from '@/shared/components/ui';
 import { FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
@@ -20,6 +20,7 @@ const OFFER_LABEL = { pending: 'بانتظار الرد', accepted: 'قَبِل'
 
 export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null; onClose: () => void }) {
   const now = useNow(2000);
+  const eligibleNow = useEligibleCaptainCount();
   const order = useAppStore((s) => s.orders.find((o) => o.id === orderId));
   const merchant = useAppStore((s) => s.merchants.find((m) => m.id === order?.merchantId));
   const captain = useAppStore((s) => s.captains.find((c) => c.id === order?.captainId));
@@ -74,7 +75,7 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
       <Card className="px-4 py-2">
         <dl className="divide-y divide-cream-dark">
           {order.queueReason && (order.status === 'dispatch_expired' || order.status === 'pending_dispatch') && (
-            <DetailRow label="سبب العودة للطابور"><span className="font-bold text-red-800">{order.queueReason}</span></DetailRow>
+            <DetailRow label="سبب العودة للطابور"><span className="font-bold text-red-800">{describeQueueReason(order.queueReason, eligibleNow)}</span></DetailRow>
           )}
           {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && (
             <DetailRow label="طلب مؤجل — الاستلام">{formatAmmanDateTime(order.scheduledPickupAt)}</DetailRow>
