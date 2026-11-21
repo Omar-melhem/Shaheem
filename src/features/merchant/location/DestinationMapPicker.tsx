@@ -17,10 +17,24 @@ function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
 /**
  * Shows the chosen delivery area's boundary and frames it; no pin is ever placed for the
  * Merchant. Inside an area with a boundary, tapping the map or dragging the pin sets the
- * optional exact location. Shows the pickup for reference.
+ * exact location. Before an area is chosen, the Merchant's own areas with a boundary are shaded
+ * (`selectableAreas`) and a tap there lets the form detect the area. Shows the pickup for reference.
  */
-export function DestinationMapPicker({ value, pickup, area, onChange }: { value: LatLng | null; pickup: LatLng; area: ServiceArea | null; onChange: (p: LatLng) => void }) {
+export function DestinationMapPicker({
+  value,
+  pickup,
+  area,
+  selectableAreas = [],
+  onChange,
+}: {
+  value: LatLng | null;
+  pickup: LatLng;
+  area: ServiceArea | null;
+  selectableAreas?: ServiceArea[];
+  onChange: (p: LatLng) => void;
+}) {
   const boundary = area && hasAreaBoundary(area) ? area.polygon : null;
+  const choices = area ? [] : selectableAreas.filter(hasAreaBoundary);
   return (
     <BaseMap className="h-[220px] sm:h-[260px]" center={value ?? pickup} zoom={value ? 16 : 13} label="خريطة منطقة التوصيل">
       <InvalidateSize />
@@ -29,6 +43,15 @@ export function DestinationMapPicker({ value, pickup, area, onChange }: { value:
           <MapClickHandler onClick={onChange} />
           <Polygon positions={boundary.map((p) => [p.lat, p.lng] as [number, number])} interactive={false} pathOptions={{ color: '#8C2335', weight: 2, fillOpacity: 0.12 }} />
           <FitBounds points={boundary} fitKey={area!.id} />
+        </>
+      )}
+      {choices.length > 0 && (
+        <>
+          <MapClickHandler onClick={onChange} />
+          {choices.map((a) => (
+            <Polygon key={a.id} positions={a.polygon.map((p) => [p.lat, p.lng] as [number, number])} interactive={false} pathOptions={{ color: '#8C2335', weight: 1, fillOpacity: 0.06, dashArray: '4 4' }} />
+          ))}
+          <FitBounds points={choices.flatMap((a) => a.polygon)} fitKey={`all-${choices.length}`} />
         </>
       )}
       <FollowPoint point={value} zoom={16} />

@@ -24,7 +24,7 @@ import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { isDestinationActive } from '@/domain/regions';
 import { isGovernorateId } from '@/domain/governorates';
 import { cityName, isCityInGovernorate } from '@/domain/cities';
-import { PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
+import { CUSTOMER_PHONE_ERROR, PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
   CAPTAIN_NEXT_STATUS,
@@ -584,7 +584,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (!m) return fail('حساب التاجر غير موجود');
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
             // Customer phone is optional (owner decision, 2026-11-15); a supplied one must be 10 digits.
-            if (!isValidOptionalPhone(input.customerPhone)) return fail(PHONE_ERROR);
+            if (!isValidOptionalPhone(input.customerPhone)) return fail(CUSTOMER_PHONE_ERROR);
             const requestType: RequestType = input.requestType ?? 'immediate';
             if (requestType === 'scheduled') {
               const at = input.scheduledPickupAt;

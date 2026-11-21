@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AREA_REQUIRED, AREA_UNAVAILABLE } from '@/domain/destination';
-import { PHONE_ERROR } from '@/domain/phone';
+import { CUSTOMER_PHONE_ERROR, PHONE_ERROR } from '@/domain/phone';
 import { failureOf, newStore, PHONE, valueOf } from './storeHarness';
 
 afterEach(() => vi.useRealTimers());
@@ -21,7 +21,7 @@ describe('createOrder validation', () => {
 
   it('requires a 10-digit phone and an area', () => {
     const s = newStore();
-    expect(failureOf(s.state().createOrder('m-sanabel', { customerPhone: '079', areaId: 'a-khalda' }))).toBe(PHONE_ERROR);
+    expect(failureOf(s.state().createOrder('m-sanabel', { customerPhone: '079', areaId: 'a-khalda' }))).toBe(CUSTOMER_PHONE_ERROR);
     const r = s.state().createOrder('m-sanabel', { customerPhone: PHONE, areaId: null as never });
     expect(r).toMatchObject({ ok: false, error: AREA_REQUIRED, code: 'no_area' });
   });

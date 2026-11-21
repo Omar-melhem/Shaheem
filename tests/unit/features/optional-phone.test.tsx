@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { PHONE_ERROR } from '@/domain/phone';
+import { CUSTOMER_PHONE_ERROR } from '@/domain/phone';
 import { OrderReviewDialog } from '@/features/merchant/request-captain/OrderReviewDialog';
 import { failureOf, newStore, valueOf } from '../application/storeHarness';
 
@@ -28,7 +28,7 @@ describe('customer phone is optional (owner decision 2026-11-15)', () => {
 
   it('a supplied phone must still be 10 digits', () => {
     const s = newStore();
-    expect(failureOf(s.state().createOrder('m-sanabel', { customerPhone: '07912', areaId: 'a-khalda' }))).toBe(PHONE_ERROR);
+    expect(failureOf(s.state().createOrder('m-sanabel', { customerPhone: '07912', areaId: 'a-khalda' }))).toBe(CUSTOMER_PHONE_ERROR);
   });
 
   it('a valid phone is normalised and saved', () => {

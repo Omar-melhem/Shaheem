@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
 import { useAppStore } from '@/app/state';
-import { AREA_REQUIRED, AREA_UNAVAILABLE, destinationPinError } from '@/domain/destination';
-import { PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
+import { AREA_UNAVAILABLE, LOCATION_REQUIRED, PIN_OUTSIDE_COVERAGE, destinationPinError, detectAreaForPin } from '@/domain/destination';
+import { CUSTOMER_PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
 import { ammanDayKey, ammanWallTimeToEpoch } from '@/domain/time';
 import type { ID, Merchant, RequestType } from '@/domain/types';
 import { toast } from '@/shared/components/toast';
@@ -82,16 +82,39 @@ export function useRequestCaptainForm(merchant: Merchant) {
     setPinNotice(dropPin ? `أُزيل الدبوس السابق لأنه لا يطابق منطقة «${area.name}». يمكنك تحديد موقع جديد، وهذا اختياري.` : null);
   };
 
+  /**
+   * Sets the optional exact pin. Dropped before an area is chosen, the pin satisfies the location
+   * requirement only when it falls inside exactly one of the Merchant's areas — that area (and its
+   * fixed fee) is then selected and the Merchant is told. Otherwise the pin is not kept.
+   */
   const setPin = (location: CustomerLocation | null) => {
+    if (location && !form.areaId) {
+      const detected = detectAreaForPin(areaOptions.map((o) => o.area), location.position);
+      if (!detected) {
+        setErrors((e) => ({ ...e, areaId: PIN_OUTSIDE_COVERAGE }));
+        setPinNotice(null);
+        return;
+      }
+      const label = areaOptions.find((o) => o.area.id === detected.id)?.label ?? detected.name;
+      setForm((f) => ({ ...f, areaId: detected.id, location }));
+      setErrors((e) => ({ ...e, areaId: undefined }));
+      setPinNotice(`حُدّدت منطقة التوصيل تلقائياً من الموقع: «${label}».`);
+      return;
+    }
     setForm((f) => ({ ...f, location }));
     setPinNotice(null);
+  };
+
+  /** Inline check when the phone field loses focus: blank is fine (optional), anything else must be valid. */
+  const validatePhone = () => {
+    setErrors((e) => ({ ...e, customerPhone: isValidOptionalPhone(form.customerPhone) ? undefined : CUSTOMER_PHONE_ERROR }));
   };
 
   /** Validates everything and opens the review; returns false when a field needs fixing. */
   const openReview = (): boolean => {
     const next: Errors = {};
-    if (!isValidOptionalPhone(form.customerPhone)) next.customerPhone = PHONE_ERROR;
-    if (!form.areaId) next.areaId = AREA_REQUIRED;
+    if (!isValidOptionalPhone(form.customerPhone)) next.customerPhone = CUSTOMER_PHONE_ERROR;
+    if (!form.areaId) next.areaId = LOCATION_REQUIRED;
     let scheduledAt: number | undefined;
     if (form.requestType === 'scheduled') {
       const check = scheduledPickup(form, Date.now());
@@ -149,7 +172,7 @@ export function useRequestCaptainForm(merchant: Merchant) {
   };
 
   return {
-    form, errors, set, setSchedule, minScheduleDate, areaOptions, selectedArea, resolution, areaError, pinError, pinNotice, selectArea, setPin,
+    form, errors, set, setSchedule, minScheduleDate, areaOptions, selectedArea, resolution, areaError, pinError, pinNotice, selectArea, setPin, validatePhone,
     resetCount, review, submitting, submitError, openReview, closeReview, confirm,
   };
 }

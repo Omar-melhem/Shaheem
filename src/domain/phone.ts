@@ -18,5 +18,10 @@ export function normalizePhone(raw: string): string {
 
 export const isValidPhone = (raw: string): boolean => new RegExp(`^\\d{${PHONE_DIGITS}}$`).test(normalizePhone(raw));
 
-/** Optional field: blank is valid, a supplied value must be 10 digits. */
-export const isValidOptionalPhone = (raw: string | undefined): boolean => !raw?.trim() || isValidPhone(raw);
+/** Jordanian mobile prefix required for the customer phone (owner review 2026-11-21: «07XXXXXXXX»). */
+export const MOBILE_PREFIX = '07';
+export const CUSTOMER_PHONE_ERROR = 'رقم هاتف العميل يجب أن يتكوّن من 10 أرقام ويبدأ بـ 07، مثل 0791234567.';
+
+/** Optional customer phone: blank is valid, a supplied value must be 10 digits starting with 07. */
+export const isValidOptionalPhone = (raw: string | undefined): boolean =>
+  !raw?.trim() || (isValidPhone(raw) && normalizePhone(raw).startsWith(MOBILE_PREFIX));
