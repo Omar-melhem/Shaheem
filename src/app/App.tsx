@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { enableCrossTabSync } from '@/app/state';
 import { useSimulationClock } from '@/shared/hooks/application';
 import { Toaster } from '@/shared/components/toast';
-import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
+import { ScrollToTop } from '@/app/ScrollToTop';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { HomeRedirect, RequireSession } from '@/features/auth/RequireSession';
 import { AdminLayout } from '@/features/admin/AdminLayout';
@@ -32,6 +32,7 @@ export function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomeRedirect />} />
         <Route path="/login" element={<LoginPage />} />
@@ -80,7 +81,6 @@ export function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <DemoToolsButton />
       <Toaster />
     </BrowserRouter>
   );

@@ -1,3 +1,5 @@
+import { glueDayPeriod } from '@/domain/time';
+
 const dateTime = new Intl.DateTimeFormat('ar-JO-u-nu-latn', {
   day: 'numeric',
   month: 'short',
@@ -7,8 +9,8 @@ const dateTime = new Intl.DateTimeFormat('ar-JO-u-nu-latn', {
 const time = new Intl.DateTimeFormat('ar-JO-u-nu-latn', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 const date = new Intl.DateTimeFormat('ar-JO-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
 
-export const formatDateTime = (ts: number) => dateTime.format(ts);
-export const formatTime = (ts: number) => time.format(ts);
+export const formatDateTime = (ts: number) => glueDayPeriod(dateTime.format(ts));
+export const formatTime = (ts: number) => glueDayPeriod(time.format(ts));
 export const formatDate = (ts: number) => date.format(ts);
 
 export function formatRelative(ts: number, now: number = Date.now()): string {

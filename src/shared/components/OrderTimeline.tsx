@@ -1,20 +1,21 @@
 import { Check } from 'lucide-react';
 import type { DeliveryOrder } from '@/domain/types';
-import { DELIVERY_STAGES, ORDER_STATUS_LABEL } from '@/domain/orderStatus';
+import { DELIVERY_STAGES, ORDER_STATUS_LABEL, orderStatusLabel, type StatusAudience } from '@/domain/orderStatus';
 import { formatDateTime, formatTime } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 
 const ACTOR_LABEL = { admin: 'الإدارة', merchant: 'التاجر', captain: 'الكابتن', system: 'النظام' } as const;
 
 /** Full audit trail: every state change with actor and timestamp (SRS §9.4). */
-export function OrderHistoryList({ order }: { order: DeliveryOrder }) {
+export function OrderHistoryList({ order, audience = 'admin' }: { order: DeliveryOrder; audience?: StatusAudience }) {
+  const label = (s: DeliveryOrder['status']) => orderStatusLabel(s, { audience });
   return (
     <ol className="relative space-y-3 border-s-2 border-cream-deep ps-4">
       {[...order.history].reverse().map((h, i) => (
         <li key={i} className="relative">
           <span className="absolute -start-[23px] top-1.5 h-3 w-3 rounded-full border-2 border-white bg-primary" aria-hidden />
           <p className="text-sm font-bold text-ink">
-            {h.from === h.to ? (h.note ?? ORDER_STATUS_LABEL[h.to]) : ORDER_STATUS_LABEL[h.to]}
+            {h.from === h.to ? (h.note ?? label(h.to)) : label(h.to)}
           </p>
           <p className="text-xs text-ink-muted">
             {ACTOR_LABEL[h.actor.role]} — {h.actor.name} · {formatDateTime(h.at)}

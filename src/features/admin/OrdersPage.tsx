@@ -1,3 +1,5 @@
+import { destinationParts } from '@/domain/destination';
+import type { DeliveryOrder } from '@/domain/types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Eye, ReceiptText, RotateCcw, SlidersHorizontal } from 'lucide-react';
@@ -15,7 +17,7 @@ const HEADERS = ['الطلب', 'التاجر', 'هاتف العميل', 'الو�
 const LEGEND = [{ icon: <Eye />, label: 'عرض تفاصيل الطلب وسجله ومحاولات التوزيع (والإلغاء حسب السياسة)' }];
 /** Same breakpoint as Tailwind `md`: from here the filters sit inline; below it they live in the sheet. */
 const INLINE_FILTERS_QUERY = '(min-width: 768px)';
-const PAGER_BUTTON = 'h-9 rounded-lg px-3 font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-40';
+const PAGER_BUTTON = 'h-9 rounded-lg px-3 font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300 disabled:opacity-40';
 
 export function OrdersPage() {
   const now = useNow(10000);
@@ -138,25 +140,24 @@ export function OrdersPage() {
             {visible.map((o) => (
               <tr key={o.id}>
                 <td className="px-4 py-3">
-                  <button type="button" onClick={() => setDetailId(o.id)} className="font-mono font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300" aria-label={`عرض تفاصيل الطلب ${o.reference}`}>
+                  <button type="button" onClick={() => setDetailId(o.id)} className="font-mono font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300" aria-label={`عرض تفاصيل الطلب ${o.reference}`}>
                     <span dir="ltr">{o.reference}</span>
                   </button>
-                  <p className="text-xs text-ink-muted">{formatDateTime(o.createdAt)}</p>
+                  <p className="whitespace-nowrap text-xs text-ink-muted">{formatDateTime(o.createdAt)}</p>
                 </td>
-                <td className="px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
+                <td className="whitespace-nowrap px-4 py-3 font-medium">{merchantName(o.merchantId)}</td>
                 <td className="whitespace-nowrap px-4 py-3">
                   {o.customerPhone ? <span dir="ltr">{o.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}
                 </td>
                 <td className="px-4 py-3">
-                  {o.destination.label}
-                  <p className="text-xs text-ink-muted">{o.areaName}</p>
+                  <DestinationCell order={o} />
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 font-bold">{formatMoney(o.deliveryPrice)}</td>
-                <td className="px-4 py-3">{captainName(o.captainId)}</td>
+                <td className="whitespace-nowrap px-4 py-3">{captainName(o.captainId)}</td>
                 <td className="px-4 py-3">
                   <OrderStatusBadge status={o.status} scheduled={o.requestType === 'scheduled'} />
                 </td>
-                <td className="px-4 py-3 text-xs text-ink-muted">{formatRelative(o.updatedAt, now)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-muted">{formatRelative(o.updatedAt, now)}</td>
                 <RowActions>
                   <IconAction icon={<Eye />} label="عرض التفاصيل والسجل" onClick={() => setDetailId(o.id)} />
                 </RowActions>
@@ -191,5 +192,18 @@ export function OrdersPage() {
       />
       <OrderDetailDrawer orderId={detailId} onClose={() => setDetailId(null)} />
     </>
+  );
+}
+
+/** Area named once: the specific place (if any) on top, the area under it. */
+function DestinationCell({ order }: { order: DeliveryOrder }) {
+  const { place, area } = destinationParts(order);
+  return place ? (
+    <>
+      {place}
+      <p className="text-xs text-ink-muted">{area}</p>
+    </>
+  ) : (
+    <>{area}</>
   );
 }

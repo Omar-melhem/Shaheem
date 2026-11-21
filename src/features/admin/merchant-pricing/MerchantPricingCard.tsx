@@ -9,7 +9,7 @@ export function MerchantPricingCard({ merchant, activeZones }: { merchant: Merch
   return (
     <Link
       to={`/admin/pricing/${merchant.id}`}
-      className="group flex h-full flex-col gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-cream-deep transition-shadow hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+      className="group flex h-full flex-col gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-cream-deep transition-shadow hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300"
       aria-label={`أسعار ${merchant.businessName}`}
     >
       <div className="flex items-start gap-3">

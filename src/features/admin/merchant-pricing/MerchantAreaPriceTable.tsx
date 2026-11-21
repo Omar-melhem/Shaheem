@@ -126,7 +126,7 @@ export function MerchantAreaPriceTable({ merchant }: { merchant: Merchant }) {
                           : price ? <Badge tone="warning">السعر معطّل</Badge>
                           : <Badge tone="warning">مفعّلة — بلا سعر</Badge>}
                       </td>
-                      <td className="px-4 py-3 text-xs text-ink-muted">{price ? `${formatDateTime(price.updatedAt)} · ${price.updatedBy}` : '—'}</td>
+                      <td className="px-4 py-3 text-xs text-ink-muted">{price ? <><span className="whitespace-nowrap">{formatDateTime(price.updatedAt)}</span> · <span className="whitespace-nowrap">{price.updatedBy}</span></> : '—'}</td>
                       <RowActions>
                         {price ? (
                           <IconAction icon={<Pencil />} label={`تعديل سعر ${a.name}`} onClick={() => setEditing({ area: a, price })} />

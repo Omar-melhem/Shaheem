@@ -7,6 +7,7 @@ import type { DeliveryOrder } from '@/domain/types';
 import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, describeQueueReason } from '@/domain/dispatch';
 import { ORDER_GROUP_LABEL } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
+import { destinationText } from '@/domain/destination';
 import { Badge, Card, CardHeader, EmptyState, OpenDecision, PageHeader, SimTag } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatRelative } from '@/shared/lib/format';
@@ -17,8 +18,8 @@ import { OfferRound } from './OfferRound';
 import { ScheduledQueueCard } from './ScheduledQueueCard';
 
 /**
- * Distribution Center: three order queues stacked on the right (scheduled → needs Admin →
- * waiting) and live offers on the left; one column on small screens, queues first. Queue
+ * Distribution Center: «needs Admin» full width on top, then the scheduled and waiting queues
+ * stacked on the right and live offers on the left; one column on small screens, queues first. Queue
  * membership comes from application/dispatchQueues.ts. Broadcasting is switched in the header.
  */
 export function DispatchPage() {
@@ -41,7 +42,7 @@ export function DispatchPage() {
         {o.dispatchMode === 'private' && <Badge tone="info">خاص</Badge>}
       </div>
       <p className="mt-1 text-sm text-ink-soft">
-        <b>{merchantName(o.merchantId)}</b> ← {o.destination.label} ({o.areaName})
+        <b>{merchantName(o.merchantId)}</b> ← {destinationText(o)}
       </p>
       <p className="text-xs text-ink-muted">
         {formatMoney(o.deliveryPrice)} · ينتظر منذ {formatRelative(o.createdAt, now)}
@@ -78,13 +79,15 @@ export function DispatchPage() {
         <OpenDecision id="O-004 / O-005">من يستلم العرض في كل جولة وطريقة حساب القرب قرارات مفتوحة؛ الجولات هنا بساعة محاكاة داخل المتصفح.</OpenDecision>
       </Card>
 
+      {/* Most urgent queue, full width (owner review 2026-11-21). */}
+      <Card className="mb-6">
+        <CardHeader title={`${ORDER_GROUP_LABEL.needs_admin} (${intervention.length})`} description="انتهت جولات التوزيع دون قبول — لا تبدأ جولة جديدة إلا بإجراء من الإدارة" icon={<TriangleAlert className="h-5 w-5" />} />
+        {intervention.length === 0 ? <EmptyState compact title="لا توجد طلبات بحاجة لتدخل الإدارة حالياً" /> : queueList(intervention)}
+      </Card>
+
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:[grid-template-areas:'queues_offers']">
         <div className="min-w-0 space-y-6 lg:[grid-area:queues]">
           <ScheduledQueueCard orders={scheduled} now={now} onOpen={setDetailId} />
-          <Card>
-            <CardHeader title={`${ORDER_GROUP_LABEL.needs_admin} (${intervention.length})`} description="انتهت جولات التوزيع دون قبول — لا تبدأ جولة جديدة إلا بإجراء من الإدارة" icon={<TriangleAlert className="h-5 w-5" />} />
-            {intervention.length === 0 ? <EmptyState compact title="لا توجد طلبات بحاجة لتدخل الإدارة حالياً" /> : queueList(intervention)}
-          </Card>
           <Card>
             <CardHeader title={`${ORDER_GROUP_LABEL.pending_dispatch} (${waiting.length})`} description="طلبات لم تُعرض بعد على الكباتن" icon={<Inbox className="h-5 w-5" />} />
             {waiting.length === 0 ? <EmptyState compact title="لا توجد طلبات بانتظار التوزيع حالياً" /> : queueList(waiting)}

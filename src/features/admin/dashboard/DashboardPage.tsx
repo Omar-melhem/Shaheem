@@ -8,7 +8,7 @@ import { PageHeader } from '@/shared/components/ui';
 import { OperationalKpiSection, PlatformKpiSection } from './OverviewSection';
 import { LatestOrdersTable } from './LatestOrdersTable';
 
-const LINK_OUTLINE = 'inline-flex h-10 items-center gap-2 rounded-xl border border-cream-deep bg-white px-4 text-sm font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300';
+const LINK_OUTLINE = 'inline-flex h-10 items-center gap-2 rounded-xl border border-cream-deep bg-white px-4 text-sm font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300';
 
 /**
  * «نظرة عامة»: composition only. Quick actions sit in the page header; public broadcasting is
@@ -39,7 +39,7 @@ export function DashboardPage() {
             <Link to="/admin/captains?new=1" className={LINK_OUTLINE}>
               <UserPlus className="h-4 w-4" aria-hidden /> إضافة كابتن
             </Link>
-            <Link to="/admin/dispatch" className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300">
+            <Link to="/admin/dispatch" className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300">
               <Send className="h-4 w-4" aria-hidden /> توزيع يدوي
             </Link>
           </>

@@ -21,7 +21,7 @@ export function RequestTypeSelector({ value, onChange }: { value: RequestType; o
             aria-checked={selected}
             onClick={() => onChange(v)}
             className={cn(
-              'rounded-xl border bg-white px-4 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300',
+              'rounded-xl border bg-white px-4 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300',
               selected ? 'border-secondary ring-1 ring-secondary' : 'border-cream-deep hover:border-sand',
             )}
           >

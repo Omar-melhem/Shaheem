@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 import { ChevronDown } from 'lucide-react';
 import { useAppStore, DEMO_ADMIN } from '@/app/state';
 import { Button, Select, SimTag } from '@/shared/components/ui';
@@ -6,8 +7,9 @@ import { reportResult } from '@/shared/components/toast';
 import { useDemoSignIn } from '../hooks/useDemoSignIn';
 
 /**
- * Presenter shortcut, collapsed by default: every demo account in one place. Each button signs in
- * through the same credential check as the form, so role routing is unchanged.
+ * The one presenter panel on the login page, collapsed by default and opened only by its own
+ * toggle (a failed sign-in never expands it): every demo account plus the «أدوات العرض» tools.
+ * Each account button signs in through the same credential check as the form.
  * Prototype only — a production login has no account list.
  */
 export function DemoAccountsPanel() {
@@ -17,13 +19,18 @@ export function DemoAccountsPanel() {
   const [merchantId, setMerchantId] = useState(merchants[0]?.id ?? '');
   const [captainId, setCaptainId] = useState(captains[0]?.id ?? '');
 
+  const [open, setOpen] = useState(false);
   const enterAs = (account?: { username: string; password: string }) => account && reportResult(signInWith(account.username, account.password));
 
   return (
-    <details className="group mt-8 rounded-2xl border border-dashed border-sand-dark/50 bg-cream/50">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-ink-soft transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 [&::-webkit-details-marker]:hidden">
+    <details
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+      className="group mt-8 rounded-2xl border border-dashed border-sand-dark/50 bg-cream/50"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-ink-soft transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300 [&::-webkit-details-marker]:hidden">
         <ChevronDown className="h-4 w-4 transition-transform duration-150 group-open:rotate-180" aria-hidden />
-        <span className="flex-1">حسابات العرض</span>
+        <span className="flex-1">أدوات وحسابات العرض</span>
         <SimTag>تجريبي</SimTag>
       </summary>
       <div className="space-y-2 px-4 pb-4">
@@ -48,6 +55,9 @@ export function DemoAccountsPanel() {
             ))}
           </Select>
         </DemoRow>
+        <div className="border-t border-dashed border-sand-dark/40 pt-3">
+          <DemoToolsButton variant="inline" />
+        </div>
       </div>
     </details>
   );

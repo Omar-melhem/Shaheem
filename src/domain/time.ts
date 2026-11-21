@@ -62,6 +62,9 @@ const displayFormatter = new Intl.DateTimeFormat('ar-JO-u-nu-latn', {
 });
 const timeFormatter = new Intl.DateTimeFormat('ar-JO-u-nu-latn', { timeZone: BUSINESS_TZ, hour: 'numeric', minute: '2-digit' });
 
+/** Keeps the time and its «ص/م» on one line (a no-break space before the period). */
+export const glueDayPeriod = (text: string) => text.replace(/[\s\u202f](ص|م)$/u, '\u00a0$1');
+
 /** "الأحد 9 تشرين الثاني، 3:30 م" in Amman time. */
-export const formatAmmanDateTime = (ts: number) => displayFormatter.format(ts);
-export const formatAmmanTime = (ts: number) => timeFormatter.format(ts);
+export const formatAmmanDateTime = (ts: number) => glueDayPeriod(displayFormatter.format(ts));
+export const formatAmmanTime = (ts: number) => glueDayPeriod(timeFormatter.format(ts));

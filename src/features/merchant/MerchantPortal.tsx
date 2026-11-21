@@ -37,7 +37,7 @@ export function MerchantPortal() {
             {active.length === 0 ? (
               <EmptyState compact title="لا توجد توصيلات نشطة حالياً. عند قبول كابتن لطلبك يظهر هنا وتتحدث حالته تلقائياً." />
             ) : (
-              <ul className="max-h-[560px] divide-y divide-cream-dark overflow-y-auto">
+              <ul className="divide-y divide-cream-dark">
                 {active.map((o) => <ActiveOrderItem key={o.id} order={o} />)}
               </ul>
             )}

@@ -6,7 +6,7 @@ import { useAppStore } from '@/app/state';
 import { merchantZoneOptions, type MerchantZoneOption } from '@/application/queries';
 import { governorateName } from '@/domain/governorates';
 import { cityName } from '@/domain/cities';
-import { formatMoneyExact } from '@/domain/money';
+import { formatMoney } from '@/domain/money';
 import { Logo } from '@/shared/components/Logo';
 import { Button, Card, EmptyState, SearchField } from '@/shared/components/ui';
 import { formatDate } from '@/shared/lib/format';
@@ -93,7 +93,7 @@ export function MerchantAreasPage() {
                   {g.rows.map((o) => (
                     <tr key={o.area.id} className="break-inside-avoid">
                       <td className="px-5 py-2.5 font-medium">{o.label}</td>
-                      <td className="px-5 py-2.5 text-end font-bold" dir="ltr">{formatMoneyExact(o.price)}</td>
+                      <td className="px-5 py-2.5 text-end font-bold" dir="ltr">{formatMoney(o.price)}</td>
                     </tr>
                   ))}
                 </tbody>

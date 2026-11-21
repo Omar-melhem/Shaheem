@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAppStore } from '@/app/state';
 import type { DeliveryOrder } from '@/domain/types';
+import { destinationParts } from '@/domain/destination';
 import { formatMoney } from '@/domain/money';
 import { formatAmmanDateTime } from '@/domain/time';
 import { DetailRow, Drawer } from '@/shared/components/ui';
@@ -21,10 +22,10 @@ export function MerchantOrderDetail({ order, onClose }: { order: DeliveryOrder |
   if (!order || !statusOnly) return null;
   const scheduled = order.requestType === 'scheduled';
   return (
-    <Drawer open onClose={onClose} title={<span dir="ltr">{order.reference}</span>} subtitle={<OrderStatusBadge status={order.status} scheduled={scheduled} />}>
+    <Drawer open onClose={onClose} title={<span dir="ltr">{order.reference}</span>} subtitle={<OrderStatusBadge status={order.status} scheduled={scheduled} audience="merchant" />}>
       <dl className="divide-y divide-cream-dark rounded-xl bg-white px-4">
         <DetailRow label="منطقة التوصيل">{order.areaName}</DetailRow>
-        <DetailRow label="الوجهة">{order.destination.label}</DetailRow>
+        {destinationParts(order).place && <DetailRow label="الوجهة">{destinationParts(order).place}</DetailRow>}
         <DetailRow label="رسوم التوصيل">{formatMoney(order.deliveryPrice)}</DetailRow>
         <DetailRow label="هاتف العميل">{order.customerPhone ? <span dir="ltr">{order.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
         <DetailRow label="نوع الطلب">{scheduled ? 'طلب مؤجل' : 'طلب فوري'}</DetailRow>
@@ -35,7 +36,7 @@ export function MerchantOrderDetail({ order, onClose }: { order: DeliveryOrder |
       </dl>
       <section aria-labelledby="merchant-order-history" className="rounded-xl bg-white p-4">
         <h3 id="merchant-order-history" className="mb-3 text-sm font-bold text-ink">مراحل الطلب</h3>
-        <OrderHistoryList order={statusOnly} />
+        <OrderHistoryList order={statusOnly} audience="merchant" />
       </section>
     </Drawer>
   );

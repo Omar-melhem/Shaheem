@@ -10,7 +10,7 @@
     @apply bg-cream text-ink antialiased;
   }
   :focus-visible {
-    outline-color: #8c2335;
+    outline-color: #4f7466; /* secondary-400: focus is green, red is kept for errors */
   }
   :focus-visible { outline-style: solid; outline-width: 2px; outline-offset: 3px; }
   img, video, canvas { max-width: 100%; }

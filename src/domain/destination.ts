@@ -32,5 +32,22 @@ export function detectAreaForPin<T extends ServiceArea>(areas: T[], pin: LatLng)
   return matches.length === 1 ? matches[0] : null;
 }
 
+/**
+ * The destination with the area named once. New area-only orders store the label «منطقة X» next to
+ * `areaName` X, so showing both repeated the name («منطقة الشميساني (الشميساني)»).
+ * `place` is the description or chosen place when it adds something; `area` is always the area.
+ */
+export function destinationParts(order: { destination: { label: string }; areaName: string }): { place?: string; area: string } {
+  const label = order.destination.label.trim();
+  const redundant = !label || label === order.areaName || label === `منطقة ${order.areaName}`;
+  return redundant ? { area: order.areaName } : { place: label, area: order.areaName };
+}
+
+/** One-line destination: «خلف سيتي مول · خلدا», or just «خلدا» when there is nothing more specific. */
+export function destinationText(order: { destination: { label: string }; areaName: string }): string {
+  const { place, area } = destinationParts(order);
+  return place ? `${place} · ${area}` : area;
+}
+
 /** New orders without a pin have no coordinates. Older demo orders keep an `approximate` zone centre instead. */
 export const isAreaOnly = (destination: Destination) => !destination.position;

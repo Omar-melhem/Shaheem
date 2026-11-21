@@ -54,7 +54,7 @@ export function TableActionsHelp({ title, items }: { title: string; items: Actio
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-cream-dark hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-cream-dark hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300"
       >
         <Info className="h-5 w-5" aria-hidden />
       </button>

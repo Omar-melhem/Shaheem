@@ -12,6 +12,7 @@ import { OffersTab } from './OffersTab';
 import { ActiveDeliveryTab } from './ActiveDeliveryTab';
 import { HistoryTab, WalletTab, ProfileTab } from './OtherTabs';
 import { GpsChip } from './GpsChip';
+import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 
 type Tab = 'offers' | 'active' | 'history' | 'wallet' | 'profile';
 
@@ -50,6 +51,7 @@ export function CaptainApp() {
       <aside className="hidden max-w-xs space-y-2 text-center sm:block lg:mt-24 lg:text-start">
         <SimTag>معاينة محاكاة لتطبيق الكابتن</SimTag>
         <p className="text-sm text-ink-muted">التطبيق الفعلي تطبيق جوال مخصص لنظامي Android و iOS. هذه المعاينة تعرض التدفق نفسه داخل المتصفح لأغراض العرض.</p>
+        <DemoToolsButton variant="inline" />
       </aside>
 
       <div className="relative flex h-[100dvh] sm:h-[min(820px,calc(100dvh-90px))] w-full max-w-[400px] flex-col overflow-hidden sm:rounded-[2.5rem] sm:border-[10px] border-ink bg-cream shadow-pop">
@@ -71,6 +73,7 @@ export function CaptainApp() {
                 <GpsChip captain={c} freshness={view.freshness} hasActive={!!activeOrder} />
               </div>
             </div>
+            <span className="sm:hidden"><DemoToolsButton /></span>
             <button onClick={signOut} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="تسجيل الخروج" title="تسجيل الخروج">
               <LogOut className="h-4 w-4" />
             </button>

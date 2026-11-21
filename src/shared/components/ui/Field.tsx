@@ -45,7 +45,7 @@ export function Field({
       </label>
       {control}
       {error ? (
-        <p id={controlId && fieldMessageId(controlId)} className="text-xs font-medium text-red-700" role="alert">
+        <p id={controlId && fieldMessageId(controlId)} className="text-[13px] font-medium text-red-700" role="alert">
           {error}
         </p>
       ) : hint ? (

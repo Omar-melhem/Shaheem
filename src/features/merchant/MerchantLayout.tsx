@@ -8,6 +8,7 @@ import { Logo } from '@/shared/components/Logo';
 import { Dialog } from '@/shared/components/ui';
 import { AppShell, type ShellNavItem } from '@/shared/components/layout/AppShell';
 import { SupportContactList } from '@/features/support/SupportContacts';
+import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 
 function MerchantIdentity({ merchant, compact }: { merchant: Merchant; compact?: boolean }) {
   return (
@@ -40,7 +41,7 @@ export function MerchantLayout() {
   ];
 
   return (
-    <AppShell brand={<MerchantIdentity merchant={merchant} />} mobileBrand={<MerchantIdentity merchant={merchant} compact />} nav={nav} navLabel="تنقل بوابة التاجر">
+    <AppShell brand={<MerchantIdentity merchant={merchant} />} mobileBrand={<MerchantIdentity merchant={merchant} compact />} nav={nav} navLabel="تنقل بوابة التاجر" headerActions={<DemoToolsButton />}>
       <Outlet />
       <Dialog open={supportOpen} onClose={() => setSupportOpen(false)} title="تواصل مع شهم" description="قنوات الدعم الرسمية">
         <SupportContactList />

@@ -18,7 +18,7 @@ export function BackgroundPreviewBar({ value, onChange }: { value: BackgroundVar
             aria-checked={value === v}
             onClick={() => onChange(v)}
             className={cn(
-              'rounded-full px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300',
+              'rounded-full px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300',
               value === v ? 'bg-secondary text-white' : 'text-ink-soft hover:bg-cream',
             )}
           >

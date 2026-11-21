@@ -111,7 +111,7 @@ export function CaptainsPage() {
                 <tr key={c.id}>
                   <td className="px-4 py-3">
                     <p className="whitespace-nowrap font-bold text-ink">{c.fullName}</p>
-                    <p className="text-xs text-ink-muted" dir="ltr" style={{ textAlign: 'right' }}>{c.phone}</p>
+                    <p className="whitespace-nowrap text-xs text-ink-muted" dir="ltr" style={{ textAlign: 'right' }}>{c.phone}</p>
                   </td>
                   <td className="px-4 py-3"><Badge tone={c.status === 'active' ? 'success' : 'danger'} dot>{c.status === 'active' ? 'مفعّل' : 'موقوف'}</Badge></td>
                   <td className="px-4 py-3">{c.status === 'active' ? <CaptainStatusBadge status={avail} /> : <span className="text-xs text-ink-muted">—</span>}</td>

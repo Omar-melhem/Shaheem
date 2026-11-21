@@ -3,6 +3,7 @@ import { Bike, ChevronLeft, Phone } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import { useNow } from '@/shared/hooks/application';
 import type { DeliveryOrder } from '@/domain/types';
+import { destinationText } from '@/domain/destination';
 import { isActiveDelivery } from '@/domain/orderStatus';
 import { isValidPhone } from '@/domain/phone';
 import { formatMoney } from '@/domain/money';
@@ -18,7 +19,7 @@ function waitingText(order: DeliveryOrder): string {
     return order.status === 'offered_privately' ? 'عُرض الطلب على كابتن وبانتظار قبوله.' : 'بانتظار تنسيق الإدارة لكابتن في الموعد المطلوب. لم يُسند كابتن بعد.';
   }
   if (order.status === 'awaiting_captain' || order.status === 'offered_privately') return 'جارٍ البحث عن كابتن قريب…';
-  if (order.status === 'dispatch_expired') return 'لم يقبل أي كابتن بعد — فريق شهم يتابع الطلب.';
+  if (order.status === 'dispatch_expired') return 'لم يُسند كابتن بعد — فريق شهم يتابع الطلب.';
   return 'الطلب في انتظار التوزيع من فريق شهم.';
 }
 
@@ -31,11 +32,11 @@ export function ActiveOrderItem({ order }: { order: DeliveryOrder }) {
     <li className="space-y-3 px-5 py-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
-        <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
+        <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} audience="merchant" />
         <span className="ms-auto text-xs text-ink-muted">آخر تحديث {formatRelative(order.updatedAt, now)}</span>
       </div>
       <p className="text-sm text-ink-soft">
-        إلى <b>{order.destination.label}</b> ({order.areaName}) · {formatMoney(order.deliveryPrice)}
+        إلى <b>{destinationText(order)}</b> · {formatMoney(order.deliveryPrice)}
         {order.customerPhone && <span className="block text-xs text-ink-muted">هاتف العميل: <span dir="ltr">{order.customerPhone}</span></span>}
       </p>
       {order.requestType === 'scheduled' && order.scheduledPickupAt !== undefined && (
@@ -69,14 +70,14 @@ export function HistoryItem({ order }: { order: DeliveryOrder }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`عرض تفاصيل الطلب ${order.reference}`}
-        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-start text-sm transition-colors hover:bg-cream/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-300"
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-start text-sm transition-colors hover:bg-cream/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-secondary-300"
       >
       <span className="font-mono font-bold" dir="ltr">{order.reference}</span>
       <span className="min-w-0 flex-1 truncate text-ink-soft">
-        {order.destination.label} · {order.areaName}
+        {destinationText(order)}
       </span>
       <span className="whitespace-nowrap font-bold">{formatMoney(order.deliveryPrice)}</span>
-      <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} />
+      <OrderStatusBadge status={order.status} scheduled={order.requestType === 'scheduled'} audience="merchant" />
       <ChevronLeft className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
       <span className="w-full text-xs text-ink-muted">
         {formatDateTime(order.createdAt)}

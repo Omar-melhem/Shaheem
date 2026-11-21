@@ -77,7 +77,7 @@ export function MerchantsPage() {
               <tr key={m.id}>
                 <td className="px-4 py-3">
                   <p className="font-bold text-ink">{m.businessName}</p>
-                  <p className="text-xs text-ink-muted">منذ {formatDate(m.createdAt)}</p>
+                  <p className="whitespace-nowrap text-xs text-ink-muted">منذ {formatDate(m.createdAt)}</p>
                 </td>
                 <td className="px-4 py-3"><MerchantCategoryBadge category={m.category} /></td>
                 <td className="whitespace-nowrap px-4 py-3"><span dir="ltr">{m.phone}</span></td>

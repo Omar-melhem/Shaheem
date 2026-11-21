@@ -14,7 +14,7 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
 
 const itemClass = (active: boolean) =>
   cn(
-    'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300',
+    'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300',
     active ? 'bg-primary text-white shadow-sm' : 'text-ink-soft hover:bg-cream-dark',
   );
 
@@ -148,7 +148,7 @@ export function AppShell({
           <div className="min-w-0 flex-1">{mobileBrand && <div className="lg:hidden">{mobileBrand}</div>}</div>
           {headerActions}
         </header>
-        <main className="mx-auto w-full min-w-0 max-w-[1400px] flex-1 px-4 py-6 lg:px-6 lg:pb-24 print:max-w-none print:p-0">{children}</main>
+        <main className="mx-auto w-full min-w-0 max-w-[1400px] flex-1 px-4 py-6 lg:px-6 lg:pb-10 print:max-w-none print:p-0">{children}</main>
       </div>
     </div>
   );

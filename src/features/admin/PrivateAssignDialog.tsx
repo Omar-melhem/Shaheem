@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAppStore } from '@/app/state';
 import { useCaptainViews, useNow } from '@/shared/hooks/application';
 import type { DeliveryOrder } from '@/domain/types';
+import { destinationParts } from '@/domain/destination';
 import { haversineMeters, formatDistance } from '@/domain/geo';
 import { describeReasons } from '@/domain/eligibility';
 import { formatMoney } from '@/domain/money';
@@ -61,7 +62,7 @@ export function PrivateAssignDialog({ order, onClose }: { order: DeliveryOrder |
       {order && (
         <div className="space-y-3">
           <div className="rounded-xl bg-cream px-4 py-3 text-sm">
-            <b>{order.areaName}</b> · {order.destination.label} · {formatMoney(order.deliveryPrice)}
+            <b>{order.areaName}</b>{destinationParts(order).place && ` · ${destinationParts(order).place}`} · {formatMoney(order.deliveryPrice)}
           </div>
           <ul className="space-y-2" role="radiogroup" aria-label="اختر الكابتن">
             {ranked.map((v) => {

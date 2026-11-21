@@ -19,6 +19,7 @@ import {
 import { useAppStore } from '@/app/state';
 import { useNow } from '@/shared/hooks/application';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
+import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
 import { Logo } from '@/shared/components/Logo';
 import { AppShell, type ShellNavItem } from '@/shared/components/layout/AppShell';
 import { cn } from '@/shared/lib/cn';
@@ -56,7 +57,7 @@ export function AdminLayout() {
       mobileBrand={<Logo className="h-9" />}
       nav={nav}
       navLabel="التنقل الرئيسي للإدارة"
-      headerActions={<><BroadcastPill /><AlertsMenu /></>}
+      headerActions={<><DemoToolsButton /><BroadcastPill /><AlertsMenu /></>}
       sidebarFooter="مدير النظام (تجريبي)"
     >
       <Outlet />
@@ -81,7 +82,7 @@ function BroadcastPill() {
         disabled={pending !== null}
         aria-label={`${action} — الحالة الآن: ${enabled ? 'مفعّل' : 'متوقف'}`}
         className={cn(
-          'peer inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:opacity-60',
+          'peer inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300 disabled:opacity-60',
           enabled ? 'bg-secondary-50 text-secondary ring-secondary-200 hover:bg-secondary-100' : 'bg-amber-50 text-amber-900 ring-amber-300 hover:bg-amber-100',
         )}
       >

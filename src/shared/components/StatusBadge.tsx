@@ -1,14 +1,14 @@
 import type { OrderStatus } from '@/domain/types';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, SCHEDULED_STATUS_LABEL } from '@/domain/orderStatus';
+import { orderStatusLabel, orderStatusTone, type StatusAudience } from '@/domain/orderStatus';
 import { FRESHNESS_LABEL, type LocationFreshness } from '@/domain/location';
 import { OP_STATUS_LABEL, type CaptainView } from '@/shared/hooks/application';
 import { Badge } from './ui';
 
 /** `scheduled` swaps in the scheduled-order wording while it waits for Admin coordination. */
-export function OrderStatusBadge({ status, scheduled }: { status: OrderStatus; scheduled?: boolean }) {
+export function OrderStatusBadge({ status, scheduled, audience = 'admin' }: { status: OrderStatus; scheduled?: boolean; audience?: StatusAudience }) {
   return (
-    <Badge tone={ORDER_STATUS_TONE[status]} dot>
-      {(scheduled && SCHEDULED_STATUS_LABEL[status]) || ORDER_STATUS_LABEL[status]}
+    <Badge tone={orderStatusTone(status, audience)} dot>
+      {orderStatusLabel(status, { scheduled, audience })}
     </Badge>
   );
 }

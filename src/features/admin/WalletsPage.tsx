@@ -60,7 +60,7 @@ export function WalletsPage() {
                   const walletOk = v.balance > 0 && v.balance >= threshold;
                   return (
                     <tr key={v.captain.id}>
-                      <td className="px-4 py-3 font-bold">{v.captain.fullName}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-bold">{v.captain.fullName}</td>
                       <td className={cn('whitespace-nowrap px-4 py-3 text-base font-extrabold', !walletOk && 'text-red-700')}>{formatMoney(v.balance)}</td>
                       <td className="px-4 py-3">{walletOk ? <Badge tone="success">كافٍ</Badge> : <Badge tone="danger">غير كافٍ</Badge>}</td>
                       <td className="max-w-[260px] px-4 py-3 text-xs">{v.eligibility.eligible ? <Badge tone="success">مؤهل</Badge> : <span className="text-ink-muted">{describeReasons(v.eligibility.reasons)}</span>}</td>
@@ -90,7 +90,7 @@ export function WalletsPage() {
               {tx.map((t) => (
                 <tr key={t.id}>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-soft">{formatDateTime(t.createdAt)}</td>
-                  <td className="px-4 py-3 font-bold">{captainName(t.captainId)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-bold">{captainName(t.captainId)}</td>
                   <td className="whitespace-nowrap px-4 py-3 font-extrabold text-secondary"><span dir="ltr">+{formatMoney(t.amount)}</span></td>
                   <td className="px-4 py-3 text-xs">{t.reason}</td>
                   <td className="px-4 py-3 text-xs text-ink-muted">{t.actor.name}</td>

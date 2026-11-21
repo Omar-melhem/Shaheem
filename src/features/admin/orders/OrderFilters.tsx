@@ -128,7 +128,7 @@ export function ActiveFilterChips({
         <li key={k}>
           <span className="inline-flex h-9 items-center gap-1 rounded-full bg-primary-50 ps-3 pe-1 text-xs font-bold text-primary">
             {label[k] ?? value[k]}
-            <button type="button" aria-label={`إزالة فلتر ${label[k] ?? ''}`} onClick={() => onRemove(k)} className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300">
+            <button type="button" aria-label={`إزالة فلتر ${label[k] ?? ''}`} onClick={() => onRemove(k)} className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300">
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
           </span>

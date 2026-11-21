@@ -1,5 +1,5 @@
 import { Marker, Polyline, Popup } from 'react-leaflet';
-import { NO_EXACT_LOCATION, isAreaOnly } from '@/domain/destination';
+import { NO_EXACT_LOCATION, destinationParts, isAreaOnly } from '@/domain/destination';
 import { useAppStore } from '@/app/state';
 import { useEligibleCaptainCount, useNow } from '@/shared/hooks/application';
 import { formatMoney } from '@/domain/money';
@@ -84,7 +84,7 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
           <DetailRow label="نقطة الاستلام">{order.pickup.address}</DetailRow>
           <DetailRow label="منطقة العميل">{order.areaName}</DetailRow>
           <DetailRow label="وصف العنوان">
-            {order.destination.label}
+            {destinationParts(order).place ?? <span className="text-ink-muted">—</span>}
             {isAreaOnly(order.destination) && <span className="block text-xs text-amber-800">{NO_EXACT_LOCATION}</span>}
             {order.destination.note && <span className="block text-xs text-ink-soft">ملاحظة: {order.destination.note}</span>}
           </DetailRow>

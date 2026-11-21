@@ -1,6 +1,6 @@
 import { CAPTAIN_STATUS_COLOR, STALE_COLOR } from './markers';
 
-/** Captain marker legend for the Live Map (Captain-only view, FU-1.2 §6). */
+/** Captain marker legend for the Live Map (Captain-only view, FU-1.2 §6). Starts collapsed so it never hides a marker. */
 export function MapLegend() {
   const item = (color: string, label: string, style: 'solid' | 'dashed' = 'solid') => (
     <li className="flex items-center gap-2">
@@ -9,7 +9,7 @@ export function MapLegend() {
     </li>
   );
   return (
-    <details open className="group rounded-xl bg-white/95 p-3 text-xs shadow-card ring-1 ring-cream-deep">
+    <details className="group rounded-xl bg-white/95 p-3 text-xs shadow-card ring-1 ring-cream-deep">
       <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 font-bold text-ink [&::-webkit-details-marker]:hidden">
         دليل الخريطة
         <span className="text-[11px] font-medium text-primary group-open:hidden">إظهار</span>

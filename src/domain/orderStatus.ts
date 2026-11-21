@@ -68,6 +68,29 @@ export const SCHEDULED_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
   offered_privately: 'بانتظار قبول الكابتن',
 };
 
+/**
+ * Who reads a status label. Merchants never see internal dispatch wording: a failed automatic
+ * dispatch reads as «waiting for a Captain, SHAHM is following up» (owner review 2026-11-21).
+ */
+export type StatusAudience = 'admin' | 'merchant';
+
+export const MERCHANT_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
+  dispatch_expired: 'بانتظار كابتن – فريق شهم يتابع الطلب',
+};
+
+const MERCHANT_STATUS_TONE: Partial<Record<OrderStatus, StatusTone>> = { dispatch_expired: 'warning' };
+
+/** The one label lookup for badges and timelines. */
+export function orderStatusLabel(status: OrderStatus, opts: { scheduled?: boolean; audience?: StatusAudience } = {}): string {
+  if (opts.scheduled && SCHEDULED_STATUS_LABEL[status]) return SCHEDULED_STATUS_LABEL[status]!;
+  if (opts.audience === 'merchant' && MERCHANT_STATUS_LABEL[status]) return MERCHANT_STATUS_LABEL[status]!;
+  return ORDER_STATUS_LABEL[status];
+}
+
+export function orderStatusTone(status: OrderStatus, audience: StatusAudience = 'admin'): StatusTone {
+  return (audience === 'merchant' && MERCHANT_STATUS_TONE[status]) || ORDER_STATUS_TONE[status];
+}
+
 export const isActiveDelivery = (s: OrderStatus) => ACTIVE_DELIVERY_STATUSES.includes(s);
 export const isInQueue = (s: OrderStatus) => QUEUE_STATUSES.includes(s);
 export const isOffering = (s: OrderStatus) => OFFERING_STATUSES.includes(s);

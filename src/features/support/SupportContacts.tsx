@@ -35,8 +35,8 @@ export function SupportContactList({ compact }: { compact?: boolean }) {
     return (
       <EmptyState
         icon={<Headphones className="h-6 w-6" />}
-        title="بيانات التواصل الرسمية قيد الإضافة"
-        description="ستظهر هنا قنوات تواصل شهم الرسمية بعد اعتمادها وإضافتها من لوحة الإدارة."
+        title="قنوات التواصل مع شهم غير متاحة بعد"
+        description="ستظهر هنا أرقام وقنوات دعم شهم الرسمية فور اعتمادها."
       />
     );
   }
