@@ -31,7 +31,7 @@ class DebugPreviewButton extends StatelessWidget {
           icon: const Icon(Icons.bug_report_outlined, size: 20),
           backgroundColor: Theme.of(context).colorScheme.surface,
           foregroundColor: AppColor.secondary,
-          border: const BorderSide(color: AppColor.sandDark),
+          border: const BorderSide(color: AppColor.inputOutline),
           onPressed: onPressed,
         ),
         const SizedBox(height: 4),

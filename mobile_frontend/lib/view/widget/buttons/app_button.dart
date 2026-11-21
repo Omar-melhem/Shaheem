@@ -1,6 +1,7 @@
 // Shared primary (high-emphasis) button.
 
 import 'package:flutter/material.dart';
+import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_icon_position.dart';
 
@@ -109,6 +110,24 @@ class AppButton extends StatelessWidget {
   /// Screen-reader text while loading. Defaults to the localized "loading".
   final String? loadingSemanticLabel;
 
+  /// Adds the theme's pressed and disabled colors (D-A69) when the caller
+  /// kept the default red background; an explicit [backgroundColor] keeps
+  /// its exact color in every state, as before.
+  ButtonStyle _withDefaultStates(ButtonStyle style) {
+    if (backgroundColor != null) return style;
+    return style.copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return AppColor.disabledBackground;
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return AppColor.primaryPressed;
+        }
+        return AppColor.primary;
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Not a const-constructor assert because String.trim isn't constant.
@@ -141,16 +160,18 @@ class AppButton extends StatelessWidget {
     final button = FilledButton(
       // Loading keeps the enabled colors but drops taps.
       onPressed: isLoading ? () {} : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: background,
-        foregroundColor: foreground,
-        minimumSize: Size(48, height),
-        padding:
-            padding ?? const EdgeInsetsDirectional.symmetric(horizontal: 24),
-        textStyle: defaultTextStyle.merge(textStyle),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius),
-          side: border ?? BorderSide.none,
+      style: _withDefaultStates(
+        FilledButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          minimumSize: Size(48, height),
+          padding:
+              padding ?? const EdgeInsetsDirectional.symmetric(horizontal: 24),
+          textStyle: defaultTextStyle.merge(textStyle),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+            side: border ?? BorderSide.none,
+          ),
         ),
       ),
       child: isLoading

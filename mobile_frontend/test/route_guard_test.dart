@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/util/routes/debug_shell_preview.dart';
 import 'package:mobile_frontend/util/routes/route_guard.dart';
 import 'package:mobile_frontend/util/routes/routes_string.dart';
+import 'package:mobile_frontend/domain/entities/active_order.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/cubit/splash_cubit.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 
@@ -124,22 +126,86 @@ void main() {
     );
   });
 
+  group('post-sign-in destination from the active order (D-A73)', () {
+    String? signedInAt(String location, CurrentOrderState order) =>
+        resolveRedirect(
+          location: location,
+          startup: const SplashResolved(),
+          session: signedIn,
+          activeOrder: order,
+        );
+    const active = CurrentOrderActive(
+      order: ActiveOrder(orderId: 'o-1', restaurantName: 'R'),
+    );
+
+    test('while the lookup runs, the public screen stays', () {
+      for (final path in publicRoutes) {
+        expect(signedInAt(path, const CurrentOrderInitial()), isNull);
+        expect(signedInAt(path, const CurrentOrderLoading()), isNull);
+      }
+    });
+
+    test('an active order → Current Order; anything else → Home', () {
+      expect(
+        signedInAt(RoutesString.splash, active),
+        RoutesString.currentOrder,
+      );
+      expect(signedInAt(RoutesString.login, active), RoutesString.currentOrder);
+      for (final settled in const <CurrentOrderState>[
+        CurrentOrderEmpty(),
+        CurrentOrderNotConfigured(),
+        CurrentOrderFailure(CurrentOrderFailureKind.noInternet),
+        CurrentOrderFailure(CurrentOrderFailureKind.unexpected),
+      ]) {
+        expect(signedInAt(RoutesString.splash, settled), RoutesString.home);
+      }
+    });
+
+    test('never redirects signed-in navigation because of an order', () {
+      for (final path in [...mainShellRoutes, ...shellOverlayRoutes]) {
+        expect(signedInAt(path, active), isNull);
+        expect(signedInAt(path, const CurrentOrderLoading()), isNull);
+        expect(signedInAt(path, const CurrentOrderEmpty()), isNull);
+      }
+    });
+
+    test('a signed-out session ignores the active-order state', () {
+      expect(
+        resolveRedirect(
+          location: RoutesString.currentOrder,
+          startup: const SplashResolved(),
+          session: signedOut,
+          activeOrder: active,
+        ),
+        RoutesString.login,
+      );
+    });
+  });
+
   group('main shell routes', () {
-    test('five distinct branch roots, Current Order in the middle', () {
+    test('four distinct branch roots in bar order (D-A70)', () {
       expect(mainShellRoutes, [
         RoutesString.home,
-        RoutesString.notifications,
-        RoutesString.currentOrder,
         RoutesString.orderHistory,
+        RoutesString.wallet,
         RoutesString.profile,
       ]);
-      expect(mainShellRoutes.toSet().length, 5);
+      expect(mainShellRoutes.toSet().length, 4);
       expect(mainShellRoutes.every((path) => path.startsWith('/')), isTrue);
       expect(mainShellRoutes.any(publicRoutes.contains), isFalse);
     });
 
     test('isMainShellRoute matches roots and nested paths only', () {
+      expect(isMainShellRoute(RoutesString.wallet), isTrue);
+      // Profile is the fourth tab (D-A70); Current Order, Settings and
+      // About are protected pages above the shell, not tabs.
       expect(isMainShellRoute(RoutesString.profile), isTrue);
+      expect(isMainShellRoute(RoutesString.currentOrder), isFalse);
+      expect(shellOverlayRoutes, {
+        RoutesString.currentOrder,
+        RoutesString.settings,
+        RoutesString.about,
+      });
       expect(isMainShellRoute('${RoutesString.home}/details'), isTrue);
       expect(isMainShellRoute('/homework'), isFalse);
       expect(isMainShellRoute(RoutesString.login), isFalse);
@@ -181,6 +247,19 @@ void main() {
         expect(preview(path, signedOut), isNull);
       }
       expect(preview('${RoutesString.home}/details', signedOut), isNull);
+      for (final path in shellOverlayRoutes) {
+        expect(preview(path, signedOut), isNull);
+      }
+    });
+
+    test('pages above the shell are protected like the tabs', () {
+      for (final path in shellOverlayRoutes) {
+        expect(redirect(path, const SplashResolved(), signedIn), isNull);
+        expect(
+          redirect(path, const SplashResolved(), signedOut),
+          RoutesString.login,
+        );
+      }
     });
 
     test('opens nothing else and never replaces startup', () {

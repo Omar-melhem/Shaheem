@@ -204,7 +204,7 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
     final l10n = context.l10n;
     final s = AppTextFieldStyle.defaultsOf(theme).merge(widget.style);
     final radius = BorderRadius.circular(s.borderRadius!);
-    
+
     OutlineInputBorder border(Color? color, double? width) =>
         OutlineInputBorder(
           borderRadius: radius,
@@ -237,7 +237,7 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
       inputFormatters: widget.inputFormatters,
       textDirection: widget.textDirection,
       textAlign: widget.textAlign,
-      
+
       // Obscured values are never corrected or suggested by the keyboard.
       autocorrect: widget.autocorrect ?? !widget.obscureText,
       enableSuggestions: widget.enableSuggestions ?? !widget.obscureText,

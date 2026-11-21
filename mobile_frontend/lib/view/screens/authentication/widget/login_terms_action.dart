@@ -3,9 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_frontend/helper/legal/legal_page_launcher.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
-import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
-import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
+import 'package:mobile_frontend/view/widget/legal/terms_page_opener.dart';
 
 /// The «الشروط والأحكام» text action under the Login form.
 ///
@@ -37,22 +36,7 @@ class _LoginTermsActionState extends State<LoginTermsAction> {
     // gets the full screen height.
     FocusScope.of(context).unfocus();
     try {
-      final result = await widget.legalPageLauncher.openTermsAndConditions();
-      if (!mounted || result == LegalPageOpenResult.opened) return;
-      final l10n = context.l10n;
-      await showAppPopup<void>(
-        context,
-        icon: const Icon(
-          Icons.description_outlined,
-          size: 40,
-          color: AppColor.primary,
-        ),
-        title: l10n.termsAndConditions,
-        message: result == LegalPageOpenResult.notConfigured
-            ? l10n.termsUnavailableMessage
-            : l10n.termsOpenFailedMessage,
-        actions: [AppPopupAction(label: l10n.close, isPrimary: true)],
-      );
+      await openTermsPage(context, widget.legalPageLauncher);
     } finally {
       _opening = false;
     }

@@ -25,7 +25,7 @@ class Headline3 extends AppTextWidget {
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.headline3.copyWith(
     fontWeight: FontWeight.bold,
-    color: color ?? AppColor.ink,
+    color: color ?? AppColor.textPrimary,
     fontSize: fontSize ?? 24,
   );
 }

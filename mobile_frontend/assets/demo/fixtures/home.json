@@ -1,0 +1,12 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "greeting_name": "أحمد",
+  "wallet_balance_fils": 4000,
+  "pending_offer_ids": [
+    "demo-offer-101",
+    "demo-offer-102"
+  ],
+  "active_order_id": null,
+  "demo_notice": "بيانات تجريبية — ليست بيانات حقيقية"
+}

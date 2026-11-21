@@ -34,10 +34,14 @@ D-A13, D-A20, D-A38, D-A41, D-R06, D-R07, C-33.
 | `AppSessionCubit` | App-wide, one instance | `MainApp.initState` | Session readiness and the current `AppUser` |
 | `SplashCubit` | App-wide instance, startup-only role | `MainApp.initState` | Orchestrates startup; idle after it resolves |
 | `LoginCubit` | Feature (Login) | The `/login` route builder (`BlocProvider`); closed when Login leaves the tree | Login form values, field errors, submission (§3) |
-| `CurrentOrderCubit` | Main shell (one instance while the shell is open) | The shell route builder (`BlocProvider`); closed on sign-out | The captain's active order, its pickup state and the captain's location (§3.2). Read by the Current Order screen and by `AppNavBar` |
+| `CurrentOrderCubit` (scope moved by D-A73) | Authenticated scope: one instance shared by the four-tab shell, the standalone `/current-order` page, the offer flow and recovery; survives tab changes | Created once above the shell and the standalone page; closed on sign-out | The captain's authoritative active order, its pickup state and the captain's location (§3.2), plus coalesced recovery reads (acceptance, startup, foreground return). Read by the Current Order page, the offer flow and the recovery navigation listener. Not read by the navigation bar |
 | `HomeAvailabilityCubit` (Task 24) | Feature (Home route inside the shell) | The Home route builder (`BlocProvider`); closed on sign-out | The captain's **server-confirmed** availability and the enable/disable flow (§3.3). Read only by the Home availability card |
-| `PendingOffersCubit` (Task 26) | Feature (Home route inside the shell) | The Home route builder (`BlocProvider`); closed on sign-out | The offers the server says this captain can still accept, and the accept/decline commands (§3.3). Read only by Home's «طلبات بانتظار القبول» |
-| Future wallet/order feature state | Feature | Feature route or screen | Server-backed wallet summary and ledger; choose Cubit or Bloc based on workflow complexity. No client-side wallet calculations or holds (D-A25, D-A28, D-A50) |
+| `PendingOffersCubit` (Task 26; shell-scoped since Task 36) | Main shell | The shell route builder (`BlocProvider`); closed on sign-out | The offers the server says this captain can still accept, and the accept/decline commands (§3.3). Read by Home's «طلبات بانتظار القبول» and by `NewOfferSheetHost` (the new-offer sheet above every tab) |
+| `DeclinedOffersCubit` (Task 36; shell-scoped since Task 38) | Main shell | The shell route builder (`BlocProvider`); closed on sign-out | The offers **this captain** declined, as the server records them (read-only; a decline never adds a row locally). Read by Order History. `load()` runs on first entry, tab return, visible resume and Retry; `refresh()` runs after a server-confirmed decline (`PendingOffersCubit.onDeclineConfirmed`): ignored before the first load, coalesced into exactly one follow-up read while a load is running, dropped after sign-out/close |
+| `WalletCubit` | Feature (Wallet branch) | Wallet route builder; closed on sign-out | One server balance and the 7-day commission-debit history (D-A76). No holds, no recharge command, no client calculation |
+| Wallet delivery statistics (D-A76) | Feature (Wallet branch), independent of the balance | Wallet route builder; closed on sign-out | Lifetime delivered-order count and earnings from an explicit typed read model with their own loading / unavailable / not configured states; a statistics failure never clears the balance; unknown never reads as zero; earnings unavailable until D-P36 |
+| Profile rating (D-A77) | Feature (Profile branch) | Profile route builder; closed on sign-out | Typed rating read model (unknown vs no ratings vs value); name/phone are read from `AppSessionCubit`, never copied into a second store |
+| Account deletion (D-A78) | Feature (`/settings`) | Settings route builder | Confirmation → one submission → typed outcome; on completed deletion it asks `AppSessionCubit.endSession()` so every per-user scope closes |
 
 - **Making state app-wide** needs real cross-feature demand.
 - **Theme and locale:** neither can change at runtime, so they have no Cubit.
@@ -48,13 +52,9 @@ D-A13, D-A20, D-A38, D-A41, D-R06, D-R07, C-33.
 - **Feature Cubits are never global.**
 - **Navigation has no Cubit** (D-A38). The selected tab is GoRouter's branch
   state, and the bar's indicators are plain inputs:
-  - `hasActiveOrder` and `isCheckingActiveOrder` are derived by `AppNavBar`
-    from the shared `CurrentOrderCubit` backed by server state. Refresh on
-    sign-in, order acceptance, status changes, verified push, resume and
-    opening Current Order, without polling or a second copy of the state.
-  - `unreadCount` belongs to the future Notifications Cubit and comes from
-    Backend/PostgreSQL. In the old unintegrated snapshot the honest default
-    (`0`) is still shown; **zero is not the production source of truth**.
+  - The bar has **no** indicator inputs (D-A70): no unread count (feature
+    removed, D-A72) and no active-order/loading state (Current Order is a
+    standalone page, D-A73).
   - Don't add a `NavBarCubit`, and don't fetch anything inside the bar.
 - **The debug preview is not session state** (D-A40): `DebugShellPreview` is
   a temporary in-memory switch read by the route guard. `AppSessionCubit`
@@ -132,7 +132,16 @@ response that arrives after a sign-out (stale token) is ignored.
 
 Validator API and rules: `../ui/SHARED_UI_COMPONENTS_REFERENCE.md` §7.
 
-### 3.2 `CurrentOrderCubit` (historical implementation; final server rules approved)
+### 3.2 `CurrentOrderCubit` (shared active-order owner, D-A73)
+
+**Recovery (D-A73):** besides `load()`, the Cubit exposes a coalesced
+recovery read used by confirmed acceptance, startup and foreground return.
+While a read runs, a new trigger marks the result stale and schedules
+exactly one follow-up read, so an older "none" cannot overwrite a newer
+accepted assignment. A confirmed absence replaces any previous active order.
+Failure/not configured never become "none". The navigation decision is made
+by a route-level listener from typed state, never inside the Cubit.
+
 
 Files: `lib/view/screens/current_order_screen/cubit/current_order_cubit.dart`
 and `current_order_state.dart`. Not a form; listed here as the reference for
@@ -196,18 +205,46 @@ the bar's indicator; only its map is unavailable (C-33).
     refresh.
   - Loaded on open, on returning to the Home tab, on resume while Home is
     visible and on explicit refresh; never polled.
+  - **Shell-scoped since Task 36**, so `NewOfferSheetHost` can present a
+    newly listed offer as a bottom sheet above any tab or the Profile
+    route. The host keeps only offer ids (first list = already on Home;
+    later unseen ids queued; ids gone from the server list forgotten), one
+    sheet at a time, foreground and signed-in only, and re-reads once on
+    resume if a sheet was waiting. It owns no offer data and sends commands
+    through this Cubit. After a confirmed instant accept it calls
+    `CurrentOrderCubit.refreshed()` and opens Current Order only for the
+    offer's `orderId`.
 
   **Not implemented:** location tracking, 30 s uploads, the 90 s freshness
   rule, FCM/APNs, the real permission adapter and the backend.
-- **Notifications Cubit:** server-backed notification list and unread count;
-  FCM is a delivery hint, not authoritative read state.
-- **Wallet Cubit:** server total/available/holds/ledger, without calculating
-  financial consequences on the phone.
+- **Notifications Cubit — removed (D-A72, 2026-11-20).** Historical
+  description of the deleted Task 35 implementation: `NotificationsCubit`,
+  scoped to the main shell (closed on sign-out) because the screen and the
+  bar's unread dot share it. Loads the server list (Admin announcements,
+  assigned orders) and unread count via `GetNotifications`; loads when the
+  tab is first built, when it becomes visible again, and on resume only
+  while visible. Keeps the list while re-reading, clears it on any failure,
+  drops late answers. Read-only: no mark-as-read, no local count. FCM is a
+  delivery hint, not authoritative read state. The assigned-order tap
+  re-reads `CurrentOrderCubit` and opens Current Order only on an `orderId`
+  match (screen-side, not in a Cubit).
+- **Wallet Cubit (Task 34, revised by D-A74/D-A76):** `WalletCubit`,
+  scoped to the Wallet route (closed on sign-out). Reads the **single**
+  server balance and the last-7-days commission debits through `GetWallet`
+  (the one place the display window is applied); no held/available fields,
+  no credit list in the UI; nothing is calculated on the phone. Statuses: initial, loading, noSession, notConfigured, noInternet,
+  failure, loaded; the last overview stays visible while re-reading and is
+  cleared by any failure; late answers (newer load, sign-out, close) are
+  dropped. Read-only: no recharge/payment command. The Home app-bar balance
+  is the `HomeScreen.walletTotalFils` input (same single balance value): the
+  production route passes nothing («—») until a wallet API exists; only the
+  temporary debug demo supplies it from its in-memory wallet (Task 38, see
+  `tool/demo/README.md`).
 - **Order workflow Bloc/Cubit:** use cases for task-oriented POST commands,
   not a mutable status PATCH field. Always recheck server state and typed
   business error codes; use stable idempotency keys per attempted operation.
 - **Scheduled future commitments:** shown separately from the single active
-  delivery, even though commission was reserved on Admin assignment.
+  delivery (no commission reservation exists, D-A74).
 
 ## 3.4 Screen composition vs Cubit state vs UI effects (Home, Task 27)
 
@@ -217,7 +254,7 @@ own Flutter-only resources and presentation side effects.
 | Concern | Owner on Home |
 |---|---|
 | Page layout (app bar, one `CustomScrollView`, sliver padding) | `HomeScreen`, a `StatelessWidget` (`view/home_screen.dart`) |
-| Availability and offers state, commands, stale-result and duplicate guards | `HomeAvailabilityCubit`, `PendingOffersCubit` (route-scoped, unchanged) |
+| Availability and offers state, commands, stale-result and duplicate guards | `HomeAvailabilityCubit` (route-scoped), `PendingOffersCubit` (shell-scoped since Task 36, same instance) |
 | Initial load (once per mount), reload when Home is shown again (Task 28) and on app resume only while Home is visible (Task 29), listener disposal | `HomeLifecycleBridge` (`widget/`), the only `StatefulWidget`: it owns one `AppLifecycleListener` and no business state |
 | Permission explanation popup | `HomeAvailabilityRationaleListener` (`BlocListener` + `showAppPopup`); the Cubit only exposes `pendingRationale` |
 | Section UI | `HomeGreeting`, `HomeAvailabilityCard` / `HomeAvailabilityNotice`, `PendingOffersHeader` / `PendingOffersSliver`, `HomeAppBar` / `WalletBalanceChip`, one per file in `widget/` |

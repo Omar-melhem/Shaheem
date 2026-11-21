@@ -106,16 +106,12 @@ class AppTextFieldStyle {
 
   /// The complete default style for [theme].
   ///
-  /// Colors come from the theme's color scheme (central `AppColor` tokens
-  /// via `AppTheme`), except the resting border, which uses the
-  /// input-specific [AppColor.inputBorder] (≥3:1 on white and cream). Two values are pre-existing Material fallbacks kept to
-  /// preserve the current look until owner-approved tokens exist (open
-  /// technical debt, not resolved branding):
-  /// - `colorScheme.error`: `AppTheme` sets no error color, so this is
-  ///   Material's default error red.
-  /// - the disabled border, `onSurface` at 38% alpha: the exact border
-  ///   Flutter's Material 3 filled-field fallback drew before this style
-  ///   existed.
+  /// Colors come from the central D-A69 tokens: resting border
+  /// [AppColor.inputOutline] (4.74:1 on white), focused border
+  /// [AppColor.focus] with a wider stroke (dark outline plus width cue, so
+  /// focus is not signalled by color alone), error border
+  /// `colorScheme.error` ([AppColor.error]) and a light [AppColor.divider]
+  /// border for disabled fields.
   static AppTextFieldStyle defaultsOf(ThemeData theme) {
     final colors = theme.colorScheme;
     return AppTextFieldStyle(
@@ -126,18 +122,15 @@ class AppTextFieldStyle {
         horizontal: 16,
         vertical: 14,
       ),
-      // Input-specific token, not colorScheme.outline, so the navigation
-      // bar and other outlined elements keep their current sand border.
-      borderColor: AppColor.inputBorder,
+      borderColor: AppColor.inputOutline,
       borderWidth: 1,
-      focusedBorderColor: colors.primary,
-      focusedBorderWidth: 1.5,
+      focusedBorderColor: AppColor.focus,
+      focusedBorderWidth: 2,
       errorBorderColor: colors.error,
       errorBorderWidth: 1,
       focusedErrorBorderColor: colors.error,
-      focusedErrorBorderWidth: 1.5,
-      // Same value Flutter computes (`withOpacity(0.38)` → alpha 97).
-      disabledBorderColor: colors.onSurface.withAlpha(97),
+      focusedErrorBorderWidth: 2,
+      disabledBorderColor: AppColor.divider,
       disabledBorderWidth: 1,
     );
   }

@@ -401,13 +401,13 @@ void main() {
       OutlineInputBorder outline(InputBorder? b) => b! as OutlineInputBorder;
       expect(
         outline(user.enabledBorder).borderSide.color,
-        AppColor.inputBorder,
+        AppColor.inputOutline,
       );
       expect(
         outline(user.enabledBorder).borderSide.width,
         defaults.borderWidth,
       );
-      expect(outline(user.focusedBorder).borderSide.color, AppColor.primary);
+      expect(outline(user.focusedBorder).borderSide.color, AppColor.focus);
       expect(
         outline(user.focusedBorder).borderSide.width,
         defaults.focusedBorderWidth,

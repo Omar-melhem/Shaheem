@@ -25,7 +25,7 @@ class Caption extends AppTextWidget {
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.caption.copyWith(
     fontWeight: FontWeight.bold,
-    color: color ?? AppColor.ink,
+    color: color ?? AppColor.textPrimary,
     fontSize: fontSize ?? 9,
   );
 }

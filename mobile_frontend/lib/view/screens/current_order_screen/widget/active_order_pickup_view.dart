@@ -133,7 +133,7 @@ class _PickupCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColor.border),
+        border: Border.all(color: AppColor.divider),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

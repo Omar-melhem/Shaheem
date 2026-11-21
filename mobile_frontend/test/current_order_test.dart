@@ -24,7 +24,6 @@ import 'package:mobile_frontend/view/screens/current_order_screen/view/current_o
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
-import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
@@ -144,8 +143,9 @@ void main() {
       orders.pending = Completer<void>();
       final first = cubit.load();
       expect(cubit.state, isA<CurrentOrderLoading>());
-      await cubit.load();
-      await cubit.load();
+      // Later calls join the running lookup (same future), no new request.
+      expect(identical(cubit.load(), first), isTrue);
+      unawaited(cubit.load());
       expect(orders.calls, 1);
       orders.pending!.complete();
       await first;
@@ -311,33 +311,46 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(HomeScreen), findsOneWidget);
+      // Startup resolved the active order once (D-A73); count from here.
+      orders.calls = 0;
     }
 
-    final centerItem = find.byKey(
-      MainNavigationBar.itemKey(MainNavDestination.currentOrder),
-    );
-    final spinner = find.byKey(MainNavigationBar.centerProgressKey);
+    CurrentOrderCubit cubit(WidgetTester tester) =>
+        tester.element(find.byType(MaterialApp)).read<CurrentOrderCubit>();
 
-    MainNavigationBar bar(WidgetTester tester) =>
-        tester.widget<MainNavigationBar>(find.byType(MainNavigationBar));
-
+    /// Opens the standalone page the way acceptance/recovery do: a fresh
+    /// authoritative read, then the page pushed above the current tab.
     Future<void> openCurrentOrder(WidgetTester tester) async {
-      await tester.tap(centerItem);
+      unawaited(cubit(tester).load());
+      unawaited(
+        GoRouter.of(
+          tester.element(find.byType(AppNavBar)),
+        ).push(RoutesString.currentOrder),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(CurrentOrderScreen), findsOneWidget);
     }
 
-    testWidgets('nothing is looked up until the captain opens it', (
+    testWidgets('startup looks the order up once; no location read', (
       tester,
     ) async {
-      await launch(tester);
-      expect(orders.calls, 0);
+      final probe = FakeActiveOrderRepository();
+      orders = probe;
+      await tester.pumpWidget(
+        MainApp(
+          connectivityService: internet,
+          authRepository: auth,
+          activeOrderRepository: probe,
+          captainLocationRepository: location,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(probe.calls, 1);
       expect(location.calls, 0);
-      expect(bar(tester).hasActiveOrder, isFalse);
-      expect(bar(tester).isCheckingActiveOrder, isFalse);
+      expect(find.byType(HomeScreen), findsOneWidget);
     });
 
-    testWidgets('tap looks the order up; it is not an order-creation screen', (
+    testWidgets('the page is read-only and above the shell (no bar)', (
       tester,
     ) async {
       await launch(tester);
@@ -347,7 +360,8 @@ void main() {
       expect(find.byType(TextField), findsNothing);
       expect(find.byType(Form), findsNothing);
       expect(find.byIcon(Icons.add), findsNothing);
-      expect(find.text(l10n.currentOrderTitle), findsNWidgets(2));
+      expect(find.text(l10n.currentOrderTitle), findsOneWidget);
+      expect(find.byType(MainNavigationBar), findsNothing);
     });
 
     testWidgets('no active order → localized empty state, no map, no toast', (
@@ -361,9 +375,6 @@ void main() {
       expect(find.byType(SnackBar), findsNothing);
       expect(mapRequests, isEmpty);
       expect(location.calls, 0);
-      expect(bar(tester).hasActiveOrder, isFalse);
-      // Still on the Current Order destination.
-      expect(bar(tester).selectedIndex, MainNavDestination.currentOrder.index);
 
       // Refresh asks again.
       await tester.tap(find.widgetWithText(FilledButton, l10n.refresh));
@@ -371,28 +382,29 @@ void main() {
       expect(orders.calls, 2);
     });
 
-    testWidgets('duplicate taps while loading start one lookup only', (
+    testWidgets('duplicate refresh taps while loading start one lookup only', (
       tester,
     ) async {
       await launch(tester);
       orders.pending = Completer<void>();
-      await tester.tap(centerItem);
+      unawaited(cubit(tester).load());
+      unawaited(
+        GoRouter.of(
+          tester.element(find.byType(AppNavBar)),
+        ).push(RoutesString.currentOrder),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      // Loading is shown on the screen and inside the bar's button.
       expect(find.text(l10n.currentOrderLoading), findsOneWidget);
-      expect(spinner, findsOneWidget);
-      expect(bar(tester).hasActiveOrder, isFalse);
 
-      await tester.tap(centerItem);
+      await tester.tap(find.byTooltip(l10n.refresh));
       await tester.pump();
-      await tester.tap(centerItem);
+      await tester.tap(find.byTooltip(l10n.refresh));
       await tester.pump();
       expect(orders.calls, 1);
 
       orders.pending!.complete();
       await tester.pumpAndSettle();
-      expect(spinner, findsNothing);
       expect(find.text(l10n.currentOrderEmptyTitle), findsOneWidget);
     });
 
@@ -406,7 +418,6 @@ void main() {
       expect(find.text(l10n.serviceUnavailableMessage), findsOneWidget);
       // A failure is neither "empty" nor "active".
       expect(find.text(l10n.currentOrderEmptyTitle), findsNothing);
-      expect(bar(tester).hasActiveOrder, isFalse);
 
       orders
         ..error = null
@@ -442,7 +453,6 @@ void main() {
       // Nothing to retry: no Retry button in the body.
       expect(find.widgetWithText(FilledButton, l10n.retry), findsNothing);
       expect(find.byType(ActiveOrderPickupView), findsNothing);
-      expect(bar(tester).hasActiveOrder, isFalse);
     });
 
     test('the three outcomes have three different Arabic messages', () {
@@ -487,18 +497,19 @@ void main() {
           matching: find.byType(AppBar),
         ),
       );
-      final navBar = tester.getRect(find.byType(MainNavigationBar));
+      // Standalone page: the body runs to the screen bottom.
+      const bodyBottom = 874.0;
       final icon = tester.getRect(
         find.byIcon(PhosphorIconsRegular.warningCircle),
       );
       final button = tester.getRect(
         find.widgetWithText(FilledButton, l10n.retry),
       );
-      final bodyCenter = (header.bottom + navBar.top) / 2;
+      final bodyCenter = (header.bottom + bodyBottom) / 2;
       final groupCenter = (icon.top + button.bottom) / 2;
       expect(groupCenter, moreOrLessEquals(bodyCenter, epsilon: 0.5));
       expect(icon.top, greaterThan(header.bottom));
-      expect(button.bottom, lessThan(navBar.top));
+      expect(button.bottom, lessThan(bodyBottom - 34));
     });
 
     testWidgets('active order → map for that order at the restaurant pickup', (
@@ -514,8 +525,8 @@ void main() {
       expect(find.text(l10n.pickupInstructionsLabel), findsOneWidget);
       expect(find.text(testActiveOrder.pickupInstructions!), findsOneWidget);
       expect(find.text('fake-map'), findsOneWidget);
-      // The shell stays around the map.
-      expect(find.byType(MainNavigationBar), findsOneWidget);
+      // A standalone page: no tab bar around the map (D-A73).
+      expect(find.byType(MainNavigationBar), findsNothing);
 
       final shown = mapRequests.last;
       expect(shown.orderId, testActiveOrder.orderId);
@@ -528,30 +539,15 @@ void main() {
       expect(location.calls, 1);
     });
 
-    testWidgets('selected branch and active order are independent in the bar', (
-      tester,
-    ) async {
+    testWidgets('completed elsewhere: a confirmed absence replaces the shown '
+        'order on the next read', (tester) async {
       await launch(tester);
       orders.order = testActiveOrder;
       await openCurrentOrder(tester);
-      final center = MainNavDestination.currentOrder.index;
-      expect(bar(tester).selectedIndex, center);
-      expect(bar(tester).hasActiveOrder, isTrue);
-
-      // Leave the branch: no longer selected, still an active order.
-      await tester.tap(
-        find.byKey(MainNavigationBar.itemKey(MainNavDestination.home)),
-      );
-      await tester.pumpAndSettle();
-      expect(bar(tester).selectedIndex, MainNavDestination.home.index);
-      expect(bar(tester).hasActiveOrder, isTrue);
-
-      // The order ends on the server; coming back revalidates.
+      expect(find.byType(ActiveOrderPickupView), findsOneWidget);
       orders.order = null;
-      await openCurrentOrder(tester);
-      expect(orders.calls, 2);
-      expect(bar(tester).selectedIndex, center);
-      expect(bar(tester).hasActiveOrder, isFalse);
+      await cubit(tester).refreshed();
+      await tester.pumpAndSettle();
       expect(find.text(l10n.currentOrderEmptyTitle), findsOneWidget);
       expect(find.byType(ActiveOrderPickupView), findsNothing);
     });
@@ -572,7 +568,6 @@ void main() {
       expect(find.text(l10n.pickupPointLabel), findsOneWidget);
       expect(find.text('مطعم بلا موقع'), findsOneWidget);
       expect(find.text('اتصل عند الوصول'), findsOneWidget);
-      expect(bar(tester).hasActiveOrder, isTrue);
       // Not confused with "no order" or a lookup failure.
       expect(find.text(l10n.currentOrderEmptyTitle), findsNothing);
       expect(find.text(l10n.currentOrderLoadFailedTitle), findsNothing);
@@ -670,14 +665,27 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('direct route entry starts exactly one lookup', (tester) async {
-      await launch(tester);
+    testWidgets('a deep link shows the already-resolved state without a '
+        'second lookup', (tester) async {
       orders.order = testActiveOrder;
+      await tester.pumpWidget(
+        MainApp(
+          connectivityService: internet,
+          authRepository: auth,
+          activeOrderRepository: orders,
+          captainLocationRepository: location,
+          pickupMapBuilder: fakeMap,
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Startup recovery already opened it (D-A73).
+      expect(find.byType(CurrentOrderScreen), findsOneWidget);
+      final calls = orders.calls;
       GoRouter.of(
-        tester.element(find.byType(AppNavBar)),
+        tester.element(find.byType(CurrentOrderScreen)),
       ).go(RoutesString.currentOrder);
       await tester.pumpAndSettle();
-      expect(orders.calls, 1);
+      expect(orders.calls, calls);
       expect(mapRequests.last.orderId, testActiveOrder.orderId);
     });
 
@@ -698,8 +706,14 @@ void main() {
       orders
         ..pending = Completer<void>()
         ..order = testActiveOrder;
-      await tester.tap(centerItem);
+      unawaited(cubit(tester).load());
+      unawaited(
+        GoRouter.of(
+          tester.element(find.byType(AppNavBar)),
+        ).push(RoutesString.currentOrder),
+      );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final session = tester
           .element(find.byType(CurrentOrderScreen))
           .read<AppSessionCubit>();
@@ -715,7 +729,7 @@ void main() {
     });
 
     group('layout', () {
-      testWidgets('empty state is centered between the header and the bar', (
+      testWidgets('empty state is centered in the body below the header', (
         tester,
       ) async {
         setScreenSize(tester, 375, 800);
@@ -730,7 +744,8 @@ void main() {
             matching: find.byType(AppBar),
           ),
         );
-        final navBar = tester.getRect(find.byType(MainNavigationBar));
+        // A standalone page: the body ends above the bottom inset.
+        const bodyBottom = 800.0 - 34;
         final title = tester.getRect(find.text(l10n.currentOrderEmptyTitle));
         final button = tester.getRect(
           find.widgetWithText(FilledButton, l10n.refresh),
@@ -743,9 +758,9 @@ void main() {
         );
         // The group sits fully inside the body…
         expect(title.top, greaterThan(header.bottom));
-        expect(button.bottom, lessThan(navBar.top));
+        expect(button.bottom, lessThan(bodyBottom));
         // …and around the middle of the body, not of the physical screen.
-        final bodyCenter = (header.bottom + navBar.top) / 2;
+        final bodyCenter = (header.bottom + 800) / 2;
         final icon = tester.getRect(
           find.descendant(
             of: find.byType(CurrentOrderScreen),

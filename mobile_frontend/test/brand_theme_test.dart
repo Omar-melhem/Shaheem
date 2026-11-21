@@ -1,4 +1,4 @@
-// Tests for the D-A63 visual foundation: exact brand colors, the bundled
+// Tests for the visual foundation: the D-A69 red/white/neutral palette, the bundled
 // IBM Plex Sans Arabic family, Ink default text, the input border contrast,
 // and the Login screen rendered with them (including large text sizes).
 
@@ -48,34 +48,87 @@ void main() {
     await loader.load();
   });
 
-  group('brand tokens (D-A63)', () {
-    test('the five approved base values are exact', () {
-      expect(AppColor.primary, const Color(0xFF8C2335));
-      expect(AppColor.secondary, const Color(0xFF263D34));
-      expect(AppColor.cream, const Color(0xFFF5F0E8));
-      expect(AppColor.background, const Color(0xFFF5F0E8));
-      expect(AppColor.sand, const Color(0xFFC8A98A));
-      expect(AppColor.ink, const Color(0xFF242424));
-      expect(AppColor.textPrimary, AppColor.ink);
+  group('palette (D-A69, red/white/neutral)', () {
+    test('semantic roles have the approved values', () {
+      expect(AppColor.primary, const Color(0xFFC62828));
+      expect(AppColor.onPrimary, const Color(0xFFFFFFFF));
+      expect(AppColor.primaryPressed, const Color(0xFFA61B1B));
+      expect(AppColor.primaryContainer, const Color(0xFFFDECEC));
+      expect(AppColor.onPrimaryContainer, const Color(0xFF8F1D1D));
+      expect(AppColor.background, const Color(0xFFFFFFFF));
+      expect(AppColor.surface, const Color(0xFFFFFFFF));
+      expect(AppColor.surfaceContainer, const Color(0xFFF5F5F5));
+      expect(AppColor.textPrimary, const Color(0xFF171717));
+      expect(AppColor.textSecondary, const Color(0xFF616161));
+      expect(AppColor.navSelected, AppColor.textPrimary);
+      expect(AppColor.navUnselected, AppColor.textSecondary);
+      expect(AppColor.inputOutline, const Color(0xFF737373));
+      expect(AppColor.divider, const Color(0xFFE5E5E5));
+      expect(AppColor.selectedTabContainer, const Color(0xFFEEEEEE));
+      expect(AppColor.disabledBackground, const Color(0xFFF0F0F0));
+      expect(AppColor.disabledForeground, const Color(0xFF767676));
+      expect(AppColor.success, const Color(0xFF166534));
+      expect(AppColor.error, const Color(0xFFB91C1C));
+      expect(AppColor.warning, const Color(0xFF92400E));
+      expect(AppColor.focus, const Color(0xFF171717));
     });
 
-    test('theme maps the brand values', () {
+    test('theme maps the roles; secondary is neutral, not success', () {
       final theme = AppTheme.light;
-      expect(theme.colorScheme.primary, AppColor.primary);
-      expect(theme.colorScheme.secondary, AppColor.secondary);
-      expect(theme.colorScheme.onSurface, AppColor.ink);
-      expect(theme.colorScheme.surface, AppColor.white);
-      expect(theme.scaffoldBackgroundColor, AppColor.cream);
+      final c = theme.colorScheme;
+      expect(c.primary, AppColor.primary);
+      expect(c.onPrimary, AppColor.onPrimary);
+      expect(c.primaryContainer, AppColor.primaryContainer);
+      expect(c.secondary, AppColor.textPrimary);
+      expect(c.secondary, isNot(AppColor.success));
+      expect(c.onSurface, AppColor.textPrimary);
+      expect(c.surface, AppColor.white);
+      expect(c.error, AppColor.error);
+      expect(c.outline, AppColor.inputOutline);
+      expect(c.outlineVariant, AppColor.divider);
+      expect(c.surfaceTint, Colors.transparent);
+      expect(theme.scaffoldBackgroundColor, AppColor.white);
+      expect(theme.appBarTheme.backgroundColor, AppColor.white);
+      expect(theme.appBarTheme.scrolledUnderElevation, 0);
+      expect(theme.appBarTheme.surfaceTintColor, Colors.transparent);
     });
 
-    test('input border reaches 3:1 on the white fill and cream background', () {
+    test('contrast on white meets the text and non-text minimums', () {
+      expect(contrast(AppColor.primary, AppColor.white), greaterThan(5.5));
+      expect(contrast(AppColor.onPrimary, AppColor.primary), greaterThan(5.5));
       expect(
-        contrast(AppColor.inputBorder, AppColor.surface),
-        greaterThanOrEqualTo(3),
+        contrast(AppColor.onPrimary, AppColor.primaryPressed),
+        greaterThan(7),
+      );
+      expect(contrast(AppColor.textPrimary, AppColor.white), greaterThan(17));
+      expect(contrast(AppColor.textSecondary, AppColor.white), greaterThan(6));
+      expect(
+        contrast(AppColor.onPrimaryContainer, AppColor.primaryContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(contrast(AppColor.inputOutline, AppColor.white), greaterThan(4.5));
+      expect(
+        contrast(AppColor.success, AppColor.white),
+        greaterThanOrEqualTo(4.5),
       );
       expect(
-        contrast(AppColor.inputBorder, AppColor.background),
-        greaterThanOrEqualTo(3),
+        contrast(AppColor.warning, AppColor.white),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(AppColor.error, AppColor.white),
+        greaterThanOrEqualTo(4.5),
+      );
+      // Disabled controls are exempt from WCAG 1.4.3; still kept legible
+      // (3.99:1 measured).
+      expect(
+        contrast(AppColor.disabledForeground, AppColor.disabledBackground),
+        greaterThan(3.9),
+      );
+      // Selected tab content on its neutral pill.
+      expect(
+        contrast(AppColor.navSelected, AppColor.selectedTabContainer),
+        greaterThan(15),
       );
     });
 
@@ -126,7 +179,7 @@ void main() {
         t.labelLarge,
       ]) {
         expect(style!.fontFamily, AppFonts.ibmPlexSansArabic);
-        expect(style.color, AppColor.ink);
+        expect(style.color, AppColor.textPrimary);
       }
       expect(AppFonts.ibmPlexSansArabic.contains('/'), isFalse);
     });
@@ -135,7 +188,7 @@ void main() {
       await tester.pumpWidget(testApp(const Headline4(title: 'عنوان')));
       final text = tester.widget<Text>(find.byType(Text));
       expect(text.style!.fontFamily, AppFonts.ibmPlexSansArabic);
-      expect(text.style!.color, AppColor.ink);
+      expect(text.style!.color, AppColor.textPrimary);
       expect(text.style!.fontWeight, FontWeight.bold);
     });
   });
@@ -172,7 +225,7 @@ void main() {
         find.byType(EditableText),
       )) {
         expect(e.style.fontFamily, AppFonts.ibmPlexSansArabic);
-        expect(e.style.color, AppColor.ink);
+        expect(e.style.color, AppColor.textPrimary);
       }
 
       final scaffold = tester.widget<Scaffold>(
@@ -183,10 +236,10 @@ void main() {
       );
       expect(
         scaffold.backgroundColor ?? AppTheme.light.scaffoldBackgroundColor,
-        AppColor.cream,
+        AppColor.white,
       );
       final title = tester.widget<Text>(find.text(l10n.loginTitle).first);
-      expect(title.style?.color, AppColor.ink);
+      expect(title.style?.color, AppColor.textPrimary);
 
       final button = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, l10n.loginButton),
@@ -200,11 +253,11 @@ void main() {
         expect(d.fillColor, AppColor.surface);
         expect(
           (d.enabledBorder! as OutlineInputBorder).borderSide.color,
-          AppColor.inputBorder,
+          AppColor.inputOutline,
         );
         expect(
           (d.focusedBorder! as OutlineInputBorder).borderSide.color,
-          AppColor.primary,
+          AppColor.focus,
         );
       }
     });

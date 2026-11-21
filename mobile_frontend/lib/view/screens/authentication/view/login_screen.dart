@@ -134,7 +134,7 @@ class LoginScreen extends StatelessWidget {
                       Container(
                         height: 1,
                         width: MediaQuery.sizeOf(context).width * 0.1,
-                        color: AppColor.lightFont,
+                        color: AppColor.divider,
                       ),
                       Center(
                         child: LoginTermsAction(

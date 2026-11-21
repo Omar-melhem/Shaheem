@@ -80,10 +80,10 @@ class AppToast extends StatelessWidget {
   /// Background color per type, from existing theme/brand tokens (C-13).
   static Color backgroundFor(BuildContext context, AppToastType type) =>
       switch (type) {
-        AppToastType.success => AppColor.secondary,
+        AppToastType.success => AppColor.success,
         AppToastType.error => Theme.of(context).colorScheme.error,
-        AppToastType.warning => AppColor.sandDark,
-        AppToastType.info => AppColor.ink,
+        AppToastType.warning => AppColor.warning,
+        AppToastType.info => AppColor.textPrimary,
       };
 
   static IconData _iconFor(AppToastType type) => switch (type) {

@@ -1,6 +1,6 @@
 // Widget tests for the shared custom components: AppTextFormField,
-// AppButton, AppTextButton, AppPopup, AppToast, AppStatusMessage and
-// UnderConstructionPlaceholder — in Arabic RTL.
+// AppButton, AppTextButton, AppPopup, AppToast and AppStatusMessage, in
+// Arabic RTL.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -13,14 +13,10 @@ import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/util/tools/tools.dart';
-import 'package:mobile_frontend/view/screens/notifications_screen/view/notifications_screen.dart';
-import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
-import 'package:mobile_frontend/view/screens/profile_screen/view/profile_screen.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_icon_position.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
-import 'package:mobile_frontend/view/widget/placeholder/under_construction_placeholder.dart';
 import 'package:mobile_frontend/view/widget/status/app_status_message.dart';
 import 'package:mobile_frontend/view/widget/text_field/app_text_form_field.dart';
 import 'package:mobile_frontend/view/widget/toast/app_toast.dart';
@@ -460,27 +456,29 @@ void main() {
           final colors = AppTheme.light.colorScheme;
           final d = decoration(tester);
 
-          expect(side(d.border), const BorderSide(color: AppColor.inputBorder));
           expect(
-            side(d.enabledBorder),
-            const BorderSide(color: AppColor.inputBorder),
+            side(d.border),
+            const BorderSide(color: AppColor.inputOutline),
           );
           expect(
+            side(d.enabledBorder),
+            const BorderSide(color: AppColor.inputOutline),
+          );
+          // D-A69: dark focus outline with a wider stroke (not color alone).
+          expect(
             side(d.focusedBorder),
-            BorderSide(color: colors.primary, width: 1.5),
+            const BorderSide(color: AppColor.focus, width: 2),
           );
           expect(side(d.errorBorder), BorderSide(color: colors.error));
           expect(
             side(d.focusedErrorBorder),
-            BorderSide(color: colors.error, width: 1.5),
+            BorderSide(color: colors.error, width: 2),
           );
-          // Pre-existing Material 3 filled-field fallback, now explicit:
-          // onSurface with Flutter's withOpacity(0.38) alpha.
+          expect(colors.error, AppColor.error);
+          // D-A69 disabled field boundary.
           expect(
             side(d.disabledBorder),
-            BorderSide(
-              color: colors.onSurface.withAlpha((255.0 * 0.38).round()),
-            ),
+            const BorderSide(color: AppColor.divider),
           );
           expect(
             (d.enabledBorder! as OutlineInputBorder).borderRadius,
@@ -506,15 +504,15 @@ void main() {
             child: AppTextFormField(
               label: 'L',
               style: AppTextFieldStyle(
-                borderColor: AppColor.sandDark,
+                borderColor: AppColor.warning,
                 borderWidth: 3,
-                focusedBorderColor: AppColor.secondary,
+                focusedBorderColor: AppColor.success,
                 focusedBorderWidth: 4,
-                errorBorderColor: AppColor.primary700,
+                errorBorderColor: AppColor.onPrimaryContainer,
                 errorBorderWidth: 5,
-                focusedErrorBorderColor: AppColor.primary300,
+                focusedErrorBorderColor: AppColor.primaryPressed,
                 focusedErrorBorderWidth: 6,
-                disabledBorderColor: AppColor.sandLight,
+                disabledBorderColor: AppColor.divider,
                 disabledBorderWidth: 7,
                 borderRadius: 4,
               ),
@@ -524,24 +522,24 @@ void main() {
         final d = decoration(tester);
         expect(
           side(d.enabledBorder),
-          const BorderSide(color: AppColor.sandDark, width: 3),
+          const BorderSide(color: AppColor.warning, width: 3),
         );
         expect(side(d.border), side(d.enabledBorder));
         expect(
           side(d.focusedBorder),
-          const BorderSide(color: AppColor.secondary, width: 4),
+          const BorderSide(color: AppColor.success, width: 4),
         );
         expect(
           side(d.errorBorder),
-          const BorderSide(color: AppColor.primary700, width: 5),
+          const BorderSide(color: AppColor.onPrimaryContainer, width: 5),
         );
         expect(
           side(d.focusedErrorBorder),
-          const BorderSide(color: AppColor.primary300, width: 6),
+          const BorderSide(color: AppColor.primaryPressed, width: 6),
         );
         expect(
           side(d.disabledBorder),
-          const BorderSide(color: AppColor.sandLight, width: 7),
+          const BorderSide(color: AppColor.divider, width: 7),
         );
         expect(
           (d.focusedBorder! as OutlineInputBorder).borderRadius,
@@ -565,9 +563,9 @@ void main() {
         final d = decoration(tester);
         expect(
           side(d.enabledBorder),
-          const BorderSide(color: AppColor.inputBorder, width: 2),
+          const BorderSide(color: AppColor.inputOutline, width: 2),
         );
-        expect(side(d.focusedBorder).width, 1.5);
+        expect(side(d.focusedBorder).width, 2);
         expect(side(d.errorBorder).width, 1);
         expect(side(d.disabledBorder).width, 1);
       });
@@ -575,12 +573,12 @@ void main() {
       testWidgets('text styles, fill, cursor, padding and error lines apply', (
         tester,
       ) async {
-        const text = TextStyle(color: AppColor.secondary, fontSize: 18);
+        const text = TextStyle(color: AppColor.success, fontSize: 18);
         const label = TextStyle(color: AppColor.primary);
-        const floating = TextStyle(color: AppColor.primary700);
+        const floating = TextStyle(color: AppColor.onPrimaryContainer);
         const hint = TextStyle(color: AppColor.textSecondary);
-        const helper = TextStyle(color: AppColor.sandDark);
-        const error = TextStyle(color: AppColor.primary700);
+        const helper = TextStyle(color: AppColor.warning);
+        const error = TextStyle(color: AppColor.onPrimaryContainer);
         const padding = EdgeInsetsDirectional.only(start: 4, end: 8);
         await pump(
           tester,
@@ -598,7 +596,7 @@ void main() {
                 errorStyle: error,
                 errorMaxLines: 5,
                 fillColor: AppColor.background,
-                cursorColor: AppColor.secondary,
+                cursorColor: AppColor.success,
                 contentPadding: padding,
               ),
             ),
@@ -613,10 +611,10 @@ void main() {
         expect(d.errorMaxLines, 5);
         expect(d.fillColor, AppColor.background);
         expect(d.contentPadding, padding);
-        expect(editable(tester).style.color, AppColor.secondary);
+        expect(editable(tester).style.color, AppColor.success);
         expect(editable(tester).style.fontSize, 18);
         // While an error shows, Flutter colors the cursor with errorStyle.
-        expect(editable(tester).cursorColor, AppColor.primary700);
+        expect(editable(tester).cursorColor, AppColor.onPrimaryContainer);
 
         await pump(
           tester,
@@ -624,18 +622,18 @@ void main() {
             width: 300,
             child: AppTextFormField(
               label: 'L',
-              style: AppTextFieldStyle(cursorColor: AppColor.secondary),
+              style: AppTextFieldStyle(cursorColor: AppColor.success),
             ),
           ),
         );
-        expect(editable(tester).cursorColor, AppColor.secondary);
+        expect(editable(tester).cursorColor, AppColor.success);
       });
     });
 
     group('AppTextFieldStyle.merge', () {
       test('non-null values win; null never erases', () {
         const base = AppTextFieldStyle(
-          borderColor: AppColor.sandDark,
+          borderColor: AppColor.warning,
           borderWidth: 1,
           fillColor: AppColor.surface,
         );
@@ -647,7 +645,7 @@ void main() {
         );
         expect(merged.borderWidth, 2);
         expect(merged.cursorColor, AppColor.primary);
-        expect(merged.borderColor, AppColor.sandDark);
+        expect(merged.borderColor, AppColor.warning);
         expect(merged.fillColor, AppColor.surface);
         expect(identical(base.merge(null), base), isTrue);
       });
@@ -913,32 +911,32 @@ void main() {
           AppButton(
             label: 'Go',
             icon: const Icon(Icons.add),
-            textStyle: const TextStyle(color: AppColor.cream),
+            textStyle: const TextStyle(color: AppColor.primaryContainer),
             onPressed: () {},
           ),
         );
-        expect(labelStyle(tester, 'Go').color, AppColor.cream);
-        expect(iconColor(tester, Icons.add), AppColor.cream);
+        expect(labelStyle(tester, 'Go').color, AppColor.primaryContainer);
+        expect(iconColor(tester, Icons.add), AppColor.primaryContainer);
 
         await show(
           tester,
           AppButton(
             label: 'Go',
             icon: const Icon(Icons.add),
-            textStyle: const TextStyle(color: AppColor.cream),
-            foregroundColor: AppColor.secondary,
+            textStyle: const TextStyle(color: AppColor.primaryContainer),
+            foregroundColor: AppColor.success,
             onPressed: () {},
           ),
         );
-        expect(labelStyle(tester, 'Go').color, AppColor.secondary);
-        expect(iconColor(tester, Icons.add), AppColor.secondary);
+        expect(labelStyle(tester, 'Go').color, AppColor.success);
+        expect(iconColor(tester, Icons.add), AppColor.success);
 
         await show(
           tester,
           AppButton(
             label: 'Go',
             isLoading: true,
-            textStyle: const TextStyle(color: AppColor.cream),
+            textStyle: const TextStyle(color: AppColor.primaryContainer),
             onPressed: () {},
           ),
         );
@@ -948,7 +946,7 @@ void main() {
                 find.byType(CircularProgressIndicator),
               )
               .color,
-          AppColor.cream,
+          AppColor.primaryContainer,
         );
       });
 
@@ -957,12 +955,12 @@ void main() {
           tester,
           AppButton(
             label: 'Go',
-            icon: const Icon(Icons.add, color: AppColor.sand),
-            foregroundColor: AppColor.secondary,
+            icon: const Icon(Icons.add, color: AppColor.selectedTabContainer),
+            foregroundColor: AppColor.success,
             onPressed: () {},
           ),
         );
-        expect(iconColor(tester, Icons.add), AppColor.sand);
+        expect(iconColor(tester, Icons.add), AppColor.selectedTabContainer);
       });
 
       testWidgets('background, radius, border and padding render', (
@@ -973,18 +971,15 @@ void main() {
           AppButton(
             label: 'Go',
             onPressed: () {},
-            backgroundColor: AppColor.secondary,
+            backgroundColor: AppColor.success,
             borderRadius: 4,
-            border: const BorderSide(color: AppColor.sandDark, width: 2),
+            border: const BorderSide(color: AppColor.warning, width: 2),
           ),
         );
-        expect(surface(tester).color, AppColor.secondary);
+        expect(surface(tester).color, AppColor.success);
         final shape = surface(tester).shape! as RoundedRectangleBorder;
         expect(shape.borderRadius, BorderRadius.circular(4));
-        expect(
-          shape.side,
-          const BorderSide(color: AppColor.sandDark, width: 2),
-        );
+        expect(shape.side, const BorderSide(color: AppColor.warning, width: 2));
 
         await show(tester, AppButton(label: 'Go', onPressed: () {}));
         final normal = tester.getSize(find.byType(FilledButton));
@@ -1034,15 +1029,15 @@ void main() {
           const AppButton(
             label: 'Go',
             icon: Icon(Icons.add),
-            backgroundColor: AppColor.secondary,
-            foregroundColor: AppColor.cream,
+            backgroundColor: AppColor.success,
+            foregroundColor: AppColor.primaryContainer,
             onPressed: null,
           ),
         );
-        final onSurface = AppTheme.light.colorScheme.onSurface;
-        expect(surface(tester).color, onSurface.withAlpha(31));
-        expect(labelStyle(tester, 'Go').color, onSurface.withAlpha(97));
-        expect(iconColor(tester, Icons.add), onSurface.withAlpha(97));
+        // The theme's D-A69 disabled colors win over per-call colors.
+        expect(surface(tester).color, AppColor.disabledBackground);
+        expect(labelStyle(tester, 'Go').color, AppColor.disabledForeground);
+        expect(iconColor(tester, Icons.add), AppColor.disabledForeground);
       });
 
       testWidgets('semantics: enabled, disabled and loading differ', (
@@ -1264,12 +1259,12 @@ void main() {
           AppTextButton(
             label: 'Delete',
             icon: const Icon(Icons.delete_outline),
-            color: AppColor.secondary,
+            color: AppColor.success,
             onPressed: () {},
           ),
         );
-        expect(label(tester, 'Delete').color, AppColor.secondary);
-        expect(iconColor(tester, Icons.delete_outline), AppColor.secondary);
+        expect(label(tester, 'Delete').color, AppColor.success);
+        expect(iconColor(tester, Icons.delete_outline), AppColor.success);
         expect(tester.getSize(find.byType(Icon)), const Size(18, 18));
       });
 
@@ -1281,23 +1276,23 @@ void main() {
           AppTextButton(
             label: 'More',
             icon: const Icon(Icons.add),
-            textStyle: const TextStyle(color: AppColor.secondary),
+            textStyle: const TextStyle(color: AppColor.success),
             onPressed: () {},
           ),
         );
-        expect(label(tester, 'More').color, AppColor.secondary);
-        expect(iconColor(tester, Icons.add), AppColor.secondary);
+        expect(label(tester, 'More').color, AppColor.success);
+        expect(iconColor(tester, Icons.add), AppColor.success);
 
         await show(
           tester,
           AppTextButton(
             label: 'More',
-            textStyle: const TextStyle(color: AppColor.secondary),
-            color: AppColor.ink,
+            textStyle: const TextStyle(color: AppColor.success),
+            color: AppColor.textPrimary,
             onPressed: () {},
           ),
         );
-        expect(label(tester, 'More').color, AppColor.ink);
+        expect(label(tester, 'More').color, AppColor.textPrimary);
       });
 
       testWidgets('textStyle merges over the default weight and family', (
@@ -2208,10 +2203,10 @@ void main() {
             AppToastType.info => Icons.info_outline,
           };
           final expectedColor = switch (type) {
-            AppToastType.success => AppColor.secondary,
+            AppToastType.success => AppColor.success,
             AppToastType.error => AppTheme.light.colorScheme.error,
-            AppToastType.warning => AppColor.sandDark,
-            AppToastType.info => AppColor.ink,
+            AppToastType.warning => AppColor.warning,
+            AppToastType.info => AppColor.textPrimary,
           };
           expect(find.byIcon(expectedIcon), findsOneWidget);
           expect(
@@ -3056,105 +3051,5 @@ void main() {
       );
       expect(calls, 1);
     });
-
-    testWidgets('UnderConstructionPlaceholder: heading, message, no action', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      await pumpStatus(
-        tester,
-        const UnderConstructionPlaceholder(icon: Icons.map, message: message),
-      );
-      expect(find.text(l10n.underConstructionTitle), findsOneWidget);
-      expect(find.text(message), findsOneWidget);
-      expect(find.byType(AppButton), findsNothing);
-      expect(
-        find.bySemanticsLabel('${l10n.underConstructionTitle}\n$message'),
-        findsOneWidget,
-      );
-      semantics.dispose();
-    });
-  });
-
-  group('UnderConstructionPlaceholder', () {
-    testWidgets('delegates the ARB heading, exact message and icon', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        testApp(
-          const UnderConstructionPlaceholder(
-            icon: Icons.map,
-            message: 'جملة الشاشة',
-          ),
-        ),
-      );
-      final status = tester.widget<AppStatusMessage>(
-        find.byType(AppStatusMessage),
-      );
-      expect(status.title, l10n.underConstructionTitle);
-      expect(status.message, 'جملة الشاشة');
-      expect(status.icon, Icons.map);
-      // Informational only: no action and no loading state.
-      expect(status.actionLabel, isNull);
-      expect(status.onAction, isNull);
-      expect(status.isLoading, isFalse);
-      expect(find.text(l10n.underConstructionTitle), findsOneWidget);
-    });
-
-    testWidgets('a blank message is rejected by AppStatusMessage', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        testApp(
-          const UnderConstructionPlaceholder(icon: Icons.map, message: ' '),
-        ),
-      );
-      expect(tester.takeException(), isAssertionError);
-    });
-
-    final screens = <String, (Widget, String)>{
-      'Notifications': (
-        const NotificationsScreen(),
-        l10n.notificationsPlaceholderMessage,
-      ),
-      'Order History': (
-        const OrderHistoryScreen(),
-        l10n.orderHistoryPlaceholderMessage,
-      ),
-      'Profile': (const ProfileScreen(), l10n.profilePlaceholderMessage),
-    };
-    for (final MapEntry(key: name, value: (screen, message))
-        in screens.entries) {
-      testWidgets(
-        '$name screen at 320×300, text scale 3: readable, no overflow',
-        (tester) async {
-          final semantics = tester.ensureSemantics();
-          setScreenSize(tester, 320, 300);
-          tester.platformDispatcher.textScaleFactorTestValue = 3;
-          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-          await tester.pumpWidget(testApp(screen));
-          expect(tester.takeException(), isNull);
-          for (final text in [l10n.underConstructionTitle, message]) {
-            expect(
-              tester
-                  .renderObject<RenderParagraph>(find.text(text))
-                  .didExceedMaxLines,
-              isFalse,
-            );
-          }
-          // One status announcement: heading then message, nothing repeated.
-          expect(
-            find.bySemanticsLabel('${l10n.underConstructionTitle}\n$message'),
-            findsOneWidget,
-          );
-          expect(
-            find.bySemanticsLabel(RegExp(l10n.underConstructionTitle)),
-            findsOneWidget,
-          );
-          expect(find.byType(AppButton), findsNothing);
-          semantics.dispose();
-        },
-      );
-    }
   });
 }

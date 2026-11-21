@@ -16,7 +16,7 @@ import 'package:mobile_frontend/util/fonts.dart';
 /// `TextThemeStyle.bodyText1.copyWith(color: AppColor.primary)`.
 ///
 /// Font family: IBM Plex Sans Arabic ([AppFonts.ibmPlexSansArabic]), bundled
-/// and registered in `pubspec.yaml`. Default color: Ink ([AppColor.ink]).
+/// and registered in `pubspec.yaml`. Default color: Ink ([AppColor.textPrimary]).
 abstract final class TextThemeStyle {
   /// Font used by every style. Kept in one place so a future locale-based
   /// choice only needs to change here.
@@ -26,84 +26,84 @@ abstract final class TextThemeStyle {
     fontFamily: _fontFamily,
     fontSize: 38.0,
     fontWeight: FontWeight.w600,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline1 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 36.0,
     fontWeight: FontWeight.w600,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline2 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 26.0,
     fontWeight: FontWeight.w600,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline3 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 24.0,
     fontWeight: FontWeight.w600,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline4 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 20.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline5 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 16.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle headline6 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 14.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle bodyText1 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 15.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle bodyText2 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 13.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle subtitle2 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 12.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle subtitle1 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 10.0,
     fontWeight: FontWeight.w400,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
   static const TextStyle caption = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 9.0,
     fontWeight: FontWeight.w300,
-    color: AppColor.ink,
+    color: AppColor.textPrimary,
     height: 1.2,
   );
 }

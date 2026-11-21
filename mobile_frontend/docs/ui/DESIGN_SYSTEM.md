@@ -1,6 +1,6 @@
 # SHAHM Flutter — Design System
 
-**Approved target (owner confirmation through 2026-11-14).** Descriptions of 2026-11-11 code below must not be mistaken for completed migration. Check `PROJECT_STATUS.md` before claiming colors/fonts/components are changed in Flutter.
+**Current target: red/white/neutral theme (D-A69, client revision 2026-11-20).** Check `PROJECT_STATUS.md` §0 before claiming a component has been migrated in Flutter.
 
 Colors, typography, fonts, RTL, localization, responsive breakpoints and
 assets. Component APIs (text
@@ -15,84 +15,65 @@ C-20, C-21, C-22, C-36.
 
 ## 1. Colors (`lib/theme/app_color.dart`, class `AppColor`)
 
-**Final SHAHM brand palette (D-A63):**
+**Semantic palette (D-A69).** The exact shades are an implementation
+selection for the owner's red/white direction, centralized so they can be
+revised in one place. There is one brand palette; the former
+maroon/forest/cream/sand tokens (D-A63) are superseded.
 
-| Role | Base value |
-|---|---|
-| Primary maroon | `#8C2335` |
-| Secondary forest green | `#263D34` |
-| Cream background | `#F5F0E8` |
-| Sand accent | `#C8A98A` |
-| Ink — default text, including Headline4 | `#242424` |
+| Semantic role | Hex | Use |
+|---|---|---|
+| `primary` | `#C62828` | Prominent primary actions, including Accept |
+| `onPrimary` | `#FFFFFF` | Content on red |
+| `primaryPressed` | `#A61B1B` | Pressed red state |
+| `primaryContainer` | `#FDECEC` | Low-emphasis red status/highlight background |
+| `onPrimaryContainer` | `#8F1D1D` | Text on the red tint |
+| `background` / `surface` | `#FFFFFF` | Screens, Home AppBar, navigation, cards, sheets |
+| `surfaceContainer` | `#F5F5F5` | Neutral inset surfaces |
+| `textPrimary` / `navSelected` | `#171717` | Main text, selected tab icon/label |
+| `textSecondary` / `navUnselected` | `#616161` | Secondary text, unselected tabs |
+| `inputOutline` | `#737373` | Visible control boundary |
+| `divider` / `outlineVariant` | `#E5E5E5` | Decorative separators, card outlines |
+| `selectedTabContainer` | `#EEEEEE` | Neutral selection cue behind the selected tab |
+| `disabledBackground` | `#F0F0F0` | Disabled controls |
+| `disabledForeground` | `#767676` | Disabled content |
+| `success` | `#166534` | Semantic available/success state only |
+| `error` | `#B91C1C` | Validation, failure, destructive account deletion |
+| `warning` | `#92400E` | Semantic warning |
+| `focus` | `#171717` | Focused outline (plus width/shape cue) |
 
-**Permanent design-system rule:** all client-side branding must use central,
-coordinated design tokens, never literal colors in screen widgets. A future
-brand-color change should require edits to central Flutter tokens and the
-web design-token source(s), not a search-and-replace across components.
-Runtime server-delivered theme switching is **not** implicitly approved.
+Approximate contrast on white: primary 5.62:1, text primary 17.93:1, text
+secondary 6.19:1, input outline 4.74:1 (body text ≥ 4.5:1; meaningful
+non-text boundaries ≥ 3:1; a decorative divider never replaces an input
+boundary). Brand red and destructive red are close in hue: actions are
+distinguished by label, icon, placement and filled vs outlined style.
 
-`AppColor` must provide coherent **Brand**, **Basic**, **Neutral**, **Semantic**,
-**Text**, **Background**, **Border**, and **Extended** palettes/scales (including
-appropriate states for success, warning, error, disabled and focus). Preserve
-intentional reusable shades even when currently unused. Remove verified
-obsolete aliases/duplicates in the same migration, and update every caller.
-Do **not** indiscriminately delete every "unused" color or retain shadow
-implementations of the same token. Names/scales may be refined centrally
-without changing the owner's five brand hex values.
-
-| Semantic family | Use |
-|---|---|
-| `background`, `splashBackground` | Cream |
-| `surface` | White/default surface |
-| `textPrimary` | Ink |
-| `textSecondary` | Approved muted Ink/neutral scale |
-| `border`, `outline` | Sand/neutral border |
-| `success`, `warning`, `error` | Semantic statuses, not arbitrary brand accents |
-
-**Implemented in Flutter (Task 10, 2026-11-15):**
-- The five base values above are exact in `AppColor` (`primary`, `secondary`,
-  `cream`/`background`, `sand`, `ink`/`textPrimary`) and mapped in
-  `AppTheme.light` (tested in `test/brand_theme_test.dart`). The 50–900
-  maroon/forest scales and the cream/sand/ink shades are
-  **implementation-derived tonal shades**, not owner-specified values.
-- `TextThemeStyle` and the shared text widgets default to Ink (no longer
-  black).
-- **Input border:** new semantic alias `AppColor.inputBorder = inkMuted`
-  (`#6E6A64`, an existing neutral; no new hex). It is used only for the
-  resting border of `AppTextFormField` and measures **5.37:1** on the white
-  fill and **4.74:1** on the cream background (WCAG 1.4.11 ≥ 3:1). No sand
-  shade passes on both (`sandDark`: 3.29:1 / 2.90:1). `border`/`outline`
-  stay `sandLight`, so the navigation bar and other outlined elements are
-  unchanged.
-- **Still unresolved (owner decision):** exact semantic `error`, `warning`,
-  `success` and `disabled` colors. Inputs and toasts still use Material's
-  default error (`#B00020`, 6.46:1 on cream) and the Material 3 disabled
-  border (`onSurface` at alpha 97). The older miscellaneous `AppColor` block
-  (`red`, `success`, `failed`, …) was not audited or removed in this task.
-- Web token sources were **not** changed; web synchronization is pending.
-
-**Rules:** no raw `Color(...)` literals in widgets; no unapproved decorative
-gradients; maintain contrast and accessible status communication.
+**Rules:**
+- Colors come from `AppColor` through `ColorScheme` and component themes; no
+  `Color(...)` literals in screen widgets; no decorative gradients.
+- `secondary` maps to **neutral emphasis**, not success. Use the explicit
+  `success` token for "available/success" (e.g. the availability switch).
+- Selected tabs are dark, never red.
+- Material surface tint and scrolled-under tint are disabled deliberately
+  so no beige or red tint returns on white surfaces.
 
 ## 2. Theme (`lib/theme/app_theme.dart`)
 
-`AppTheme.light` builds a `ColorScheme.light` with these colors:
-- primary: maroon, with white on primary.
-- secondary: forest green, with white on secondary.
-- surface: white; on-surface: ink.
-- outline: `sandLight` (inputs use `AppColor.inputBorder` instead).
+`AppTheme.light` builds a `ColorScheme.light` from the table above:
+primary/onPrimary, primaryContainer/onPrimaryContainer, secondary =
+neutral (`textPrimary`), surface/onSurface = white/`textPrimary`,
+`surfaceContainer*`, outline = `inputOutline`, outlineVariant = `divider`,
+error = `error`, `surfaceTint` transparent. Component themes: white Scaffold
+and AppBar (no scrolled-under tint, dark status-bar icons), filled buttons
+red with pressed/disabled states, outlined buttons neutral, input borders
+`inputOutline` / focus `focus` / error `error`, switch thumb/track using
+`success` when on, bottom sheet and dialog white, `fontFamily`
+IBM Plex Sans Arabic. No dark theme, no runtime switching (no Cubit).
 
-It also sets:
-- `fontFamily: AppFonts.ibmPlexSansArabic` (every Material text style;
-  Material 3 colors default text with `onSurface` = Ink).
-- Scaffold background: cream.
-- `AppBarTheme`: cream background, ink foreground, centered, no elevation.
-- `FilledButtonTheme`: minimum size 160×48, bold IBM Plex Sans Arabic text.
-- Button labels: a Flutter button's text style replaces the inherited one,
-  so `AppButton`/`AppTextButton` fill in the theme family when their style
-  names none.
-
-There's no dark theme, and no runtime theme switching (so no Cubit).
+**Reference image (`reference_home_client.jpeg`):** layout guidance only —
+greeting at the start of the AppBar with the availability switch/status
+below it, readable white cards, four destinations. Not adopted: its maroon,
+logo, patterned header, red selected tab, sample names/amounts, «الربح»
+(the full fee is labelled «أجرة التوصيل») and «تجاهل» (dismiss ≠ decline).
 
 ## 3. Typography
 
@@ -274,58 +255,41 @@ Phosphor icon family, but select the exact Wallet glyph and final visual
 mapping during the Wallet navigation implementation; do not treat the old
 Profile mapping as the target design.
 
-## 10. Main navigation bar (D-A36, D-A38, D-A50)
+## 10. Main navigation bar (D-A69, D-A70)
 
 Component API: `SHARED_UI_COMPONENTS_REFERENCE.md` §3.12. Routing:
 `../architecture/ROUTING_AND_STARTUP.md` §7.
 
-**Layout** (C-20):
-- Five items in reading order, equal widths. In Arabic, Home is on the
-  right and the fifth destination is on the left; Current Order is always the middle item, so
-  it is centered in RTL and LTR alike.
-- Each item is an icon with its label below, and the whole item (at least
-  48×48) is the touch target. All five share one vertical rhythm: 8 px, the
-  icon (28 px box), 4 px, the label, 8 px.
-- Bar surface: at least 64 px high, `surface` color, a top border in
-  `outline`, plus the bottom safe-area inset. The inset is added once,
-  inside the bar; the shell `Scaffold` adds none.
-- Central button: a 56 px circle with elevation, raised 20 px above the bar
-  surface, with its label «الطلب الحالي» below it. The raised strip is part
-  of the bar's own height, so it never overlaps page content or other items.
-- On wide screens the items are capped at 640 px and centered; the surface
-  still spans the full width. The bar stays at the bottom at every
-  breakpoint (no NavigationRail).
-- **Labels are never shrunk.** They are 12 px. When any label doesn't fit on
-  one line (a narrow phone or larger accessibility text), all labels get two
-  lines and the bar grows taller. Text scaling is honored up to 2.0 inside
-  the bar.
+- **Four** equal items in reading order (Arabic: Home on the right, My
+  Account on the left): «الرئيسية», «طلباتي», «المحفظة», «حسابي». No raised
+  center button, unread dot or active-order badge.
+- Each item: icon above label; the whole item (≥ 48×48) is the target.
+  White surface with a top `divider` line plus the bottom safe-area inset
+  (added once, inside the bar). Content width capped at 640 px.
+- **Selected:** Fill icon, bold label, `navSelected` (`#171717`), and a
+  `selectedTabContainer` pill behind the icon (second cue beyond color).
+  **Unselected:** Regular icon, regular label, `navUnselected` (`#616161`).
+- Labels are never shrunk; if one does not fit, all labels get two lines and
+  the bar grows. Text scaling honored up to 2.0 inside the bar.
+- Each item is a labelled button exposing its selected state; the bar is
+  named `mainNavigationLabel`.
+- Hidden while the keyboard is open; visible only inside the main shell.
 
-**States** (approved tokens, D-A63; old component look remains a code snapshot):
+### 10.1 Home AppBar (D-A71)
 
-| State | Shown by |
-|---|---|
-| Destination not selected | Regular icon, regular-weight label, `textSecondary` |
-| Destination selected | Fill icon, bold label, `colorScheme.primary` |
-| Central button, normal | `colorScheme.primary` background, white Regular map pin, surface-colored ring |
-| Central button, selected | The same background with an `AppColor.sand` ring, a Fill map pin and a bold label |
-| Central button, active order | `colorScheme.secondary` background **and** a small package badge above the circle. Independent of "selected": all four combinations exist. Shown only when the server reported an active order, never after an error |
-| Central button, checking | A small spinner replaces the icon inside the same circle; the size doesn't change |
-| Unread notifications | A 10 px dot in `colorScheme.error` at the icon's top-end corner. It is overlaid, so the icon and label don't move |
+White, no logo or pattern. Row 1: greeting (start-aligned, wraps) and the
+wallet balance chip (end). Row 2: availability label/status and the
+controlled switch (`success` when on), with notices/errors underneath. The
+AppBar height adapts to content (narrow width, text scale up to 3,
+error/rationale text) instead of truncating.
 
-**Accessibility:**
-- Each item is a labelled button that exposes its selected state.
-- The unread dot, the active order and the lookup in progress are announced
-  in words (`navUnreadNotifications`, `navActiveOrder`,
-  `navCheckingActiveOrder`), and none relies on color alone.
-- The central button has the hint `navCurrentOrderHint` («عرض طلبك الفعال
-  وموقع استلامه على الخريطة»), so it's announced as opening the current
-  order, not creating one.
-- The bar is named `mainNavigationLabel` for screen readers.
-- The central button's color change is not animated when the system asks
-  for reduced motion.
+### 10.2 Offer card (Task 40)
 
-**Behavior:** hidden while the keyboard is open; visible only inside the
-main shell.
+White card, `divider` outline, restrained shadow; merchant, pickup and
+delivery **area** with location/store icons; full fee «أجرة التوصيل» with a
+money icon; «قبول» filled red with white text and a check icon; «رفض»
+neutral outlined with a close icon. Long names wrap; amounts are 3-decimal
+JOD.
 
 ## 11. Status, empty and placeholder states
 

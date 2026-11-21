@@ -4,7 +4,7 @@ The product context and business rules the Flutter app must respect. Each
 rule names its **source** and **status**. Nothing here is implemented in
 Flutter unless `PROJECT_STATUS.md` says so.
 
-**Canonical decision precedence:** The owner approvals recorded through 2026-11-14 supersede contradictory 2026-11-10/12 prototype notes. These requirements describe intended behavior, **not implemented code**; verify actual implementation in `PROJECT_STATUS.md`.
+**Canonical decision precedence:** The 2026-11-20 client revision (D-A69–D-A79) supersedes conflicting earlier rules; owner approvals through 2026-11-14 supersede contradictory 2026-11-10/12 prototype notes. These requirements describe intended behavior, **not implemented code**; verify actual implementation in `PROJECT_STATUS.md`.
 
 **Sources:**
 - The Flutter project guidelines (the `CLAUDE.md` versions supplied on
@@ -106,43 +106,60 @@ Exact delivery state values:
   new instant offers stop **approximately 30 minutes** before a scheduled
   pickup. Admin receives a possible conflict warning **one hour** beforehand;
   no fixed gap is imposed between future commitments.
-- In one atomic acceptance/assignment transaction, the backend tests that
-  **available balance after the proposed commission hold ≥ -1,000 fils**.
+- **No commission hold exists (D-A74).** Accepting an offer or confirming a
+  scheduled assignment reserves nothing and debits nothing. The former
+  "available balance after the proposed hold ≥ -1,000 fils" check is
+  obsolete. Whether a -1,000-fils floor or any other wallet condition still
+  gates acceptance, and at which point, is **unresolved (D-P41)**; the backend
+  must not charge on acceptance or invent a replacement threshold.
 - A private offer is visible only to the targeted captain. The backend checks
   all eligibility conditions again at acceptance. Valid offers may expire or
   be withdrawn; an old push is not permission to accept.
 
-### 3.3 Wallet and commission (owner-approved D-P10)
+### 3.3 Wallet and commission (owner-approved; current contract D-A74–D-A76, 2026-11-20)
 
-| Rule | Final business contract |
+This table is the **single current** wallet contract. Hold/reservation rules
+of D-A29, D-A49, D-A51, D-A59, D-A61 and D-A67 are superseded and kept only
+as history in the decisions registry.
+
+| Rule | Current business contract |
 |---|---|
 | Currency | Store monetary amounts in **integer fils**; never binary float |
-| Delivery fee | Fixed at order creation for the chosen destination area, in **0.500 JOD** increments; not derived from map distance |
+| Delivery fee | Fixed at order creation for the chosen destination area, in **0.500 JOD** increments; not derived from map distance. Orders and offers show the **full delivery fee** |
 | Global rate | **20%** initially; one Admin-adjustable rate for all captains, no captain-specific percentages; existing orders keep their snapshot |
-| Commission | Percentage of **delivery fee only**, calculated precisely with decimal/integer arithmetic and **rounded to nearest fils** |
-| Snapshot | First public dispatch for automatic instant orders; first confirmed private acceptance/assignment for direct instant orders; **Admin confirmation of scheduled assignment** for scheduled orders. Store percentage and amount immutably |
-| Reserve/hold | On captain acceptance for instant offers, or on Admin confirmation of scheduled assignment, hold only the commission, not the entire delivery fee. An automatic public broadcast itself is **not** a captain wallet hold |
-| Balance | Confirmed external recharge credits − final commission debits (plus audited explicit adjustments, if any) |
-| Available | Balance minus active holds; prospective Available after a new hold cannot fall below **-1,000 fils** |
-| Delivery completed | Convert the existing hold into **one** permanent `commission_debit`, do not debit twice |
-| Cancel before pickup | Release the hold, no automatic fine |
-| Cancel/reassign after pickup | Admin-only exception, **do not automatically release or debit** while unresolved; mark pending settlement. On an approved direct handover to replacement captain, release outgoing hold as the audited transfer, place replacement captain's hold under the configured wallet rules, and charge only the replacement captain on delivery. Any compensation is a separate audited manual adjustment |
-| Recharge | Captain arranges external transfer (CliQ, e-wallet, bank), Admin verifies receipt and records credit. No integrated payment or captain self-credit. A credit offsets negative balance first; notify captain |
-| Ledger | Immutable append-only journal; preserve operation identities and unique financial-effect constraints so retries never duplicate top-ups, holds, releases or debits |
+| Commission | Percentage of **delivery fee only**, calculated with decimal/integer arithmetic and **rounded to nearest fils** |
+| Snapshot | First public dispatch for automatic instant orders; first confirmed private acceptance/assignment for direct instant orders; Admin confirmation of scheduled assignment. Store percentage and amount immutably; it is used for the completion debit |
+| Reservation | **None at any stage** — not on instant acceptance, scheduled assignment, cancellation or reassignment |
+| Balance | **One** wallet balance: confirmed recharge credits − commission debits (plus audited explicit adjustments). There is no held or hold-derived available balance |
+| Delivery completed | The server posts **one** idempotent `commission_debit` for the order's snapshot amount, under authorization, an atomic transaction and a stable financial-effect identity |
+| Accept / dismiss / decline | Never debits the wallet |
+| Cancel before completion | No completion debit; no automatic fine |
+| Cancel/reassign after pickup | Admin-only exception, marked pending settlement while unresolved. On a confirmed handover only the **completing replacement captain** is charged on delivery. Any compensation/correction is a separate audited manual adjustment |
+| Balance ceiling | **Maximum resulting wallet balance 5,000 fils (5.000 JOD) after a recharge credit** — not a per-transfer limit and not an earnings limit. Credits must be positive. Concurrent credits are evaluated atomically by the server. Examples: 4,000 + 1,000 → allowed; 4,000 + 1,001 → rejected; -1,000 + 6,000 = 5,000 → allowed (subject to other credit rules). Existing over-cap records are never truncated, refunded, split or rewritten (handling: D-P38) |
+| Negative floor / eligibility | The former -1,000-fils floor was defined after a hold; its new application point is **unresolved (D-P41)** |
+| Recharge | Captain arranges an external transfer (CliQ, e-wallet, bank) outside the app; Admin verifies receipt and records the credit. No in-app recharge action, request, payment or contact popup (D-A76). A credit offsets a negative balance first |
+| Ledger | Immutable append-only journal; credits, debits and historical reservation records are financial evidence and are never deleted or rewritten. Unique operation identities prevent duplicate credits or debits |
 
 Business changes and wallet operations require atomic PostgreSQL transactions,
 server-side authorization, idempotency keys on retriable mutations, and an
 immutable financial audit trail. Pending post-pickup settlement cases remain
-visible to Admin; no indefinite silent holds. Display wallet balance,
-available balance, active holds and ledger to the captain; all values come from
-Backend.
+visible to Admin.
+
+**Captain Wallet UI (D-A76):** the single balance (authoritative value shown
+faithfully, also when negative or above the ceiling), two metric cards —
+**delivered-order count** and **earnings**, both **lifetime totals since the
+captain started work** (all successfully completed deliveries, independent of
+the 7-day debit window; no period selector) — and the commission-debit
+history (7-day display window; merchant, area, time, commission debited,
+never the fee). Earnings formula (gross fees vs net after commission) is
+**open (D-P36)**; until it is answered the earnings card is "unavailable".
+Credits are not listed in the captain UI but remain in the ledger.
 
 **Implementation boundary:** The earlier web file
-`web_frontend/docs/wallet-commission-backend-contract.md` exists in the
-repository, but it was not included in the 2026-11-14 reconciliation bundle
-and has not been reviewed line by line. Its content is **not** hereby
-certified or automatically approved. Concrete DTOs/endpoints and ledger
-constraints must be written against these owner-approved business rules.
+`web_frontend/docs/wallet-commission-backend-contract.md` predates this
+revision, has not been reviewed line by line and describes holds; it is
+**not** authoritative. Concrete DTOs/endpoints and ledger constraints must be
+written against the rules above. The ASP.NET/PostgreSQL service is not built.
 
 ### 3.4 Dispatch (owner-approved)
 
@@ -180,7 +197,7 @@ public rebroadcast. Server validation at accept time is mandatory.
 
 **Scheduled orders:** Always manual via Admin's WhatsApp group. Admin records
 one volunteer as confirmed assignment (no second in-app acceptance), captures
-the commission snapshot and hold immediately, and shows it as a future
+the commission snapshot (no hold, D-A74), and shows it as a future
 commitment, not an active delivery. Multiple commitments can coexist; Admin
 checks schedules manually. New instant offers stop around 30 minutes before
 pickup; Admin receives a conflict warning one hour beforehand. No automatic
@@ -221,9 +238,11 @@ Admin can explicitly close a WhatsApp request.
   Routes API Essentials DRIVE supplies road distance/ETA (without live
   traffic). Provide a separate **Open in Google Maps** native-navigation
   action for heading to pickup. Never draw a route to the customer.
-- FCM (plus APNs on iOS) transports push; PostgreSQL is authoritative for
-  notification history and unread count. New-offer push shows pickup area,
-  destination area and delivery fee only; never customer phone or identity.
+- FCM (plus APNs on iOS) transports **operational order alerts** (D-A72).
+  A push is only a hint to re-read the authoritative offer/order from the
+  backend. New-offer push shows pickup area, destination area and delivery
+  fee only; never customer phone or identity. There is **no in-app
+  notification feed, history screen or unread count**.
 
 ### 3.7 Identity, credentials and sessions
 
@@ -258,22 +277,25 @@ Admin can explicitly close a WhatsApp request.
   account actions direct the user to contact Admin; no public registration
   or automatic reset in MVP.
 
-### 3.8 Captain app navigation
+### 3.8 Captain app navigation (D-A70–D-A73, 2026-11-20)
 
-- Exactly five bottom destinations: **Home**, **Notifications**, **Current
-  Order** (center), **Order History**, **Wallet**; Wallet replaces the old
-  Profile tab. Profile access is moved to the AppBar/menu, not deleted.
-- AppBar shows the **total wallet balance**; Wallet shows balance, available,
-  holds and immutable transaction history.
-- Backend/PostgreSQL owns notification unread count; Notifications Cubit
-  supplies the navbar dot. Server owns current active-order existence; the
-  center indicator is refreshed on sign-in, acceptance, relevant order changes,
-  verified push, app resume and when opening Current Order, **not polling**.
+- Exactly **four** bottom destinations in RTL reading order: «الرئيسية»
+  Home, «طلباتي» My Orders (existing Order History feature), «المحفظة»
+  Wallet, «حسابي» My Account (Profile). Black/gray tab states (D-A69).
+- No Notifications destination, feed, badge or unread count (D-A72).
+- **Home AppBar** (D-A71): captain greeting and the controlled availability
+  switch/status, plus the wallet balance chip (same balance source as
+  Wallet). No Profile button, logo or patterned header. The body starts with
+  the pending-offer cards (full delivery fee, distinct Accept/Decline;
+  dismissing a sheet is not a decline).
+- **Current Order** (D-A73) is a protected standalone page (`/current-order`)
+  outside the tabs, with Back to Home. It opens after a confirmed instant
+  acceptance for the matching `orderId`, and recovery re-reads the server's
+  active order on startup and foreground return. Failure is never treated as
+  "no order"; no polling.
 - Current Order never creates an order or displays a customer's route.
 - Device display name: Android/iOS **«شهم»**; web title **«SHAHM | شهم»**;
   internal package identifiers need not be renamed.
-- These are **approved target requirements**; the uploaded Flutter source
-  snapshot may still contain Profile/placeholder screens.
 
 ### 3.9 Current Order and pickup map
 
@@ -314,11 +336,28 @@ Admin can explicitly close a WhatsApp request.
   timestamp and assignment history.
 - Never automatically release/charge commission merely because an incident
   was reported after pickup. Mark unresolved cases **pending settlement**.
-- On confirmed transfer, release outgoing captain's held commission as an
-  audited reassignment action, create/check replacement captain's hold, and
-  charge **only the replacement captain** on final delivery. Any outgoing-
-  captain compensation or correction is separate manual audited accounting.
+- On confirmed transfer, charge **only the replacement captain** on final
+  delivery (no hold release/transfer exists, D-A74). Any outgoing-captain
+  compensation or correction is separate manual audited accounting.
 - Goods/cash exchange and claims remain Admin-managed outside MVP app.
+
+### 3.13 Profile, Settings and account deletion (D-A77, D-A78, 2026-11-20)
+
+- «حسابي» shows the captain's name and phone from the authenticated user
+  (honest fallbacks; phone digits LTR), a rating card from an explicit read
+  model (unknown and "no ratings yet" are distinct; scale/source open,
+  D-P37), and entries **Settings**, **Terms & Conditions** (same legal
+  link/launcher as Login) and **About** (app identity; real version only).
+  No Wallet entry, no profile editing, no avatar upload. Logout stays.
+- Settings contains a discoverable destructive «حذف الحساب» entry. Deletion
+  requires explicit confirmation (separate Cancel/Confirm), is submitted once
+  through the deletion use case, and reports typed outcomes: not sent,
+  backend not configured, offline/failure, reauthentication required,
+  accepted/pending (not yet deleted), completed. Completed deletion clears the
+  session and per-user state and returns to Login without a protected Back
+  path. The deletion contract (erasure/anonymization, retention, timing,
+  session revocation, active delivery, non-zero balance, incidents) is
+  **open (D-P39)**; nothing is invented.
 
 ### 3.12 Vehicles and routing
 
@@ -338,9 +377,12 @@ or verified**, not silently implemented as unapproved behavior:
    type-safe clients, contract tests, and a separate SignalR event catalog.
 2. Model the **scheduled future commitment versus active delivery** explicitly
    without inventing a new order state or causing duplicate active orders.
-3. Implement server-side atomic wallet holds/settlements, unique ledger
+3. Implement the server-side idempotent completion commission debit, the
+   atomic 5,000-fils balance-ceiling check on credits, unique ledger
    operation keys, post-pickup pending settlement work queue, idempotency
-   rules and PostgreSQL transactional outbox for critical events.
+   rules and PostgreSQL transactional outbox for critical events. Specify
+   lifetime delivery statistics, rating and account-deletion read/command
+   contracts (D-P36, D-P37, D-P39).
 4. Specify the Admin-controlled closing time for manual WhatsApp volunteer
    requests if a fixed automated deadline is ever needed; none is approved.
 5. Validate platform GPS/notification behavior on physical Android/iOS, map
@@ -351,4 +393,4 @@ or verified**, not silently implemented as unapproved behavior:
 
 **Source-of-truth rule:** older `D-Axx` or prototype implementation notes
 remain historical when superseded by the explicit owner approvals through
-2026-11-14. `PROJECT_STATUS.md` records what is actually present in code.
+2026-11-20. `PROJECT_STATUS.md` records what is actually present in code.

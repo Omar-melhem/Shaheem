@@ -21,7 +21,7 @@ class SplashScreen extends StatelessWidget {
     final logoWidth = MediaQuery.sizeOf(context).width * 0.6;
 
     return Scaffold(
-      backgroundColor: AppColor.splashBackground,
+      backgroundColor: AppColor.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

@@ -202,12 +202,6 @@ abstract class AppLocalizations {
   /// **'الرئيسية'**
   String get homeTitle;
 
-  /// Notifications screen title; also its label in the main navigation bar.
-  ///
-  /// In ar, this message translates to:
-  /// **'الإشعارات'**
-  String get notificationsTitle;
-
   /// Current Order screen title; also the label of the central main-navigation button. It opens the captain's active order; it never creates an order.
   ///
   /// In ar, this message translates to:
@@ -217,14 +211,194 @@ abstract class AppLocalizations {
   /// Order History screen title; also its label in the main navigation bar.
   ///
   /// In ar, this message translates to:
-  /// **'سجل الطلبات'**
+  /// **'طلباتي'**
   String get orderHistoryTitle;
 
   /// Profile screen title; also its label in the main navigation bar.
   ///
   /// In ar, this message translates to:
-  /// **'الملف الشخصي'**
+  /// **'حسابي'**
   String get profileTitle;
+
+  /// Profile (D-A77): accessible label of the captain name.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاسم'**
+  String get profileNameLabel;
+
+  /// Profile (D-A77): the session has no name; nothing is invented.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاسم غير متوفر'**
+  String get profileNameUnavailable;
+
+  /// Profile (D-A77): accessible label of the captain phone.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف'**
+  String get profilePhoneLabel;
+
+  /// Profile (D-A77): the session has no phone; nothing is invented.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف غير متوفر'**
+  String get profilePhoneUnavailable;
+
+  /// Profile (D-A77): rating card heading.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقييم'**
+  String get profileRatingTitle;
+
+  /// Profile (D-A77): rating is loading.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تحميل التقييم...'**
+  String get profileRatingLoading;
+
+  /// Profile (D-A77): rating unknown (not configured, offline or failed); never a fabricated value.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقييم غير متوفر'**
+  String get profileRatingUnavailable;
+
+  /// Profile (D-A77): the server confirmed there are no ratings yet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد تقييمات بعد'**
+  String get profileRatingNone;
+
+  /// Profile (D-A77): rating value with the scale the server states (no assumed 5-star scale).
+  ///
+  /// In ar, this message translates to:
+  /// **'{value} من {max}'**
+  String profileRatingOutOf(String value, String max);
+
+  /// Profile (D-A77): how many ratings the server aggregated.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count, plural, =0{لا توجد تقييمات} =1{تقييم واحد} =2{تقييمان} few{{count} تقييمات} many{{count} تقييماً} other{{count} تقييم}}'**
+  String profileRatingCount(int count);
+
+  /// Profile: sign-out entry and its confirmation action.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الخروج'**
+  String get profileSignOut;
+
+  /// Profile: sign-out confirmation message.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل تريد تسجيل الخروج من حسابك؟'**
+  String get profileSignOutConfirm;
+
+  /// Settings page title and the Profile entry (D-A77).
+  ///
+  /// In ar, this message translates to:
+  /// **'الإعدادات'**
+  String get settingsTitle;
+
+  /// Settings section heading above account deletion.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحساب'**
+  String get settingsAccountSection;
+
+  /// Settings (D-A78): destructive account-deletion entry.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف الحساب'**
+  String get accountDeletionEntry;
+
+  /// Settings (D-A78): what the deletion entry does.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب حذف حسابك وبياناتك الشخصية المرتبطة به'**
+  String get accountDeletionEntryHint;
+
+  /// Settings (D-A78): the confirmed request is being sent.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ إرسال طلب الحذف...'**
+  String get accountDeletionSubmitting;
+
+  /// Settings (D-A78): confirmation title.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف الحساب؟'**
+  String get accountDeletionConfirmTitle;
+
+  /// Settings (D-A78): plain explanation before confirming; invents no retention period (D-P39).
+  ///
+  /// In ar, this message translates to:
+  /// **'سيُرسل طلب لحذف حسابك في شهم وبياناتك الشخصية المرتبطة به. قد يستغرق إكمال الحذف بعض الوقت، وقد يلزم الاحتفاظ ببعض السجلات وفق المتطلبات القانونية؛ ستُوضَّح التفاصيل عند تفعيل خدمة الحذف. لا يمكن التراجع عن الحذف بعد اكتماله.'**
+  String get accountDeletionConfirmMessage;
+
+  /// Settings (D-A78): the only control that sends the request.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد الحذف'**
+  String get accountDeletionConfirmAction;
+
+  /// Settings (D-A78): no deletion backend exists; nothing was sent or deleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة حذف الحساب غير متصلة بالتطبيق بعد، لذلك لم يُرسل أي طلب ولم يُحذف حسابك.'**
+  String get accountDeletionNotConfigured;
+
+  /// Settings (D-A78): offline; nothing was sent.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت، ولم يُرسل الطلب. حاول مرة أخرى.'**
+  String get accountDeletionNoInternet;
+
+  /// Settings (D-A78): failure; nothing is assumed deleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر إرسال طلب الحذف، ولم يُحذف حسابك. حاول مرة أخرى.'**
+  String get accountDeletionFailed;
+
+  /// Settings (D-A78): the server requires a fresh sign-in.
+  ///
+  /// In ar, this message translates to:
+  /// **'لأمان حسابك، يجب تسجيل الدخول مجدداً قبل طلب الحذف.'**
+  String get accountDeletionReauthRequired;
+
+  /// Settings (D-A78): starts the real sign-in flow again.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول مجدداً'**
+  String get accountDeletionSignInAgain;
+
+  /// Settings (D-A78): accepted but not yet deleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم استلام طلب حذف حسابك وهو قيد المعالجة. لم يُحذف الحساب بعد.'**
+  String get accountDeletionPending;
+
+  /// About page title and the Profile entry (D-A77).
+  ///
+  /// In ar, this message translates to:
+  /// **'حول التطبيق'**
+  String get aboutTitle;
+
+  /// About (D-A77): factual one-line identity (captains-only app); no invented company details.
+  ///
+  /// In ar, this message translates to:
+  /// **'تطبيق الكباتن في منصة شهم لتوصيل الطلبات.'**
+  String get aboutDescription;
+
+  /// About (D-A77): version row label.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإصدار'**
+  String get aboutVersionLabel;
+
+  /// About (D-A77): no version source is configured; nothing is guessed.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الإصدار غير متوفر في هذه النسخة من التطبيق.'**
+  String get aboutVersionUnavailable;
 
   /// Screen-reader name of the main bottom navigation bar.
   ///
@@ -232,53 +406,11 @@ abstract class AppLocalizations {
   /// **'التنقل الرئيسي'**
   String get mainNavigationLabel;
 
-  /// Screen-reader description added to the Notifications destination while the unread dot is shown.
+  /// Order History note: completed-delivery history is not built yet (declined offers have their own section since Task 36).
   ///
   /// In ar, this message translates to:
-  /// **'توجد إشعارات غير مقروءة'**
-  String get navUnreadNotifications;
-
-  /// Screen-reader description added to the Current Order destination while the server reports an active order.
-  ///
-  /// In ar, this message translates to:
-  /// **'لديك طلب فعال'**
-  String get navActiveOrder;
-
-  /// Screen-reader description added to the Current Order destination while the active order is being looked up.
-  ///
-  /// In ar, this message translates to:
-  /// **'جارٍ التحقق من طلبك الحالي'**
-  String get navCheckingActiveOrder;
-
-  /// Screen-reader hint of the Current Order destination: what tapping it does (it does not create an order).
-  ///
-  /// In ar, this message translates to:
-  /// **'عرض طلبك الفعال وموقع استلامه على الخريطة'**
-  String get navCurrentOrderHint;
-
-  /// Heading of the placeholder shown on screens whose feature is not built yet.
-  ///
-  /// In ar, this message translates to:
-  /// **'قيد التطوير'**
-  String get underConstructionTitle;
-
-  /// Placeholder body of the Notifications screen (feature not built yet).
-  ///
-  /// In ar, this message translates to:
-  /// **'صفحة الإشعارات قيد التطوير وستتوفر قريباً.'**
-  String get notificationsPlaceholderMessage;
-
-  /// Placeholder body of the Order History screen (feature not built yet).
-  ///
-  /// In ar, this message translates to:
-  /// **'صفحة سجل الطلبات قيد التطوير وستتوفر قريباً.'**
+  /// **'سجل التوصيلات المكتملة قيد التطوير وسيتوفر قريباً.'**
   String get orderHistoryPlaceholderMessage;
-
-  /// Placeholder body of the Profile screen (feature not built yet).
-  ///
-  /// In ar, this message translates to:
-  /// **'صفحة الملف الشخصي قيد التطوير وستتوفر قريباً.'**
-  String get profilePlaceholderMessage;
 
   /// Login screen heading.
   ///
@@ -604,6 +736,24 @@ abstract class AppLocalizations {
   /// **'مرحباً بك'**
   String get homeGreetingNoName;
 
+  /// Home (D-A73): the authoritative active order exists; shown with the way back to the Current Order page.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك طلب قيد التنفيذ من {merchant}.'**
+  String homeActiveOrderMessage(String merchant);
+
+  /// Home (D-A73): opens the Current Order page.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض الطلب الحالي'**
+  String get homeActiveOrderOpen;
+
+  /// Home (D-A73): the active-order lookup failed; never shown as "no order".
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر التحقق من طلبك الحالي. هذا لا يعني عدم وجود طلب.'**
+  String get homeActiveOrderCheckFailed;
+
   /// Jordanian Dinar symbol shown after a wallet amount (PRODUCT_OVERVIEW: JOD, د.أ).
   ///
   /// In ar, this message translates to:
@@ -627,12 +777,6 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إجمالي رصيد المحفظة غير متوفر حالياً'**
   String get walletBalanceUnavailableSemantics;
-
-  /// Heading of the Home card that controls the captain's own availability for new order offers (not the Admin broadcast switch). Copy pending owner review (Task 24).
-  ///
-  /// In ar, this message translates to:
-  /// **'استقبال الطلبات'**
-  String get availabilityCardTitle;
 
   /// Accessible name and label of the captain availability switch. Copy pending owner review (Task 24).
   ///
@@ -865,7 +1009,7 @@ abstract class AppLocalizations {
   /// Label of the delivery fee snapshot (not the captain's profit or commission) (Task 26).
   ///
   /// In ar, this message translates to:
-  /// **'قيمة التوصيل'**
+  /// **'أجرة التوصيل'**
   String get offerDeliveryFeeLabel;
 
   /// Screen-reader summary of an offer card (Task 26).
@@ -908,6 +1052,341 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'معاينة تصميم — بيانات افتراضية'**
   String get previewCaption;
+
+  /// Title of the Wallet tab and screen; also the Profile entry that opens it (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'المحفظة'**
+  String get walletTitle;
+
+  /// Screen-reader hint of the Home app-bar balance chip, which opens Wallet (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح المحفظة'**
+  String get walletOpenHint;
+
+  /// Wallet balance card: total balance label (server value) (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد'**
+  String get walletTotalBalance;
+
+  /// Screen-reader text for a balance shown as «—» because it is not known (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'غير معروف'**
+  String get walletValueUnknownSemantics;
+
+  /// History selector: final commission debits of the last 7 days (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'سجل الخصم'**
+  String get walletDebitHistory;
+
+  /// Note under the history selectors: the visible window, not the full ledger (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'يعرض السجل عمليات خصم العمولة خلال آخر 7 أيام.'**
+  String get walletHistoryWindowNote;
+
+  /// Wallet metric card (D-A76): lifetime count of successfully completed deliveries.
+  ///
+  /// In ar, this message translates to:
+  /// **'الطلبات المسلّمة'**
+  String get walletDeliveredCount;
+
+  /// Wallet metric card (D-A76): lifetime earnings; formula pending owner decision D-P36.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأرباح'**
+  String get walletEarnings;
+
+  /// Wallet metric cards (D-A76): the period is lifetime since the captain started work.
+  ///
+  /// In ar, this message translates to:
+  /// **'منذ بدء العمل'**
+  String get walletMetricsLifetimeNote;
+
+  /// Wallet earnings card (D-A76): no approved formula/source yet (D-P36); never shown as zero.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متوفر حالياً'**
+  String get walletEarningsUnavailable;
+
+  /// Wallet metric cards (D-A76): no statistics backend is connected; nothing was read.
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة الإحصائيات غير متصلة بعد.'**
+  String get walletMetricsNotConfigured;
+
+  /// Wallet metric cards (D-A76): the statistics read failed; the balance is unaffected.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل الإحصائيات.'**
+  String get walletMetricsLoadFailed;
+
+  /// Debit card: label of the order's merchant (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'المطعم'**
+  String get walletMerchantLabel;
+
+  /// Debit card: label of the debit's date and time (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'تاريخ الخصم'**
+  String get walletDebitDateLabel;
+
+  /// Debit card: label of the commission debited (never the delivery fee) (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'قيمة الخصم (العمولة)'**
+  String get walletCommissionDebitLabel;
+
+  /// A value the server did not provide (e.g. merchant or area of a debit); never invented (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متوفر'**
+  String get walletFieldUnavailable;
+
+  /// Confirmed by the server: no commission debits in the 7-day window (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد عمليات خصم خلال آخر 7 أيام.'**
+  String get walletDebitsEmpty;
+
+  /// Wallet is loading (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تحميل المحفظة…'**
+  String get walletLoading;
+
+  /// No wallet backend is connected; nothing was checked. Never shown as zero or empty (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة المحفظة غير متصلة بعد، لذلك لا يمكن عرض الرصيد أو السجل حالياً.'**
+  String get walletNotConfigured;
+
+  /// No signed-in captain (e.g. the debug preview) (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'سجّل الدخول لعرض محفظتك.'**
+  String get walletNoSession;
+
+  /// Offline while loading the wallet (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تعذّر تحميل المحفظة.'**
+  String get walletNoInternet;
+
+  /// The wallet server failed while loading (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل المحفظة. حاول مرة أخرى.'**
+  String get walletLoadFailed;
+
+  /// Screen-reader summary of a commission-debit card (Task 34).
+  ///
+  /// In ar, this message translates to:
+  /// **'خصم عمولة بقيمة {amount} دينار أردني، المطعم: {merchant}، منطقة التسليم: {area}، بتاريخ {date}'**
+  String walletDebitSemantics(
+    String amount,
+    String merchant,
+    String area,
+    String date,
+  );
+
+  /// Title of the new-order offer bottom sheet (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض طلب جديد'**
+  String get newOfferSheetTitle;
+
+  /// Badge of an instant (current) offer (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'حالي'**
+  String get offerKindInstant;
+
+  /// Badge of a scheduled (future pickup) offer (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'مؤجل'**
+  String get offerKindScheduled;
+
+  /// Label of the authoritative scheduled pickup date and local time (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'موعد الاستلام'**
+  String get offerScheduledPickupLabel;
+
+  /// Neutral value when the server did not send a value needed by the offer sheet (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متوفر'**
+  String get offerValueUnavailable;
+
+  /// The offer sheet's only money row: the full delivery fee, never net of commission (Task 36; single row since Task 38).
+  ///
+  /// In ar, this message translates to:
+  /// **'أجرة التوصيل كاملة'**
+  String get offerGrossFeeLabel;
+
+  /// Accept is off because the commission snapshot is missing or inconsistent (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل العمولة غير متوفرة لهذا العرض، لذلك لا يمكن قبوله من هنا.'**
+  String get offerEarningsMissing;
+
+  /// Accept is off for a scheduled offer: the approved process is Admin-confirmed assignment (D-A47 / D-A61) (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'الطلبات المؤجلة يؤكدها المشرف مباشرة، ولا يمكن قبولها من التطبيق حالياً.'**
+  String get offerScheduledAdminOnly;
+
+  /// Accept action of the offer sheet (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'قبول الطلب'**
+  String get offerAcceptFull;
+
+  /// Decline action of the offer sheet: this captain only, never cancels the merchant's order (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'رفض الطلب'**
+  String get offerDeclineFull;
+
+  /// Closes the offer sheet without answering; the offer stays on Home (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'لاحقاً'**
+  String get offerLater;
+
+  /// Acceptance was confirmed but the matching current order could not be shown; nothing is accepted twice (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'تم قبول العرض، لكن تعذّر فتح الطلب الحالي الآن. ستجده في الصفحة الرئيسية عند توفّره.'**
+  String get offerAcceptedNotOpened;
+
+  /// Order History section of offers this captain declined (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'العروض التي رفضتها'**
+  String get declinedOffersHeading;
+
+  /// Explains declined offers are not cancelled orders (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'عروض رفضتها أنت فقط. رفض العرض لا يلغي طلب المتجر.'**
+  String get declinedOffersNote;
+
+  /// Declined offers are loading (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تحميل العروض المرفوضة…'**
+  String get declinedOffersLoading;
+
+  /// No history backend is connected; nothing was checked (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة سجل العروض المرفوضة غير متصلة بعد.'**
+  String get declinedOffersNotConfigured;
+
+  /// No signed-in captain (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'سجّل الدخول لعرض العروض المرفوضة.'**
+  String get declinedOffersNoSession;
+
+  /// Offline while loading declined offers (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تعذّر تحميل العروض المرفوضة.'**
+  String get declinedOffersNoInternet;
+
+  /// Server failure while loading declined offers (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل العروض المرفوضة الآن.'**
+  String get declinedOffersLoadFailed;
+
+  /// The server confirmed there are no declined offers (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد عروض مرفوضة.'**
+  String get declinedOffersEmpty;
+
+  /// Title of a declined-offer record without a merchant name (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض طلب'**
+  String get declinedOfferGenericTitle;
+
+  /// Outcome line of a declined-offer record (Task 36).
+  ///
+  /// In ar, this message translates to:
+  /// **'رفضتَ هذا العرض'**
+  String get declinedOfferOutcome;
+
+  /// Debug demo (Task 37) badge shown on every screen.
+  ///
+  /// In ar, this message translates to:
+  /// **'وضع تجريبي — بيانات وهمية'**
+  String get demoBadge;
+
+  /// Debug demo (Task 37): adds a fictional new instant offer.
+  ///
+  /// In ar, this message translates to:
+  /// **'إظهار طلب جديد'**
+  String get demoShowNewOffer;
+
+  /// Debug demo (Task 37): shows the demo tools.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدوات العرض'**
+  String get demoTools;
+
+  /// Debug demo (Task 37): hides the demo tools.
+  ///
+  /// In ar, this message translates to:
+  /// **'إخفاء الأدوات'**
+  String get demoToolsHide;
+
+  /// Debug demo (Task 37): no active order scenario.
+  ///
+  /// In ar, this message translates to:
+  /// **'بدون طلب حالي'**
+  String get demoScenarioNone;
+
+  /// Debug demo (Task 37): fictional pre-assigned active order scenario.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب مسند مسبقاً'**
+  String get demoScenarioAssigned;
+
+  /// Debug demo (Task 37): lists the visual-only scheduled sample offer.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض مؤجل (للعرض فقط)'**
+  String get demoShowScheduled;
+
+  /// Debug demo (Task 37): restores the original fixtures.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة ضبط بيانات العرض'**
+  String get demoReset;
+
+  /// Debug demo (Task 37): signs the demo captain out and clears demo data.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الخروج من العرض'**
+  String get demoSignOut;
+
+  /// Debug demo (Task 37): the fixture files could not be read.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل بيانات العرض التجريبي.'**
+  String get demoFixturesError;
 }
 
 class _AppLocalizationsDelegate

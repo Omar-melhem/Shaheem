@@ -1,51 +1,55 @@
-// The five primary destinations of the main navigation bar.
+// The four primary destinations of the main navigation bar (D-A70).
 
 import 'package:flutter/widgets.dart';
 import 'package:mobile_frontend/helper/translation/generated/app_localizations.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
-/// Primary destinations, in their logical (reading) order.
+/// Primary destinations, in their logical (reading) order: in Arabic, Home
+/// is on the right and My Account on the left.
 ///
 /// The enum index is the branch index of the `StatefulShellRoute` in
 /// `go_router.dart`, so the order here, the branch order there and
-/// `mainShellRoutes` must stay identical. [currentOrder] is the emphasized
-/// central item: the captain's shortcut to their active order and its
-/// pickup map. It never creates an order, so it must never use a plus icon.
+/// `mainShellRoutes` must stay identical. Nothing may assume a particular
+/// count or a central item: Current Order is a standalone page (D-A73) and
+/// the Notifications feed was removed (D-A72).
 ///
 /// This type only describes presentation (icon and label). Routes live in
 /// the router, never here.
 enum MainNavDestination {
+  /// «الرئيسية»: greeting, availability and pending offers.
   home,
-  notifications,
-  currentOrder,
+
+  /// «طلباتي»: the existing Order History feature.
   orderHistory,
+
+  /// «المحفظة»: balance, delivery statistics and commission debits.
+  wallet,
+
+  /// «حسابي»: the captain's profile, Settings, Terms and About.
   profile;
 
   /// Icon while the destination is not selected (Phosphor Regular).
   IconData get icon => switch (this) {
     home => PhosphorIconsRegular.house,
-    notifications => PhosphorIconsRegular.bell,
-    currentOrder => PhosphorIconsRegular.mapPin,
-    orderHistory => PhosphorIconsRegular.clockCounterClockwise,
-    profile => PhosphorIconsRegular.userCircle,
+    orderHistory => PhosphorIconsRegular.clipboardText,
+    wallet => PhosphorIconsRegular.wallet,
+    profile => PhosphorIconsRegular.user,
   };
 
   /// Icon while the destination is selected: the Fill version of the same
   /// glyph, so selection is visible by shape and not by color alone.
   IconData get selectedIcon => switch (this) {
     home => PhosphorIconsFill.house,
-    notifications => PhosphorIconsFill.bell,
-    currentOrder => PhosphorIconsFill.mapPin,
-    orderHistory => PhosphorIconsFill.clockCounterClockwise,
-    profile => PhosphorIconsFill.userCircle,
+    orderHistory => PhosphorIconsFill.clipboardText,
+    wallet => PhosphorIconsFill.wallet,
+    profile => PhosphorIconsFill.user,
   };
 
   /// Localized label, shared with the destination's screen title.
   String label(AppLocalizations l10n) => switch (this) {
     home => l10n.homeTitle,
-    notifications => l10n.notificationsTitle,
-    currentOrder => l10n.currentOrderTitle,
     orderHistory => l10n.orderHistoryTitle,
+    wallet => l10n.walletTitle,
     profile => l10n.profileTitle,
   };
 }

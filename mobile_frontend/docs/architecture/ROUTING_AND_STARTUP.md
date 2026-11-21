@@ -1,6 +1,6 @@
 # SHAHM Flutter — Routing and Startup
 
-**Approved route target vs code snapshot:** the old `/profile` tab exists only in the previously verified implementation. Wallet is the approved fifth branch; Profile is accessed via an AppBar/menu route. Route migrations are not yet coded in the supplied Flutter snapshot.
+**Current target (client revision 2026-11-20, D-A70–D-A73, D-A77, D-A78):** four tab branches (Home, My Orders, Wallet, My Account), Current Order as a protected standalone page shared with recovery, Settings/Terms/About from My Account, and no Notifications route. Implementation status: `../project/PROJECT_STATUS.md` §0.
 
 Routes, the redirect policy, the startup sequence and the main navigation
 shell. Decisions referenced: D-A04, D-A05, D-A15, D-A16, D-A23, D-A36, D-A38,
@@ -14,25 +14,27 @@ D-A40, D-A41, D-A50, D-R09, C-18, C-19, C-23, C-24, C-28, C-33, C-34, C-35.
 server-validated session and loaded eligible profile. The approved
 **target navigation** is:
 
-| Target path | Destination | Access |
+| Path | Destination | Access |
 |---|---|---|
 | `/` | Splash | Public startup |
 | `/no-internet` | No Internet | Public startup |
 | `/login` | Login | Public |
-| `/home` | Home | Protected, tab 0 |
-| `/notifications` | Notifications | Protected, tab 1 |
-| `/current-order` | Current Order (center) | Protected, tab 2 |
-| `/order-history` | Order History | Protected, tab 3 |
-| `/wallet` | Wallet (replaces Profile tab) | Protected, tab 4 |
-| Profile route/path | Captain profile from AppBar/menu, **not bottom tab** | Protected; exact path to be defined during migration |
+| `/home` | Home | Protected, tab 0 «الرئيسية» |
+| `/order-history` | My Orders (existing Order History feature) | Protected, tab 1 «طلباتي» |
+| `/wallet` | Wallet | Protected, tab 2 «المحفظة» |
+| `/profile` | My Account (Profile) | Protected, tab 3 «حسابي» (a true branch; no back button at its root) |
+| `/current-order` | Current Order (standalone page above the shell, Back → Home) | Protected; outside the tab branches, inside the authenticated scope that owns `CurrentOrderCubit` |
+| `/settings` | Settings (account deletion entry) | Protected page above the shell, Back → My Account |
+| `/about` | About | Protected page above the shell, Back → My Account |
 
-**Current implementation snapshot:** the old branch-4 route remains
-`/profile` with a Profile placeholder, and Wallet isn't implemented. The
-table above is an **approved target**, not a claim that these new routes
-exist. Replace route constant, `StatefulShellBranch`, destination enum,
-labels/ARB, icons and tests in one code migration. `StatefulShellRoute`
-`indexedStack` remains the approved shell; `AppNavBar` owns routing while
-`MainNavigationBar` is presentation only. No `NavBarCubit`.
+Terms & Conditions has no route: it reuses `LegalPageLauncher` /
+`LegalLinks` exactly like Login (in-app page, or the truthful "not available
+yet" popup while the URL is empty). There is **no** `/notifications` route
+(D-A72); a deep link to it is unknown and falls back to the guard's normal
+handling. The Home balance chip uses `context.go('/wallet')` (same branch, no
+duplicate page). `StatefulShellRoute.indexedStack` remains the shell;
+`AppNavBar` owns routing while `MainNavigationBar` is presentation only. No
+`NavBarCubit`.
 
 Keep one redirect policy in `route_guard.dart`. The actual router must
 consume the validated server session, current user and profile-completion
@@ -175,34 +177,67 @@ LoginForm ──submit──► LoginCubit ──► Validators (D-A65: normaliz
 - **Logout and 401:** call `AppSessionCubit.endSession()`. The redirect then
   sends every route to `/login`, which also closes the main shell.
 
-## 7. Main navigation and Current Order (approved target D-A66, D-A68)
+## 7. Main navigation and Current Order (D-A70, D-A73)
 
 ```text
-StatefulShellRoute.indexedStack → AppNavBar
- ├─ branch 0 /home           HomeScreen
- ├─ branch 1 /notifications  NotificationsScreen
- ├─ branch 2 /current-order  CurrentOrderScreen (center)
- ├─ branch 3 /order-history  OrderHistoryScreen
- └─ branch 4 /wallet         WalletScreen
-                 AppBar/menu → Profile
+Authenticated scope (CurrentOrderCubit + recovery, PendingOffersCubit,
+                     DeclinedOffersCubit; closed on sign-out)
+ ├─ StatefulShellRoute.indexedStack → NewOfferSheetHost → AppNavBar
+ │   ├─ branch 0 /home           HomeScreen
+ │   ├─ branch 1 /order-history  OrderHistoryScreen («طلباتي»)
+ │   ├─ branch 2 /wallet         WalletScreen
+ │   └─ branch 3 /profile        ProfileScreen («حسابي»)
+ ├─ /current-order   CurrentOrderScreen (standalone, Back → /home)
+ ├─ /settings        SettingsScreen (Back → /profile)
+ └─ /about           AboutScreen (Back → /profile)
 ```
 
-**Current snapshot:** branch 4 remains `/profile` until the approved migration.
-Keep the branch list, destination enum and labels in lockstep. System Back
-from a non-Home tab root returns to Home; inner page routes pop first. The
-bar is hidden with an open keyboard and is visible only in the main shell.
+`MainNavDestination`, the branch list and `mainShellRoutes` share one order;
+nothing assumes five items or a center index. System Back from a non-Home
+tab root returns to Home; inner pages pop first. The bar is hidden with an
+open keyboard and is visible only in the shell (not on Current Order,
+Settings or About).
 
-**Backend-owned indicators:**
-- `unreadCount` comes from Notifications Cubit and Backend/PostgreSQL; FCM
-  delivery never determines whether a notification is read.
-- `hasActiveOrder` is derived from the Backend current-delivery read model:
-  `accepted`, `heading_to_pickup`, `picked_up`, `on_the_way`. A future
-  scheduled commitment does **not** become active simply because it was
-  assigned and its commission held.
-- Refresh active-order state on successful authentication, captain
-  acceptance, order-state changes, verified relevant push, app resume and
-  opening Current Order; **no high-frequency polling**. Handle late replies
-  and sign-out safely. Never display stale/fake active-order status.
+**Active-order recovery (D-A73).** One owner, `CurrentOrderCubit`, holds the
+authoritative active-order state and is shared by the shell, the standalone
+page, the offer flow and recovery. Recovery triggers, and only these:
+
+1. **Confirmed instant acceptance** (Home card or new-offer sheet): after the
+   server confirms, re-read `GetActiveOrder`; navigate to `/current-order`
+   only when the authoritative active order has the offer's `orderId`.
+   Missing/mismatched/unconfirmed → a truthful recoverable notice, no
+   navigation, no duplicate accept. Scheduled offers keep their view-only
+   policy (D-A47/D-A61, D-P35 open).
+2. **Foreground return** with a valid session: re-read once. Simultaneous
+   triggers are coalesced; a trigger that arrives while an older read runs
+   forces exactly one fresh follow-up read, so an old "none" cannot hide a
+   newly accepted order. An unfinished order brings the captain to Current
+   Order from any tab; an open offer sheet is closed first (closing is never
+   a decline).
+3. **Startup:** after Splash validates the session and loads the user, the
+   active order is resolved before the post-login destination is chosen.
+   Active → `/current-order`; confirmed none → `/home`; offline / failure /
+   not configured → `/home` with the Current Order state explicit (never a
+   fabricated "no order" and never a logout). The read is independent of
+   location lookup.
+
+A refreshed authoritative absence clears the order state; if the standalone
+page is visible it shows the confirmed-empty state with Back to Home (no
+stale persisted route keeps an order active). Sign-out closes the scope and
+drops late answers. The decision "navigate to Current Order" is applied by
+one route-level listener in the authenticated scope, driven by typed Cubit
+state; `resolveRedirect` stays the single startup/auth policy and gains no
+order rule. No polling, no timers, no competing navigation listeners, no
+global event bus; the unauthenticated debug preview never triggers recovery.
+
+**New-offer sheet (Task 36, retained).** `NewOfferSheetHost` pushes a
+`ModalBottomSheetRoute` on the root navigator above any tab or protected
+page, never outside the authenticated shell. A server-confirmed decline from
+Home or the sheet refreshes `DeclinedOffersCubit` (Task 38), so My Orders
+updates without tab switching. Dismissing the sheet is not a decline.
+
+**Removed (D-A72):** the Notifications branch, `NotificationsCubit`, the
+unread dot and the assigned-order notification tap.
 
 **Home re-entry (implemented, Tasks 28–29).** The indexed stack keeps every
 visited branch mounted, so returning to a tab runs no `initState` and no
@@ -256,9 +291,10 @@ specification work.
   Backend, maximum three errors then Admin. The captain must separately tap
   **Start Delivery** after `picked_up` to move to `on_the_way`.
 
-**Historical implementation:** `CurrentOrderCubit` currently loads through
-placeholder repositories. It can show not-configured, empty, failure, or
-active test-fake states. No live map/service exists in the supplied code.
+**Production boundary:** `ActiveOrderRepository` is still a placeholder
+("not configured"), so production startup/resume recovery cannot find a real
+order; the routes are demonstrated with test repositories and the debug
+demo. No live map/service exists.
 
 ## 8. Temporary debug-only preview (D-A40)
 
@@ -282,7 +318,7 @@ resolveRedirect(session: SessionUnauthenticated, debugPreviewActive: true)
   are ANDed with `kDebugMode`, and `resolveRedirect` ANDs the argument with
   `kDebugMode` again. In profile and release builds the button isn't built,
   `enter()` does nothing, and the guard behaves exactly as in §2.
-- **Scope:** only the five main-shell routes (and pages nested in them).
+- **Scope:** only the four main-shell routes (and pages nested in them).
   Startup (`SessionUnknown`) is unaffected.
 - **Lifetime:** in memory. Once pressed it stays on until the app restarts.
 
@@ -296,7 +332,7 @@ matching tests. The real authentication flow doesn't change.
 
 ## 9. Tests
 
-- `test/route_guard_test.dart`: the policy, the five shell routes, and the
+- `test/route_guard_test.dart`: the policy, the four shell routes, and the
   debug preview rule and switch.
 - `test/main_navigation_test.dart`: branches, direct route entry, stack
   preservation, system back, shell visibility, keyboard, safe area and

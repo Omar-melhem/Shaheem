@@ -18,6 +18,12 @@ point to.
 
 ---
 
+> **Owner-approved exception (D-A79, 2026-11-20):** the breaking API changes
+> needed to remove obsolete navigation inputs (`MainNavigationBar`,
+> `MainNavDestination`), Home AppBar inputs and wallet hold fields are
+> pre-approved for Tasks 39–44. The approval gate in §11 still applies to
+> every other change.
+
 ## 1. Do we need a custom widget?
 
 Decide in this order:

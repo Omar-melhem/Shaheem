@@ -38,7 +38,13 @@ listed for your task before implementing anything.**
 4. **Ask** (one direct question) only when ambiguity blocks a correct
    implementation.
 5. **Never delete, rename or broadly refactor** without the user's approval.
-   Mention any deletion in the plan.
+   Mention any deletion in the plan. **Standing approval (D-A79, 2026-11-20):**
+   the removals and public-API changes of the client revision (notification
+   feed, recharge UI and its contact helper, five-tab/center-button/unread/
+   active-order navigation inputs, Home Profile button, `/profile` overlay,
+   commission-hold fields and logic, exclusively orphaned dependencies) are
+   authorized; delete them fully — no commented-out code, hidden routes or
+   stubs. Other deletions still need approval.
 6. **Never claim** something works, or a test passed, unless you ran it.
 7. **Pending decisions:** don't make decisions marked Pending in
    `docs/decisions/ARCHITECTURAL_DECISIONS.md`. Ask instead.
@@ -97,7 +103,11 @@ Details: `docs/architecture/ARCHITECTURE.md`.
 - **App-level state** (one instance, created in `MainApp`, provided above the
   router): `AppConnectivityCubit`, `AppSessionCubit`, plus `SplashCubit` for
   startup orchestration.
+- **Authenticated scope:** `CurrentOrderCubit` (with active-order recovery)
+  is shared by the shell, the standalone Current Order page and the offer
+  flow; it survives tab changes and closes on sign-out (D-A73).
 - **Feature Cubits** (Login, Create Order…) stay scoped to their feature.
+  There is no `NotificationsCubit` (feature removed, D-A72).
 - **No `AppUserCubit`:** the current user lives in `AppSessionCubit`.
 - Model loading, success, empty and failure states explicitly.
 
@@ -115,18 +125,22 @@ state vs lifecycle/presentation effects, with Home as the example).
 - **Protected routes** open only when the session is authenticated and the
   profile is loaded.
 - `context.go` replaces the location; `context.push` stacks a page.
-- **Main shell (D-A36):** five branches of one
-  `StatefulShellRoute.indexedStack`. `AppNavBar` is the shell; the visual
-  `MainNavigationBar` knows no routes or feature state. The selected tab
-  always comes from the router. The bar's indicators are inputs: never
-  hard-code or fake them, and don't add a `NavBarCubit`.
-- **Current Order (center, D-A41):** the captain's shortcut to their active
-  order and its restaurant pickup map. It never creates an order and never
-  uses a plus icon. The server decides what is active (D-P25); the client
-  applies no status rule. The destination is the restaurant, never the
-  customer. `CurrentOrderCubit` (shell-scoped) is the only holder of that
-  state. No orders backend, map or location provider exists yet: never fake
-  an order, a coordinate or a map.
+- **Main shell (D-A70):** four branches of one
+  `StatefulShellRoute.indexedStack`, in RTL reading order: 0 Home `/home`,
+  1 My Orders `/order-history`, 2 Wallet `/wallet`, 3 My Account `/profile`.
+  `MainNavDestination`, the branch list and `mainShellRoutes` keep this
+  order; never assume five items or a center index. `AppNavBar` is the
+  shell; the visual `MainNavigationBar` knows no routes or feature state and
+  has no unread/active-order inputs. No `NavBarCubit`.
+- **Current Order (D-A41 meaning, D-A73 placement):** protected standalone
+  page `/current-order` outside the tabs, Back returns to Home. It opens
+  after a confirmed instant acceptance for the matching `orderId`, and
+  recovery re-reads the server's active order on startup and foreground
+  return (coalesced, session-guarded; failure ≠ "no order"). It never
+  creates an order; the destination is the restaurant, never the customer.
+  The server decides what is active; never fake an order, coordinate or map.
+- **No Notifications route or feed (D-A72).** Operational order push stays a
+  hint to re-read offers/orders.
 - **Debug preview (temporary, D-A40):** the only unauthenticated way into the
   shell, and only under `kDebugMode`. Never widen it; remove it when sign-in
   is real (`TODO(debug-preview)`).
@@ -149,8 +163,11 @@ Details: `docs/architecture/GLOBAL_SERVICES.md`.
 
 ## 8. UI rules
 
-- **Colors and typography:** colors come from `AppColor`; typography from
-  `TextThemeStyle` and the shared text widgets.
+- **Colors and typography (D-A69):** white backgrounds, red primary
+  actions, black/gray tabs, semantic green only for available/success and
+  semantic red for errors/destructive actions. Colors come from `AppColor` /
+  `ThemeData`; typography from `TextThemeStyle` and the shared text widgets.
+  No color literals in screens.
 - **Strings:** all UI text lives in `helper/translation/app_ar.arb`, read
   via `context.l10n`; never hard-coded. Never edit generated files.
 - **Responsive:** breakpoints only in `AppBreakpoints` (registered once in
@@ -178,10 +195,19 @@ Details: `docs/ui/DESIGN_SYSTEM.md` and
 
 - **Order states and wallet rules:** listed in
   `docs/project/PRODUCT_OVERVIEW.md`. Don't rename or skip states.
-- **Wallet (D-A29):** money in fils, never `double`; all holds and debits
-  are server-side. One global, admin-set commission % of the delivery fee
-  (no per-captain rates). On accept, the commission (not the fee) is held
-  and snapshotted. Recharges are credited only after admin confirmation.
+- **Wallet (D-A74–D-A76):** money in fils, never `double`. **No commission
+  holds** anywhere. One global, admin-set commission % of the delivery fee,
+  snapshotted on the order; the server debits it **once** on confirmed
+  delivery completion (never on accept/decline). One balance, no
+  held/available fields. Maximum resulting balance after a recharge is
+  **5,000 fils**, enforced by the server only; the app shows authoritative
+  values faithfully and never clamps. Recharges are credited only after
+  Admin confirmation; the captain UI has no recharge action and lists only
+  commission debits, plus lifetime delivered-count and earnings cards
+  (earnings formula pending, D-P36).
+- **Profile and deletion (D-A77, D-A78):** «حسابي» tab with name, phone,
+  rating, Settings / Terms / About; account deletion only after explicit
+  confirmation through a repository port; never fake a deletion.
 - **Server authority:** the server is the final authority for eligibility,
   acceptance, wallet and concurrency. Client checks are convenience only.
 
@@ -232,7 +258,7 @@ flutter test
 |---|---|
 | Any task | This file, `docs/project/PROJECT_STATUS.md`, `docs/decisions/ARCHITECTURAL_DECISIONS.md` |
 | New screen or feature | `docs/architecture/ARCHITECTURE.md`, `docs/architecture/STATE_MANAGEMENT.md`, `docs/ui/DESIGN_SYSTEM.md`, `docs/ui/SHARED_UI_COMPONENTS_REFERENCE.md` |
-| Business logic (orders, wallet, dispatch, eligibility) | `docs/project/PRODUCT_OVERVIEW.md` |
+| Business logic (orders, wallet, dispatch, eligibility, profile, deletion) | `docs/project/PRODUCT_OVERVIEW.md` |
 | Navigation, startup, login, logout | `docs/architecture/ROUTING_AND_STARTUP.md` |
 | Connectivity, session, current user, lifecycle | `docs/architecture/GLOBAL_SERVICES.md` |
 | Forms and validation | `docs/ui/SHARED_UI_COMPONENTS_REFERENCE.md` §7 |
@@ -241,3 +267,29 @@ flutter test
 | History of requirements | `docs/archive/` |
 
 Full index: `docs/README.md`.
+<!-- SHAHM_DEMO_START claude-removal -->
+
+## SHAHM DEMO REMOVAL CONTRACT (Task 37)
+
+A debug-only demonstration mode is installed (`lib/demo/`, fixtures in
+`assets/demo/fixtures/`, started with
+`flutter run --debug --dart-define=SHAHM_DEMO=true`).
+
+When the owner says «احذف الديمو», «إزالة الوضع التجريبي» or
+“REMOVE SHAHM DEMO”, run from `mobile_frontend/`:
+
+```bash
+bash tool/demo/remove_demo.sh --dry-run
+bash tool/demo/remove_demo.sh --apply
+```
+
+- Follow the script's safety checks; NEVER `git reset`, `git checkout` or
+  `git clean` owner changes.
+- Verify `flutter analyze`, `flutter test` and that no demo UI, wiring,
+  route, flag, fixture import or asset reference remains.
+- The removal is preauthorized by the owner's Task 37 request; stop and
+  report only if an owner-edited conflict makes it unsafe.
+- Remove the demo before any store or release build: its fixtures are
+  declared assets and would be packaged.
+
+<!-- SHAHM_DEMO_END claude-removal -->

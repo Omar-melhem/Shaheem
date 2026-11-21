@@ -7,6 +7,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_app_bar.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
+import 'package:mobile_frontend/data/repositories/active_order_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/order_offer_repository_placeholder.dart';
@@ -24,6 +31,7 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/home_availability_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
 import 'package:mobile_frontend/view/widget/toggle/app_availability_toggle.dart';
 
 import 'availability_fakes.dart';
@@ -49,9 +57,10 @@ void main() {
   Future<void> pumpHome(
     WidgetTester tester, {
     AppUser? user = const AppUser(id: 'c1', displayName: 'أحمد'),
-    int? walletTotalFils,
+    int? walletBalanceFils,
     CaptainAvailabilityRepository? repository,
     AvailabilityPermissionGateway? permissions,
+    double reservedTop = 0,
   }) async {
     final session = AppSessionCubit(SignOut(FakeAuthRepository()));
     if (user != null) session.authenticate(user, session.beginAttempt());
@@ -80,8 +89,29 @@ void main() {
             BlocProvider.value(value: session),
             BlocProvider.value(value: cubit),
             BlocProvider.value(value: offers),
+            // The app-level active-order owner Home reads (D-A73); the
+            // placeholder reports "not configured", so nothing is shown.
+            BlocProvider(
+              create: (_) => CurrentOrderCubit(
+                const GetActiveOrder(ActiveOrderRepositoryPlaceholder()),
+                const GetCaptainLocation(
+                  CaptainLocationRepositoryPlaceholder(),
+                ),
+              ),
+            ),
           ],
-          child: HomeScreen(walletTotalFils: walletTotalFils),
+          // [reservedTop] stands in for something mounted above the app
+          // (e.g. the debug demo strip), which shrinks the page.
+          child: reservedTop == 0
+              ? HomeScreen(walletBalanceFils: walletBalanceFils)
+              : Column(
+                  children: [
+                    SizedBox(height: reservedTop),
+                    Expanded(
+                      child: HomeScreen(walletBalanceFils: walletBalanceFils),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -90,7 +120,7 @@ void main() {
   }
 
   Finder appBarText(String text) =>
-      find.descendant(of: find.byType(AppBar), matching: find.text(text));
+      find.descendant(of: find.byType(HomeAppBar), matching: find.text(text));
 
   group('app bar', () {
     testWidgets('unknown balance: «—» and an unavailable label, never 0.000', (
@@ -107,22 +137,31 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('read-only: no wallet or profile action in the app bar', (
-      tester,
-    ) async {
+    testWidgets('the balance is a named button (opens Wallet, Task 34); '
+        'no Profile action on Home (D-A71)', (tester) async {
       final semantics = tester.ensureSemantics();
-      await pumpHome(tester, walletTotalFils: 1500);
-      final chip = tester.getSemantics(
-        find.bySemanticsLabel(l10n.walletBalanceSemantics('1.500')),
+      await pumpHome(tester, walletBalanceFils: 1500);
+      final chip = tester
+          .getSemantics(
+            find.bySemanticsLabel(l10n.walletBalanceSemantics('1.500')),
+          )
+          .getSemanticsData();
+      expect(chip.hasAction(SemanticsAction.tap), isTrue);
+      expect(chip.hint, l10n.walletOpenHint);
+      expect(chip.flagsCollection.isButton, isTrue);
+      // Profile is the «حسابي» tab: no AppBar action, icon or tooltip.
+      expect(
+        find.descendant(
+          of: find.byType(HomeAppBar),
+          matching: find.byType(IconButton),
+        ),
+        findsNothing,
       );
-      expect(chip.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
-      for (final type in [IconButton, InkWell, GestureDetector]) {
-        expect(
-          find.descendant(of: find.byType(AppBar), matching: find.byType(type)),
-          findsNothing,
-          reason: '$type',
-        );
-      }
+      expect(find.byIcon(PhosphorIconsRegular.userCircle), findsNothing);
+      expect(
+        tester.getSize(find.byType(WalletBalanceChip)).height,
+        greaterThanOrEqualTo(48),
+      );
       semantics.dispose();
     });
 
@@ -131,7 +170,7 @@ void main() {
         tester,
       ) async {
         final semantics = tester.ensureSemantics();
-        await pumpHome(tester, walletTotalFils: fils);
+        await pumpHome(tester, walletBalanceFils: fils);
         final amount = formatJodFils(fils);
         expect(
           appBarText('${ltrIsolate(amount)} ${l10n.walletCurrencySymbol}'),
@@ -155,7 +194,7 @@ void main() {
           tester.platformDispatcher.textScaleFactorTestValue = scale;
           addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
           const fils = -12345678;
-          await pumpHome(tester, walletTotalFils: fils);
+          await pumpHome(tester, walletBalanceFils: fils);
           expect(tester.takeException(), isNull);
           final text =
               '${ltrIsolate(formatJodFils(fils))} '
@@ -164,31 +203,37 @@ void main() {
             appBarText(text),
           );
           expect(paragraph.didExceedMaxLines, isFalse);
-          final bar = tester.getRect(find.byType(AppBar));
+          final bar = tester.getRect(find.byType(HomeAppBar));
           final chip = tester.getRect(appBarText(text));
           expect(bar.contains(chip.topLeft), isTrue);
           expect(bar.contains(chip.bottomRight), isTrue);
-          // The title shows only when it fits whole; it is always there for
-          // screen readers.
-          final title = appBarText(l10n.homeTitle);
-          if (title.evaluate().isNotEmpty) {
-            expect(
-              tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
-              isFalse,
-            );
-          }
+          // Greeting and the availability switch stay inside the bar too:
+          // it grows instead of hiding them (D-A71).
+          final greeting = tester.getRect(
+            appBarText(l10n.homeGreeting('أحمد')),
+          );
+          expect(bar.contains(greeting.topLeft), isTrue);
+          expect(bar.contains(greeting.bottomRight), isTrue);
+          // At the largest sizes the bar scrolls inside instead of
+          // overflowing: bring the switch into view, then check it.
+          await tester.ensureVisible(find.byType(AppAvailabilityToggle));
+          await tester.pump();
+          final toggle = tester.getRect(find.byType(AppAvailabilityToggle));
+          expect(bar.contains(toggle.topLeft), isTrue);
+          expect(bar.contains(toggle.bottomRight), isTrue);
+          // The «الرئيسية» title is kept for screen readers.
           expect(find.bySemanticsLabel(l10n.homeTitle), findsOneWidget);
           semantics.dispose();
         });
       }
     }
 
-    testWidgets('RTL: title at the start (right), balance at the end', (
+    testWidgets('RTL: greeting at the start (right), balance at the end', (
       tester,
     ) async {
       setScreenSize(tester, 375, 800);
-      await pumpHome(tester, walletTotalFils: 1500);
-      final title = tester.getCenter(appBarText(l10n.homeTitle)).dx;
+      await pumpHome(tester, walletBalanceFils: 1500);
+      final title = tester.getRect(appBarText(l10n.homeGreeting('أحمد'))).right;
       final chip = tester
           .getCenter(
             appBarText('${ltrIsolate('1.500')} ${l10n.walletCurrencySymbol}'),
@@ -196,6 +241,19 @@ void main() {
           .dx;
       expect(title, greaterThan(chip));
     });
+  });
+
+  testWidgets('a shorter page (402×874, 340 px reserved above) at text scale '
+      '3.1: the AppBar scrolls inside its cap, the body never overflows '
+      '(device regression, 2026-11-20)', (tester) async {
+    setScreenSize(tester, 402, 874);
+    tester.platformDispatcher.textScaleFactorTestValue = 3.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpHome(tester, walletBalanceFils: 4000, reservedTop: 340);
+    expect(tester.takeException(), isNull);
+    final bar = tester.getRect(find.byType(HomeAppBar));
+    // At most 60 % of the page that remains under the reserved area.
+    expect(bar.height, lessThanOrEqualTo((874 - 340) * 0.6 + 0.5));
   });
 
   group('greeting', () {
@@ -257,12 +315,19 @@ void main() {
     });
   });
 
-  group('availability card', () {
+  group('availability (Home AppBar, D-A71)', () {
     testWidgets('default app (no backend): truthful notice, toggle disabled, '
         'off', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpHome(tester);
-      expect(find.text(l10n.availabilityCardTitle), findsOneWidget);
+      // The switch and its notice live in the Home AppBar now.
+      expect(
+        find.descendant(
+          of: find.byType(HomeAppBar),
+          matching: find.byType(AppAvailabilityToggle),
+        ),
+        findsOneWidget,
+      );
       expect(find.text(l10n.availabilityNotConfigured), findsOneWidget);
       expect(
         tester.getSemantics(toggle),
@@ -399,7 +464,7 @@ void main() {
           final repo = FakeAvailabilityRepository();
           await pumpHome(
             tester,
-            walletTotalFils: -12345678,
+            walletBalanceFils: -12345678,
             repository: repo,
             permissions: FakePermissionGateway(prerequisites()),
           );

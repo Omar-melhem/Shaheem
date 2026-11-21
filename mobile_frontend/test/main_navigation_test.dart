@@ -17,11 +17,11 @@ import 'package:mobile_frontend/view/navigation/app_nav_bar.dart';
 import 'package:mobile_frontend/view/screens/authentication/view/login_screen.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
-import 'package:mobile_frontend/view/screens/notifications_screen/view/notifications_screen.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/view/profile_screen.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/view/current_order_screen.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/view/splash_screen.dart';
+import 'package:mobile_frontend/view/screens/wallet_screen/view/wallet_screen.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 
@@ -35,9 +35,8 @@ void main() {
   /// Screen type expected for each destination, in branch order.
   const screens = <MainNavDestination, Type>{
     MainNavDestination.home: HomeScreen,
-    MainNavDestination.notifications: NotificationsScreen,
-    MainNavDestination.currentOrder: CurrentOrderScreen,
     MainNavDestination.orderHistory: OrderHistoryScreen,
+    MainNavDestination.wallet: WalletScreen,
     MainNavDestination.profile: ProfileScreen,
   };
 
@@ -100,11 +99,12 @@ void main() {
   final nested = find.text('nested-page');
 
   group('branches', () {
-    testWidgets('starts on Home with the bar and five destinations', (
+    testWidgets('starts on Home with the bar and four destinations', (
       tester,
     ) async {
       await launch(tester);
       expectOn(tester, MainNavDestination.home);
+      expect(MainNavDestination.values.length, 4);
       for (final d in MainNavDestination.values) {
         expect(item(d), findsOneWidget);
       }
@@ -112,9 +112,15 @@ void main() {
 
     testWidgets('branch order matches the route constants', (tester) async {
       expect(MainNavDestination.values.length, mainShellRoutes.length);
-      expect(MainNavDestination.currentOrder.index, 2);
-      expect(mainShellRoutes[2], RoutesString.currentOrder);
-      expect(RoutesString.currentOrder, '/current-order');
+      expect(mainShellRoutes, [
+        RoutesString.home,
+        RoutesString.orderHistory,
+        RoutesString.wallet,
+        RoutesString.profile,
+      ]);
+      for (final d in MainNavDestination.values) {
+        expect(mainShellRoutes[d.index], isNot(RoutesString.currentOrder));
+      }
     });
 
     testWidgets('tapping each destination selects its branch and screen', (
@@ -124,8 +130,12 @@ void main() {
       for (final d in MainNavDestination.values.reversed) {
         await tapTab(tester, d);
         expectOn(tester, d);
-        // Its title is shown in the app bar and as the bar label.
-        expect(find.text(d.label(l10n)), findsNWidgets(2));
+        // Its title is shown in the app bar and as the bar label; Home
+        // shows the greeting instead of a visible title (D-A71).
+        expect(
+          find.text(d.label(l10n)),
+          findsNWidgets(d == MainNavDestination.home ? 1 : 2),
+        );
       }
     });
 
@@ -149,16 +159,15 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      final messages = {
-        MainNavDestination.notifications: l10n.notificationsPlaceholderMessage,
-        MainNavDestination.orderHistory: l10n.orderHistoryPlaceholderMessage,
-        MainNavDestination.profile: l10n.profilePlaceholderMessage,
-      };
-      for (final entry in messages.entries) {
-        await tapTab(tester, entry.key);
-        expect(find.text(l10n.underConstructionTitle), findsOneWidget);
-        expect(find.text(entry.value), findsOneWidget);
-      }
+      // Order History shows its declined-offers section (Task 36): with no
+      // backend it says the service is not connected, never "none".
+      await tapTab(tester, MainNavDestination.orderHistory);
+      expect(find.text(l10n.orderHistoryPlaceholderMessage), findsOneWidget);
+      expect(find.text(l10n.declinedOffersNotConfigured), findsOneWidget);
+      expect(find.text(l10n.declinedOffersEmpty), findsNothing);
+      // Profile is the fourth tab (D-A70).
+      await tapTab(tester, MainNavDestination.profile);
+      expect(find.byType(ProfileScreen), findsOneWidget);
     });
   });
 
@@ -167,8 +176,8 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      await tapTab(tester, MainNavDestination.notifications);
-      pushNested(tester, NotificationsScreen);
+      await tapTab(tester, MainNavDestination.orderHistory);
+      pushNested(tester, OrderHistoryScreen);
       await tester.pumpAndSettle();
       expect(nested, findsOneWidget);
       // The shell stays visible around a nested page.
@@ -178,8 +187,8 @@ void main() {
       expectOn(tester, MainNavDestination.home);
       expect(nested, findsNothing);
 
-      await tapTab(tester, MainNavDestination.notifications);
-      expect(branchIndex(tester), MainNavDestination.notifications.index);
+      await tapTab(tester, MainNavDestination.orderHistory);
+      expect(branchIndex(tester), MainNavDestination.orderHistory.index);
       expect(nested, findsOneWidget);
     });
 
@@ -187,10 +196,10 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      await tapTab(tester, MainNavDestination.profile);
-      pushNested(tester, ProfileScreen);
+      await tapTab(tester, MainNavDestination.wallet);
+      pushNested(tester, WalletScreen);
       await tester.pumpAndSettle();
-      await tapTab(tester, MainNavDestination.profile);
+      await tapTab(tester, MainNavDestination.wallet);
       expect(nested, findsOneWidget);
     });
 
@@ -275,11 +284,52 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      await tapTab(tester, MainNavDestination.currentOrder);
+      await tapTab(tester, MainNavDestination.profile);
       await systemBack(tester);
       expectOn(tester, MainNavDestination.home);
-      await tapTab(tester, MainNavDestination.currentOrder);
-      expectOn(tester, MainNavDestination.currentOrder);
+      await tapTab(tester, MainNavDestination.profile);
+      expectOn(tester, MainNavDestination.profile);
+    });
+  });
+
+  group('Current Order page (standalone, D-A73)', () {
+    testWidgets('pushed above a tab: no bar, no selected tab; Back returns '
+        'to the same tab', (tester) async {
+      await launch(tester);
+      await tapTab(tester, MainNavDestination.wallet);
+      router(tester).push(RoutesString.currentOrder);
+      await tester.pumpAndSettle();
+      expect(find.byType(CurrentOrderScreen), findsOneWidget);
+      expect(bar, findsNothing);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expectOn(tester, MainNavDestination.wallet);
+    });
+
+    testWidgets('as the first page (deep link), Back and system back go '
+        'Home', (tester) async {
+      await launch(tester);
+      router(tester).go(RoutesString.currentOrder);
+      await tester.pumpAndSettle();
+      expect(find.byType(CurrentOrderScreen), findsOneWidget);
+      await systemBack(tester);
+      expectOn(tester, MainNavDestination.home);
+
+      router(tester).go(RoutesString.currentOrder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expectOn(tester, MainNavDestination.home);
+    });
+
+    testWidgets('/notifications no longer exists', (tester) async {
+      await launch(tester);
+      expect(
+        router(
+          tester,
+        ).configuration.findMatch(Uri.parse('/notifications')).isEmpty,
+        isTrue,
+      );
     });
   });
 
@@ -310,9 +360,9 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      await tapTab(tester, MainNavDestination.profile);
+      await tapTab(tester, MainNavDestination.wallet);
       final session = tester
-          .element(find.byType(ProfileScreen))
+          .element(find.byType(WalletScreen))
           .read<AppSessionCubit>();
       await session.endSession();
       await tester.pumpAndSettle();
@@ -403,7 +453,7 @@ void main() {
     );
     expect(
       tester.getCenter(item(MainNavDestination.home)).dx,
-      greaterThan(tester.getCenter(item(MainNavDestination.profile)).dx),
+      greaterThan(tester.getCenter(item(MainNavDestination.wallet)).dx),
     );
   });
 }

@@ -24,10 +24,7 @@ class IosLoading extends StatelessWidget {
       // The old Theme(cupertinoOverrideTheme: dark) wrapper was dropped: the
       // indicator's color is set explicitly, so it had no visible effect.
       child: const Center(
-        child: CupertinoActivityIndicator(
-          radius: 17.0,
-          color: AppColor.secondary300,
-        ),
+        child: CupertinoActivityIndicator(radius: 17.0, color: AppColor.white),
       ),
     ),
   );

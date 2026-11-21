@@ -10,12 +10,17 @@ used without re-reading the code.
 Last verified against the source on 2026-11-11. Update this file whenever a
 public API or responsibility below changes.
 
-**Approved target change (D-A50, 2026-11-12):** Wallet replaces Profile as
-the fifth navigation destination and the total balance appears in the AppBar.
-The enum/API below still documents the old implementation until the Flutter
-source is updated; do not assume the Wallet branch or screen already exists.
+**Implemented (Task 34, 2026-11-15; D-A50, D-A66):** Wallet is the fifth
+navigation destination; Profile opens from the app bar. The Home balance
+chip opens Wallet.
 
 ---
+
+> **Client revision 2026-11-20 (D-A69–D-A79):** `MainNavigationBar` /
+> `MainNavDestination` become four-item, input-free; `HomeAppBar` takes the
+> greeting and availability; `AppOrderOfferCard` uses red Accept / neutral
+> Decline. Sections below are updated as each change is implemented; see
+> `../project/PROJECT_STATUS.md` §0 for actual status.
 
 ## 1. Purpose and scope
 
@@ -677,96 +682,51 @@ check.
 tests: 6 original and 37 in "rendered contract". Login's error toast is covered
 in `test/login_screen_test.dart`.
 
-### 3.12 `MainNavigationBar` and `MainNavDestination` (`lib/view/widget/navigation/`)
+### 3.12 `MainNavigationBar` and `MainNavDestination` (`lib/view/widget/navigation/`) — four items (D-A70, implemented 2026-11-20)
 
 ```dart
-enum MainNavDestination { home, notifications, currentOrder, orderHistory, profile }
-//   .icon  .selectedIcon  .label(l10n)
+enum MainNavDestination { home, orderHistory, wallet, profile }
+//   .icon (Phosphor Regular)  .selectedIcon (Fill)  .label(l10n)
+//   house · clipboardText · wallet · user
 
 MainNavigationBar({required int selectedIndex,
-  required ValueChanged<int> onDestinationSelected,
-  int unreadCount = 0, bool hasActiveOrder = false,
-  bool isCheckingActiveOrder = false});
+  required ValueChanged<int> onDestinationSelected});
 ```
 
 | Member | Meaning |
 |---|---|
-| `selectedIndex` | Index into `MainNavDestination.values` of the open destination. The shell passes GoRouter's branch index |
-| `onDestinationSelected(index)` | Called on every tap, including on the current destination |
-| `unreadCount` | Shows the dot on Notifications when greater than zero. The number itself isn't displayed |
-| `hasActiveOrder` | Changes the central button's background and adds a badge. Independent of selection. Pass true only when the server reported an active order |
-| `isCheckingActiveOrder` | Shows a small spinner instead of the central icon; the button keeps its size |
-| `barHeight` (64, the minimum), `centerButtonSize` (56), `centerButtonRise` (20), `maxContentWidth` (640), `maxTextScale` (2) | Layout constants |
-| `itemKey(destination)`, `centerButtonKey`, `centerProgressKey`, `notificationDotKey`, `activeOrderBadgeKey`, `surfaceKey` | Keys for tests |
+| `selectedIndex` | Index into `MainNavDestination.values` of the open destination (GoRouter's branch index). Out of range asserts |
+| `onDestinationSelected(index)` | Called on every tap, including on the current destination; `AppNavBar` passes `goBranch` |
+| `barHeight` (64, the minimum), `maxContentWidth` (640), `maxTextScale` (2) | Layout constants |
+| `itemKey(destination)`, `indicatorKey(destination)`, `surfaceKey` | Keys for tests |
 
-- **Presentation only.** No routes, no GoRouter, no Cubits, no fetching.
-  Inject the indicator values; leave the defaults when there is no real
-  data.
-- **Enum order is the branch order** of the shell route. Change them
-  together (`ROUTING_AND_STARTUP.md` §7).
-- **Placement:** used by `AppNavBar` as the `Scaffold.bottomNavigationBar`.
-  It sizes itself (bar + raised strip + bottom safe area) and grows when
-  labels need two lines. Don't wrap it in a `SafeArea` or add bottom
-  padding: it applies the inset itself.
-- Visual rules, states and accessibility: `DESIGN_SYSTEM.md` §9–10.
-- **Debug asserts (Task 22):**
-  - `selectedIndex` must be within `0..MainNavDestination.values.length - 1`
-    (it used to show nothing selected, silently);
-  - `unreadCount` must not be negative.
-  The shell always passes a valid `currentIndex` and no `unreadCount`, so the
-  dot stays off until real data exists.
-- **Taps:** every tap, including a repeated tap on the current destination,
-  is reported. What it means belongs to the shell: `AppNavBar` calls
-  `goBranch`, plus `CurrentOrderCubit.load()` for Current Order.
-- **Fifth destination:** still **Profile** in code. The approved Wallet
-  migration (D-A66) is not implemented.
-- **Text scale cap (`maxTextScale = 2`):** the system text scale is clamped
-  to 2 inside the bar only, so a fixed bottom bar can't take over the screen;
-  scale 3 renders like scale 2. Screen-reader labels always carry the full
-  destination name.
-- **Known limitation, real font (owner decision):** at text scale 2 or more,
-  some labels end in "…" even on two lines:
-  - at 320 px: «الطلب الحالي», «سجل الطلبات» and «الملف الشخصي»;
-  - at 375 px: «الملف الشخصي».
+- **Presentation only, no indicator inputs.** The former `unreadCount`,
+  `hasActiveOrder`, `isCheckingActiveOrder` inputs, the raised center
+  button and their keys were removed (D-A72, D-A73; approved API change
+  D-A79).
+- **Enum order is the branch order** of the shell route and of
+  `mainShellRoutes`; labels «الرئيسية», «طلباتي», «المحفظة», «حسابي».
+- **Look (D-A69):** white surface, light top divider; selected = dark Fill
+  icon, bold dark label and a neutral pill behind the icon; unselected =
+  gray Regular icon and label. Never red.
+- **Placement:** `AppNavBar`'s `Scaffold.bottomNavigationBar`; it applies
+  the bottom safe-area inset itself and takes only its own height.
+- **Text:** labels are never shrunk; all switch to two lines when one does
+  not fit; text scale capped at 2 inside the bar. With the real font all
+  four labels fit whole at 320/375/450 px and scales 1–3 (tested).
 
-  All labels fit at text scale 1 on every tested width, and at 450 px up to
-  the cap.
+### 3.13 Home AppBar (`HomeAppBar`, `lib/view/screens/home_screen/widget/`, D-A71)
 
-### 3.13 `UnderConstructionPlaceholder` (`lib/view/widget/placeholder/`)
-
-```dart
-const UnderConstructionPlaceholder({
-  Key? key,
-  required IconData icon,
-  required String message,
-});
-```
-
-- **What it shows:**
-  - the shared ARB heading `underConstructionTitle` («قيد التطوير»);
-  - the caller's localized sentence, shown exactly as given;
-  - the caller's icon.
-
-  All three go through `AppStatusMessage` (§3.14), with no action and no
-  loading state. It is presentation only: no state, navigation or data.
-- **Why both arguments are required:**
-  - `message` is the screen-specific sentence, the only thing that tells the
-    three screens apart;
-  - `icon` identifies the feature (each caller passes its
-    `MainNavDestination` icon).
-- **Blank messages:** rejected in debug by `AppStatusMessage`'s blank-message
-  assert (Task 20). There is no separate assert here.
-- **Used by:** the bodies of the Notifications, Order History and Profile
-  placeholder screens.
-- **Verified (Task 21):**
-  - each screen at 320×300 and text scale 3: no overflow, heading and message
-    not truncated, one status announcement;
-  - the shell tests cover every tab at all widths.
-- **Known limitation, outside this widget:** at text scale 3 the screens'
-  `AppBar` titles («سجل الطلبات», «الملف الشخصي») are cut off with an
-  ellipsis, as Material app-bar titles are single-line.
-- **Release:** these placeholders are temporary and still block store
-  submission (see `docs/release/STORE_SUBMISSION_COMPLIANCE.md`).
+`HomeAppBar({required int? walletBalanceFils})` — a content-sized app bar
+placed above the Home body (Material `AppBar` needs a fixed height, which
+cannot hold a wrapping greeting plus variable notices). Row 1: `HomeGreeting`
+and `WalletBalanceChip(balanceFils:, onPressed: go /wallet)` in a `Wrap`;
+row 2: `HomeAvailabilityBar` (the existing `AppAvailabilityToggle` with its
+status and `HomeAvailabilityNotice`). No Profile action, logo or pattern.
+It grows with content and scrolls internally only beyond 60 % of the
+screen height. «الرئيسية» remains a screen-reader header.
+`HomeActiveOrderCard` (body) shows «عرض الطلب الحالي» for an active order
+and an explicit "could not check" line with Retry after a failed lookup.
 
 ### 3.14 `AppStatusMessage` (`lib/view/widget/status/`)
 
@@ -862,7 +822,10 @@ repositories, routing or remembered state.
 - **Tests:** `test/app_availability_toggle_test.dart` (18), including
   320/375/450 px × text scale 1, 2 and 3 with the real font.
 
-### 3.16 `AppOrderOfferCard` (`lib/view/widget/order/`, Task 26)
+### 3.16 `AppOrderOfferCard` (`lib/view/widget/order/`, Task 26; colors D-A69)
+
+> **2026-11-20 (D-A69):** white card with a light `AppColor.divider` outline and a restrained shadow; dark-neutral detail icons; the full fee «أجرة التوصيل» in red bold; «قبول» = AppButton's default theme red (pressed/disabled states) with a check icon; «رفض» = neutral outline (`inputOutline`), dark label, close icon. The forest/sand wording below is the historical Task 33 look.
+
 
 ```dart
 enum AppOfferCardAction { accept, decline }
@@ -906,8 +869,11 @@ One order offer, presentation only; the caller owns all state.
     amount under the label at narrow widths and large text;
   - all icons are forest, decorative (no semantics label), at the logical
     start (Material icons, already bundled; no new dependency);
-  - «قبول» is the filled brand-primary `AppButton`;
-  - «رفض» is an **outlined** `AppButton`: surface fill, `colorScheme.error`
+  - «قبول» is a filled **forest** `AppButton` (`colorScheme.secondary` /
+    `onSecondary`, Task 36) with `Icons.check_circle_outline`: never the
+    maroon primary or the error red of a refusal. Local customization only;
+    `AppButton` defaults are unchanged;
+  - «رفض» has `Icons.close` (Task 36) and is an **outlined** `AppButton`: surface fill, `colorScheme.error`
     label and 1 px border while it can act or is running (error on white is
     above 4.5:1); when disabled it uses `AppButton`'s shared disabled look
     without the red border. `colorScheme.error` is a Material fallback,
@@ -925,8 +891,50 @@ One order offer, presentation only; the caller owns all state.
   real `HomeScreen` with typed `CaptainOrderOffer` fixtures. The owner's
   former `HomeOrderPreviewCard` and the commented-out `order_card.dart`
   stub were deleted after their design moved here. Public API unchanged.
+- **New-offer sheet (Task 36, not a shared `App*` widget):**
+  `NewOrderOfferSheet` (`lib/view/navigation/`) is the bottom-sheet content
+  for one new offer, used only by `NewOfferSheetHost` and its design
+  preview. Same props pattern as this card (`offer`, nullable `onAccept` /
+  `onDecline`, `onLater`, `busyAction`, `notice`) and the same action
+  colors and icons («قبول الطلب» / «رفض الطلب» / «لاحقاً»). It adds the
+  «حالي» / «مؤجل» badge, the scheduled pickup time, and **one** money row:
+  «أجرة التوصيل كاملة» with `deliveryFeeFils` as sent (owner change, Task
+  38: no commission rate, commission amount or net line; the commission is
+  charged through the wallet). The snapshot still gates Accept in
+  `NewOfferSheetHost` (`offerAcceptBlock`). Public API unchanged. Details scroll with the actions pinned below; on a screen
+  too short for both at the current text size the actions scroll too.
+  Tests: `test/new_offer_sheet_test.dart`; preview
+  `lib/preview/new_offer_sheet_preview.dart`.
 
 ---
+
+### 3.17 Wallet widgets (`lib/view/screens/wallet_screen/widget/`, D-A74–D-A76)
+
+- `WalletBalanceCard({required WalletSummary? summary})` — the single
+  balance, «—» when unknown, sign kept, never clamped.
+- `WalletMetricCards()` — exactly two cards (delivered orders, earnings),
+  lifetime, from `WalletCubit`'s independent statistics read; side by side
+  or stacked; «—» plus a reason when unknown; earnings "unavailable" until
+  D-P36; own Retry.
+- `WalletDebitCard({required WalletCommissionDebit debit})` — merchant,
+  area, date/time, commission debited (never the fee).
+- Removed: `WalletCreditCard`, `showRechargeContactPopup`, the history
+  selector (D-A76, approved removal D-A79).
+
+### 3.18 Profile, Settings and About (`profile_screen/`, `settings_screen/`, `about_screen/`, D-A77–D-A78)
+
+- `ProfileIdentityCard()` — name and phone from `AppSessionCubit`, honest
+  fallbacks, phone LTR-isolated.
+- `ProfileRatingCard()` — `ProfileRatingCubit` states: unavailable (with
+  Retry when offline/failed), confirmed none, value with the server's scale
+  only.
+- `openTermsPage(context, LegalPageLauncher)` (`view/widget/legal/`) — the
+  one Terms flow, shared by Login's `LoginTermsAction` and Profile.
+- `SettingsScreen` + `showAccountDeletionConfirmation(context)` — destructive
+  entry, dedicated confirmation (Cancel / «تأكيد الحذف»), typed outcomes
+  from `AccountDeletionCubit`.
+- `AboutScreen` — logo, app name, factual one-line identity, version
+  "unavailable" (no version source).
 
 ## 4. Dependency map
 

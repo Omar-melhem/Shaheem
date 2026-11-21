@@ -71,6 +71,11 @@ flutter:
   generate: true
   assets:
     - assets/images/png/
+    # SHAHM_DEMO_START pubspec-assets
+    # Debug demo fixtures (Task 37). Declared assets are packaged in EVERY
+    # build, release included: remove the demo before any release build.
+    - assets/demo/fixtures/
+    # SHAHM_DEMO_END pubspec-assets
   # IBM Plex Sans Arabic (D-A63), official IBM release
   # @ibm/plex-sans-arabic@1.1.0, SIL Open Font License 1.1 (OFL.txt).
   fonts:

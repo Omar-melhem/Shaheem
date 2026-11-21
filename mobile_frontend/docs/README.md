@@ -1,6 +1,6 @@
 # SHAHM Flutter — Documentation Index
 
-**Reconciled against owner approvals through 2026-11-14 (documentation only).** For current business rules use `project/PRODUCT_OVERVIEW.md`, and for decision resolution use `decisions/ARCHITECTURAL_DECISIONS.md` §1.1/§3. Older 2026-11-11/12 implementation snapshots are not production approvals. `project/PROJECT_STATUS.md` records last verified code; **no source changes/tests** occurred in this update.
+**Reconciled against the client revision of 2026-11-20 (D-A69–D-A79).** For current business rules use `project/PRODUCT_OVERVIEW.md`, and for decision resolution use `decisions/ARCHITECTURAL_DECISIONS.md` §1.2, §1.1 and §3. Older implementation snapshots are not production approvals. `project/PROJECT_STATUS.md` §0 records the current target versus what the code actually contains.
 
 This is the central documentation for the SHAHM Flutter app
 (`mobile_frontend/`). The permanent working rules for Claude Code are in
@@ -51,7 +51,7 @@ These belong to the React web prototype and are **not** Flutter documents.
 They are useful as product references:
 
 - `../../web_frontend/docs/SHAHM-PROJECT.md`: full prototype overview (Arabic).
-- `../../web_frontend/docs/wallet-commission-backend-contract.md`: historical external proposed wallet contract. The file exists in the repository, but it was **not included in the 2026-11-14 reconciliation bundle and has not been reviewed or certified** line by line. Its contents are not automatically approved; new implementation must follow the currently approved wallet rules in this package.
+- `../../web_frontend/docs/wallet-commission-backend-contract.md`: historical external proposed wallet contract that still describes commission holds (superseded by D-A74). The file exists in the repository, but it was **not included in the 2026-11-14 reconciliation bundle and has not been reviewed or certified** line by line. Its contents are not automatically approved; new implementation must follow the currently approved wallet rules in this package.
 - `../../web_frontend/CLAUDE.md`: web prototype rules, including approved product rules (CR v1.3 and v1.4).
 
 ## Canonical contract policy
@@ -62,8 +62,8 @@ They are useful as product references:
   PostgreSQL business effects. Concrete DTOs/events must still be written.
 - **Operational source of truth**: `project/PRODUCT_OVERVIEW.md` takes
   precedence over archived prototype prompts for broadcast/GPS/wallet/order
-  behavior. Follow approved D-A53–D-A68 decisions when historic tables
-  contradict them.
+  behavior. Follow approved D-A53–D-A79 decisions (latest first) when
+  historic tables contradict them.
 - **Product vs implementation**: approved target ≠ code already implemented.
   Never turn a historic screenshot/simulator run into a claimed new test.
 - **Project Knowledge synchronization**: replacing local Markdown bytes does

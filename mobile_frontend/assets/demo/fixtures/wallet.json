@@ -1,0 +1,58 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "summary": {
+    "balance_fils": 4000,
+    "currency": "JOD"
+  },
+  "visible_history_window_days": 7,
+  "recharges": [
+    {
+      "id": "demo-credit-1",
+      "amount_fils": 500,
+      "occurred_minutes_ago": 120,
+      "source_label": "شحن تجريبي"
+    },
+    {
+      "id": "demo-credit-2",
+      "amount_fils": 2000,
+      "occurred_minutes_ago": 8640,
+      "source_label": "شحن تجريبي"
+    },
+    {
+      "id": "demo-credit-outside-week",
+      "amount_fils": 3000,
+      "occurred_minutes_ago": 13500,
+      "source_label": "شحن تجريبي خارج نافذة 7 أيام"
+    }
+  ],
+  "commission_debits": [
+    {
+      "id": "demo-debit-1",
+      "order_id": "demo-order-done-1",
+      "merchant_name": "مطعم التلة",
+      "delivery_area": "الدوار الرابع",
+      "commission_fils": 500,
+      "occurred_minutes_ago": 600
+    },
+    {
+      "id": "demo-debit-2",
+      "order_id": "demo-order-done-2",
+      "merchant_name": "بيت المعجنات",
+      "delivery_area": "طبربور",
+      "commission_fils": 600,
+      "occurred_minutes_ago": 4350
+    },
+    {
+      "id": "demo-debit-outside-week",
+      "order_id": "demo-order-archived",
+      "merchant_name": "متجر قديم",
+      "delivery_area": "خلدا",
+      "commission_fils": 400,
+      "occurred_minutes_ago": 13000
+    }
+  ],
+  "financial_actions_enabled": false,
+  "balance_note": "Fictional single balance (D-A74: no holds). Within the 5,000-fils ceiling (D-A75). Ledger rows below replay to it, oldest first: +3000, -400, +2000, -600, -500, +500 = 4000.",
+  "recharges_note": "Ledger evidence only: the captain Wallet UI lists commission debits, not credits (D-A76)."
+}

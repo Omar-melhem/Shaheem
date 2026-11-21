@@ -1,14 +1,14 @@
-// Widget tests for the visual MainNavigationBar in isolation: order, RTL,
-// selected state, the central button, the two indicators, accessibility,
-// safe area and responsive widths. Indicator values are injected here only;
-// the app itself never invents them.
+// Widget tests for the visual MainNavigationBar in isolation (D-A69,
+// D-A70): four items in logical order, RTL, black/gray selected state with
+// a neutral pill, no indicator inputs, accessibility, safe area, label
+// growth and responsive widths.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui' show Tristate;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
-import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
@@ -18,29 +18,21 @@ import 'test_app.dart';
 
 void main() {
   const destinations = MainNavDestination.values;
-  final scheme = AppTheme.light.colorScheme;
 
   Finder item(MainNavDestination d) => find.byKey(MainNavigationBar.itemKey(d));
-  final center = find.byKey(MainNavigationBar.centerButtonKey);
-  final dot = find.byKey(MainNavigationBar.notificationDotKey);
-  final badge = find.byKey(MainNavigationBar.activeOrderBadgeKey);
+  Finder pill(MainNavDestination d) =>
+      find.byKey(MainNavigationBar.indicatorKey(d));
 
   /// Pumps the bar at the bottom of the shared Arabic test host.
   Future<void> pumpBar(
     WidgetTester tester, {
     int selectedIndex = 0,
-    int unreadCount = 0,
-    bool hasActiveOrder = false,
-    bool isChecking = false,
     ValueChanged<int>? onSelected,
     TextDirection? direction,
     double textScale = 1,
   }) async {
     Widget bar = MainNavigationBar(
       selectedIndex: selectedIndex,
-      unreadCount: unreadCount,
-      hasActiveOrder: hasActiveOrder,
-      isCheckingActiveOrder: isChecking,
       onDestinationSelected: onSelected ?? (_) {},
     );
     if (direction != null) {
@@ -61,287 +53,152 @@ void main() {
         ),
       ),
     );
-    // responsive_framework measures after the first frame; Material
-    // finishes its implicit color animation. The loading spinner never
-    // settles, so fixed pumps are used for it.
-    if (isChecking) {
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    } else {
-      await tester.pumpAndSettle();
-    }
+    await tester.pumpAndSettle();
   }
 
-  Material centerMaterial(WidgetTester tester) =>
-      tester.widget<Material>(center);
+  Icon iconOf(WidgetTester tester, MainNavDestination d) => tester.widget<Icon>(
+    find.descendant(of: item(d), matching: find.byType(Icon)),
+  );
 
-  testWidgets('five items in logical order, each with icon and label', (
+  Text labelOf(WidgetTester tester, MainNavDestination d) =>
+      tester.widget<Text>(find.text(d.label(l10n)));
+
+  testWidgets('exactly four items in logical order with icon and label', (
     tester,
   ) async {
     await pumpBar(tester);
-    expect(destinations.map((d) => d.name), [
-      'home',
-      'notifications',
-      'currentOrder',
-      'orderHistory',
-      'profile',
+    expect(destinations, [
+      MainNavDestination.home,
+      MainNavDestination.orderHistory,
+      MainNavDestination.wallet,
+      MainNavDestination.profile,
     ]);
     expect(
-      find.descendant(
-        of: find.byType(MainNavigationBar),
-        matching: find.byType(InkWell),
-      ),
-      findsNWidgets(5),
+      [for (final d in destinations) d.label(l10n)],
+      ['الرئيسية', 'طلباتي', 'المحفظة', 'حسابي'],
     );
     for (final d in destinations) {
       expect(item(d), findsOneWidget);
-      expect(
-        find.descendant(of: item(d), matching: find.text(d.label(l10n))),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: item(d), matching: find.byType(PhosphorIcon)),
-        findsOneWidget,
-      );
+      expect(find.text(d.label(l10n)), findsOneWidget);
     }
-    // The center opens the current order; it is not a "create" action.
-    expect(l10n.currentOrderTitle, 'الطلب الحالي');
-    for (final plus in [
-      PhosphorIconsRegular.plus,
-      PhosphorIconsBold.plus,
-      PhosphorIconsFill.plus,
-      PhosphorIconsRegular.plusCircle,
-      Icons.add,
-    ]) {
-      expect(find.byIcon(plus), findsNothing);
-    }
-    expect(find.byIcon(PhosphorIconsRegular.mapPin), findsOneWidget);
+    // No retired destinations or indicators.
+    expect(find.text('الإشعارات'), findsNothing);
+    expect(find.text('الطلب الحالي'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(MainNavigationBar),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsNothing,
+    );
   });
 
-  testWidgets('RTL: Home on the right, Profile on the left, center centered', (
-    tester,
-  ) async {
+  testWidgets('RTL: Home on the right, My Account on the left', (tester) async {
     setScreenSize(tester, 400, 800);
     await pumpBar(tester);
     final xs = [for (final d in destinations) tester.getCenter(item(d)).dx];
     for (var i = 1; i < xs.length; i++) {
       expect(xs[i], lessThan(xs[i - 1]));
     }
-    expect(tester.getCenter(center).dx, moreOrLessEquals(200));
+    // Equal widths.
+    final widths = {
+      for (final d in destinations) tester.getSize(item(d)).width.round(),
+    };
+    expect(widths.length, 1);
   });
 
-  testWidgets('LTR: order flips with Directionality, center stays centered', (
-    tester,
-  ) async {
+  testWidgets('LTR: order flips with Directionality', (tester) async {
     setScreenSize(tester, 400, 800);
     await pumpBar(tester, direction: TextDirection.ltr);
     final xs = [for (final d in destinations) tester.getCenter(item(d)).dx];
     for (var i = 1; i < xs.length; i++) {
       expect(xs[i], greaterThan(xs[i - 1]));
     }
-    expect(tester.getCenter(center).dx, moreOrLessEquals(200));
   });
 
-  testWidgets('selected item differs by icon style and label weight', (
+  testWidgets('selected: dark Fill icon, bold dark label and neutral pill; '
+      'unselected: gray Regular icon; never red', (tester) async {
+    await pumpBar(tester, selectedIndex: MainNavDestination.wallet.index);
+    final selected = MainNavDestination.wallet;
+    expect(iconOf(tester, selected).icon, PhosphorIconsFill.wallet);
+    expect(iconOf(tester, selected).color, AppColor.navSelected);
+    expect(labelOf(tester, selected).style!.fontWeight, FontWeight.w700);
+    expect(labelOf(tester, selected).style!.color, AppColor.navSelected);
+    final selectedPill = tester.widget<Container>(pill(selected));
+    expect(
+      (selectedPill.decoration! as BoxDecoration).color,
+      AppColor.selectedTabContainer,
+    );
+    for (final d in destinations.where((d) => d != selected)) {
+      expect(iconOf(tester, d).icon, d.icon);
+      expect(iconOf(tester, d).color, AppColor.navUnselected);
+      expect(labelOf(tester, d).style!.fontWeight, FontWeight.w400);
+      final p = tester.widget<Container>(pill(d));
+      expect((p.decoration! as BoxDecoration).color, Colors.transparent);
+    }
+    for (final d in destinations) {
+      expect(iconOf(tester, d).color, isNot(AppColor.primary));
+      expect(labelOf(tester, d).style!.color, isNot(AppColor.primary));
+    }
+    // The surface is white with a light divider.
+    final surface = tester.widget<DecoratedBox>(
+      find.byKey(MainNavigationBar.surfaceKey),
+    );
+    final decoration = surface.decoration as BoxDecoration;
+    expect(decoration.color, AppColor.surface);
+    expect(decoration.border!.top.color, AppColor.divider);
+  });
+
+  testWidgets('selecting does not move anything', (tester) async {
+    setScreenSize(tester, 400, 800);
+    await pumpBar(tester);
+    final before = [for (final d in destinations) tester.getRect(item(d))];
+    await pumpBar(tester, selectedIndex: 3);
+    expect([for (final d in destinations) tester.getRect(item(d))], before);
+  });
+
+  testWidgets('tapping an item reports its index (also when selected)', (
     tester,
   ) async {
-    await pumpBar(tester, selectedIndex: MainNavDestination.home.index);
-    // Home selected: filled icon, bold primary label.
-    expect(find.byIcon(PhosphorIconsFill.house), findsOneWidget);
-    expect(find.byIcon(PhosphorIconsRegular.house), findsNothing);
-    final home = tester.widget<Text>(find.text(l10n.homeTitle));
-    expect(home.style!.fontWeight, FontWeight.w700);
-    expect(home.style!.color, scheme.primary);
-    // Profile not selected: regular icon, regular muted label.
-    expect(find.byIcon(PhosphorIconsRegular.userCircle), findsOneWidget);
-    final profile = tester.widget<Text>(find.text(l10n.profileTitle));
-    expect(profile.style!.fontWeight, FontWeight.w400);
-    expect(profile.style!.color, AppColor.textSecondary);
-
-    await pumpBar(tester, selectedIndex: MainNavDestination.profile.index);
-    expect(find.byIcon(PhosphorIconsFill.userCircle), findsOneWidget);
-    expect(find.byIcon(PhosphorIconsRegular.house), findsOneWidget);
-  });
-
-  testWidgets('tapping an item reports its index', (tester) async {
     final taps = <int>[];
     await pumpBar(tester, onSelected: taps.add);
     for (final d in destinations) {
       await tester.tap(item(d));
     }
-    // Tapping the circle itself works too (including its raised part).
-    await tester.tapAt(tester.getRect(center).topCenter + const Offset(0, 4));
-    expect(taps, [0, 1, 2, 3, 4, 2]);
+    await tester.tap(item(MainNavDestination.home));
+    expect(taps, [0, 1, 2, 3, 0]);
   });
 
-  testWidgets('center item is circular, raised, larger and above the bar', (
-    tester,
-  ) async {
-    await pumpBar(tester);
-    final material = centerMaterial(tester);
-    expect(material.shape, isA<CircleBorder>());
-    expect(material.elevation, greaterThan(0));
-    expect(
-      tester.getSize(center),
-      const Size.square(MainNavigationBar.centerButtonSize),
-    );
-    // Rises above the bar surface without leaving the widget's bounds.
-    final surfaceTop = tester
-        .getRect(find.byKey(MainNavigationBar.surfaceKey))
-        .top;
-    final circle = tester.getRect(center);
-    expect(circle.top, lessThan(surfaceTop));
-    expect(
-      circle.top,
-      greaterThanOrEqualTo(tester.getRect(find.byType(MainNavigationBar)).top),
-    );
-    // Its label is below the circle.
-    expect(
-      tester.getRect(find.text(l10n.currentOrderTitle)).top,
-      greaterThanOrEqualTo(circle.bottom),
-    );
-  });
-
-  testWidgets('center: selected and active-order are independent states', (
-    tester,
-  ) async {
-    const centerIndex = 2;
-    Color ring(WidgetTester t) =>
-        (centerMaterial(t).shape! as CircleBorder).side.color;
-
-    // Neither.
-    await pumpBar(tester);
-    expect(centerMaterial(tester).color, scheme.primary);
-    expect(ring(tester), scheme.surface);
-    expect(badge, findsNothing);
-    expect(find.byIcon(PhosphorIconsRegular.mapPin), findsOneWidget);
-
-    // Selected only: ring and icon weight change, background does not.
-    await pumpBar(tester, selectedIndex: centerIndex);
-    expect(centerMaterial(tester).color, scheme.primary);
-    expect(ring(tester), AppColor.sand);
-    expect(badge, findsNothing);
-    expect(find.byIcon(PhosphorIconsFill.mapPin), findsOneWidget);
-
-    // Active order only: background and badge change, ring does not.
-    await pumpBar(tester, hasActiveOrder: true);
-    expect(centerMaterial(tester).color, scheme.secondary);
-    expect(ring(tester), scheme.surface);
-    expect(badge, findsOneWidget);
-    expect(find.byIcon(PhosphorIconsRegular.mapPin), findsOneWidget);
-
-    // Both at once.
-    await pumpBar(tester, selectedIndex: centerIndex, hasActiveOrder: true);
-    expect(centerMaterial(tester).color, scheme.secondary);
-    expect(ring(tester), AppColor.sand);
-    expect(badge, findsOneWidget);
-  });
-
-  testWidgets('notification dot only when unread > 0; layout does not shift', (
-    tester,
-  ) async {
-    final bell = find.descendant(
-      of: item(MainNavDestination.notifications),
-      matching: find.byType(PhosphorIcon),
-    );
-    final label = find.text(l10n.notificationsTitle);
-
-    await pumpBar(tester, unreadCount: 0);
-    expect(dot, findsNothing);
-    final iconAt = tester.getCenter(bell);
-    final labelAt = tester.getCenter(label);
-
-    await pumpBar(tester, unreadCount: 3);
-    expect(dot, findsOneWidget);
-    expect(tester.getCenter(bell), iconAt);
-    expect(tester.getCenter(label), labelAt);
-    // Error color token; in RTL the "end" corner is the icon's left side.
-    final decoration =
-        tester.widget<Container>(dot).decoration! as BoxDecoration;
-    expect(decoration.color, scheme.error);
-    expect(tester.getCenter(dot).dx, lessThan(iconAt.dx));
-    expect(tester.getCenter(dot).dy, lessThan(iconAt.dy));
-
-    await pumpBar(tester, unreadCount: 3, direction: TextDirection.ltr);
-    expect(tester.getCenter(dot).dx, greaterThan(tester.getCenter(bell).dx));
-  });
-
-  testWidgets('accessibility: labels, selected state and indicators', (
+  testWidgets('accessibility: labelled buttons with selected state', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
-    await pumpBar(
-      tester,
-      selectedIndex: MainNavDestination.orderHistory.index,
-      unreadCount: 2,
-      hasActiveOrder: true,
-    );
-    expect(
-      tester.getSemantics(item(MainNavDestination.home)),
-      isSemantics(
-        label: l10n.homeTitle,
-        isButton: true,
-        isSelected: false,
-        hasTapAction: true,
-      ),
-    );
-    expect(
-      tester.getSemantics(item(MainNavDestination.orderHistory)),
-      isSemantics(
-        label: l10n.orderHistoryTitle,
-        isButton: true,
-        isSelected: true,
-      ),
-    );
-    expect(
-      tester.getSemantics(item(MainNavDestination.notifications)),
-      isSemantics(
-        label: l10n.notificationsTitle,
-        value: l10n.navUnreadNotifications,
-      ),
-    );
-    expect(
-      tester.getSemantics(item(MainNavDestination.currentOrder)),
-      isSemantics(
-        label: l10n.currentOrderTitle,
-        hint: l10n.navCurrentOrderHint,
-        value: l10n.navActiveOrder,
-        isButton: true,
-        hasTapAction: true,
-      ),
-    );
+    await pumpBar(tester, selectedIndex: 1);
     expect(find.bySemanticsLabel(l10n.mainNavigationLabel), findsOneWidget);
-
-    // Without indicators nothing extra is announced.
-    await pumpBar(tester);
-    expect(
-      tester.getSemantics(item(MainNavDestination.notifications)).value,
-      isEmpty,
-    );
-    expect(
-      tester.getSemantics(item(MainNavDestination.currentOrder)).value,
-      isEmpty,
-    );
+    for (final d in destinations) {
+      final node = tester.getSemantics(item(d));
+      expect(node.label, d.label(l10n));
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(
+        node.flagsCollection.isSelected,
+        d.index == 1 ? Tristate.isTrue : Tristate.isFalse,
+      );
+      expect(tester.getSize(item(d)).shortestSide, greaterThanOrEqualTo(48));
+    }
     handle.dispose();
   });
 
-  testWidgets('bottom safe area: bar grows and content stays above it', (
+  testWidgets('bottom safe area: added once; surface reaches the edge', (
     tester,
   ) async {
     setScreenSize(tester, 375, 800);
     await pumpBar(tester);
     final plainHeight = tester.getSize(find.byType(MainNavigationBar)).height;
-    expect(
-      plainHeight,
-      greaterThanOrEqualTo(
-        MainNavigationBar.barHeight + MainNavigationBar.centerButtonRise,
-      ),
-    );
+    expect(plainHeight, greaterThanOrEqualTo(MainNavigationBar.barHeight));
 
     tester.view.padding = const FakeViewPadding(bottom: 34);
     addTearDown(tester.view.resetPadding);
     await pumpBar(tester);
-    // The inset is added exactly once, not by both the bar and a parent.
     expect(
       tester.getSize(find.byType(MainNavigationBar)).height,
       plainHeight + 34,
@@ -352,39 +209,10 @@ void main() {
         lessThanOrEqualTo(800 - 34),
       );
     }
-    // The surface still reaches the screen's bottom edge.
     expect(
       tester.getRect(find.byKey(MainNavigationBar.surfaceKey)).bottom,
       800,
     );
-  });
-
-  testWidgets('loading: spinner replaces the icon, size and states unchanged', (
-    tester,
-  ) async {
-    final handle = tester.ensureSemantics();
-    final progress = find.byKey(MainNavigationBar.centerProgressKey);
-    await pumpBar(tester);
-    expect(progress, findsNothing);
-    final idleCircle = tester.getRect(center);
-    final idleBar = tester.getSize(find.byType(MainNavigationBar));
-
-    await pumpBar(tester, isChecking: true);
-    expect(progress, findsOneWidget);
-    expect(find.byIcon(PhosphorIconsRegular.mapPin), findsNothing);
-    expect(tester.getRect(center), idleCircle);
-    expect(tester.getSize(find.byType(MainNavigationBar)), idleBar);
-    // Loading alone never looks like an active order.
-    expect(centerMaterial(tester).color, scheme.primary);
-    expect(badge, findsNothing);
-    expect(
-      tester.getSemantics(item(MainNavDestination.currentOrder)),
-      isSemantics(
-        label: l10n.currentOrderTitle,
-        value: l10n.navCheckingActiveOrder,
-      ),
-    );
-    handle.dispose();
   });
 
   testWidgets('labels keep their font size; the bar grows instead', (
@@ -393,9 +221,7 @@ void main() {
     setScreenSize(tester, 320, 700);
     await pumpBar(tester);
     final normal = tester.getSize(find.byType(MainNavigationBar)).height;
-    Text label() => tester.widget<Text>(find.text(l10n.profileTitle));
-    expect(label().style!.fontSize, 12);
-    // Never shrunk to fit.
+    expect(labelOf(tester, MainNavDestination.wallet).style!.fontSize, 12);
     expect(
       find.descendant(
         of: find.byType(MainNavigationBar),
@@ -403,134 +229,38 @@ void main() {
       ),
       findsNothing,
     );
-
     await pumpBar(tester, textScale: 1.6);
-    expect(label().style!.fontSize, 12);
-    expect(
-      MediaQuery.textScalerOf(tester.element(find.text(l10n.profileTitle))),
-      const TextScaler.linear(1.6),
-    );
+    expect(labelOf(tester, MainNavDestination.wallet).style!.fontSize, 12);
     expect(
       tester.getSize(find.byType(MainNavigationBar)).height,
       greaterThan(normal),
     );
-    expect(tester.takeException(), isNull);
-
-    // Very large settings are honored up to the documented cap.
     await pumpBar(tester, textScale: 3);
     expect(
-      MediaQuery.textScalerOf(tester.element(find.text(l10n.profileTitle))),
+      MediaQuery.textScalerOf(tester.element(find.text(l10n.walletTitle))),
       const TextScaler.linear(MainNavigationBar.maxTextScale),
     );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('icon, label and edges keep the same rhythm on every item', (
+  testWidgets('icons and labels share one line across all items', (
     tester,
   ) async {
     setScreenSize(tester, 400, 800);
-    await pumpBar(tester);
-    final barBottom = tester.getRect(find.byType(MainNavigationBar)).bottom;
-    final tops = <double>{};
-    final iconBottoms = <double>{};
-    for (final d in destinations) {
-      final label = tester.getRect(find.text(d.label(l10n)));
-      tops.add(label.top);
-      expect(barBottom - label.bottom, greaterThanOrEqualTo(8), reason: '$d');
-      if (d != MainNavDestination.currentOrder) {
-        iconBottoms.add(
-          tester
-              .getRect(
-                find.descendant(
-                  of: item(d),
-                  matching: find.byType(PhosphorIcon),
-                ),
-              )
-              .bottom,
-        );
-      }
-    }
-    // All labels start on one line; all four regular icons sit on one line.
-    expect(tops.length, 1);
-    expect(iconBottoms.length, 1);
-    // The circle ends above its own label.
-    expect(tester.getRect(center).bottom, lessThanOrEqualTo(tops.single));
-  });
-
-  group('responsive', () {
-    /// No overflow, usable targets, labels inside their own item, and the
-    /// circle clear of its neighbors.
-    void expectSound(WidgetTester tester, double width) {
-      expect(tester.takeException(), isNull);
-      final circle = tester.getRect(center);
-      for (final d in destinations) {
-        final rect = tester.getRect(item(d));
-        expect(rect.width, greaterThanOrEqualTo(48), reason: '$d width');
-        expect(rect.height, greaterThanOrEqualTo(48), reason: '$d height');
-        final label = tester.getRect(find.text(d.label(l10n)));
-        expect(label.left, greaterThanOrEqualTo(rect.left), reason: '$d');
-        expect(label.right, lessThanOrEqualTo(rect.right), reason: '$d');
-        if (d != MainNavDestination.currentOrder) {
-          expect(rect.overlaps(circle), isFalse, reason: '$d under circle');
-        }
-      }
-      expect(circle.center.dx, moreOrLessEquals(width / 2));
-      expect(circle.left, greaterThanOrEqualTo(0));
-    }
-
-    for (final width in [
-      320.0,
-      375.0,
-      450.5,
-      600.0,
-      800.5,
-      840.0,
-      1024.0,
-      1440.0,
-      1920.5,
-    ]) {
-      testWidgets('width $width: all indicator states fit', (tester) async {
-        setScreenSize(tester, width, 800);
-        for (final unread in [0, 5]) {
-          for (final active in [false, true]) {
-            await pumpBar(
-              tester,
-              selectedIndex: 2,
-              unreadCount: unread,
-              hasActiveOrder: active,
-            );
-            expectSound(tester, width);
-          }
-        }
-        // Content is capped on wide screens instead of spreading out.
-        final span =
-            tester.getRect(item(MainNavDestination.home)).right -
-            tester.getRect(item(MainNavDestination.profile)).left;
-        expect(
-          span,
-          lessThanOrEqualTo(MainNavigationBar.maxContentWidth + 0.01),
-        );
-      });
-    }
-
-    testWidgets('landscape short screen', (tester) async {
-      setScreenSize(tester, 740, 320);
-      await pumpBar(tester, unreadCount: 1, hasActiveOrder: true);
-      expectSound(tester, 740);
-    });
-
-    testWidgets('large accessibility text on the narrowest width', (
-      tester,
-    ) async {
-      setScreenSize(tester, 320, 640);
-      await pumpBar(tester, textScale: 2.5);
-      expectSound(tester, 320);
-    });
+    await pumpBar(tester, selectedIndex: 2);
+    final labelTops = {
+      for (final d in destinations)
+        tester.getRect(find.text(d.label(l10n))).top,
+    };
+    final pillTops = {
+      for (final d in destinations) tester.getRect(pill(d)).top,
+    };
+    expect(labelTops.length, 1);
+    expect(pillTops.length, 1);
   });
 
   group('input contract', () {
     testWidgets('an out-of-range selectedIndex asserts', (tester) async {
-      // Negative: rejected by the constructor.
       expect(
         () =>
             MainNavigationBar(selectedIndex: -1, onDestinationSelected: (_) {}),
@@ -542,7 +272,6 @@ void main() {
           ),
         ),
       );
-      // Past the last destination: rejected when the bar builds.
       await tester.pumpWidget(
         testApp(
           MainNavigationBar(
@@ -560,57 +289,8 @@ void main() {
         ),
       );
     });
-
-    testWidgets('a negative unreadCount asserts', (tester) async {
-      expect(
-        () => MainNavigationBar(
-          selectedIndex: 0,
-          onDestinationSelected: (_) {},
-          unreadCount: -1,
-        ),
-        throwsA(
-          isA<AssertionError>().having(
-            (e) => e.message,
-            'message',
-            contains('unreadCount'),
-          ),
-        ),
-      );
-    });
-
-    testWidgets('checking and active together: both visible, checking named', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      await pumpBar(tester, hasActiveOrder: true, isChecking: true);
-      expect(find.byKey(MainNavigationBar.centerProgressKey), findsOneWidget);
-      expect(badge, findsOneWidget);
-      expect(
-        tester
-            .getSemantics(item(MainNavDestination.currentOrder))
-            .getSemanticsData()
-            .value,
-        l10n.navCheckingActiveOrder,
-      );
-      semantics.dispose();
-    });
-
-    testWidgets('repeated taps are each reported; the bar keeps no state', (
-      tester,
-    ) async {
-      final taps = <int>[];
-      await pumpBar(tester, onSelected: taps.add);
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(item(MainNavDestination.home));
-      }
-      await tester.tap(item(MainNavDestination.currentOrder));
-      await tester.tap(item(MainNavDestination.currentOrder));
-      expect(taps, [0, 0, 0, 2, 2]);
-    });
   });
 
-  // Last in the file: loads the real IBM Plex Sans Arabic glyphs, so label
-  // widths are real (the default test font draws every glyph as a square).
   group('real font', () {
     setUpAll(() async {
       final loader = FontLoader(AppFonts.ibmPlexSansArabic);
@@ -624,7 +304,6 @@ void main() {
       await loader.load();
     });
 
-    /// Labels that end in an ellipsis (did not fit their lines).
     List<String> truncated(WidgetTester tester) => [
       for (final d in destinations)
         for (final p in tester.renderObjectList<RenderParagraph>(
@@ -633,50 +312,25 @@ void main() {
           if (p.didExceedMaxLines) p.text.toPlainText(),
     ];
 
-    /// Cases where every label fits today (see PROJECT_STATUS for the
-    /// 320/375 px × text scale ≥ 2 owner decision).
-    const fitting = [
-      (320.0, 1.0),
-      (375.0, 1.0),
-      (450.0, 1.0),
-      (450.0, 2.0),
-      (450.0, 3.0),
-    ];
     for (final direction in TextDirection.values) {
-      for (final (width, scale) in fitting) {
-        testWidgets('$direction $width px × $scale: labels whole, 48 px', (
-          tester,
-        ) async {
-          setScreenSize(tester, width, 800);
-          await pumpBar(
+      for (final width in [320.0, 375.0, 450.0]) {
+        for (final scale in [1.0, 2.0, 3.0]) {
+          testWidgets('$direction $width px × $scale: labels whole, 48 px', (
             tester,
-            direction: direction,
-            textScale: scale,
-            unreadCount: 1,
-            hasActiveOrder: true,
-          );
-          expect(tester.takeException(), isNull);
-          expect(truncated(tester), isEmpty);
-          for (final d in destinations) {
-            expect(
-              tester.getSize(item(d)).shortestSide,
-              greaterThanOrEqualTo(48),
-            );
-          }
-        });
+          ) async {
+            setScreenSize(tester, width, 800);
+            await pumpBar(tester, direction: direction, textScale: scale);
+            expect(tester.takeException(), isNull);
+            expect(truncated(tester), isEmpty);
+            for (final d in destinations) {
+              expect(
+                tester.getSize(item(d)).shortestSide,
+                greaterThanOrEqualTo(48),
+              );
+            }
+          });
+        }
       }
     }
-
-    testWidgets('text scale is capped at 2: scale 3 renders like scale 2', (
-      tester,
-    ) async {
-      setScreenSize(tester, 450, 800);
-      await pumpBar(tester, textScale: 2);
-      final atTwo = tester.getSize(find.byType(MainNavigationBar));
-      final labelAtTwo = tester.getSize(find.text(l10n.homeTitle));
-      await pumpBar(tester, textScale: 3);
-      expect(tester.getSize(find.byType(MainNavigationBar)), atTwo);
-      expect(tester.getSize(find.text(l10n.homeTitle)), labelAtTwo);
-    });
   });
 }

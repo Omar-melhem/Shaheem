@@ -33,7 +33,7 @@ class BodyText2 extends AppTextWidget {
   @override
   TextStyle buildDefaultStyle() => TextThemeStyle.bodyText2.copyWith(
     fontWeight: fontWeight ?? FontWeight.bold,
-    color: color ?? AppColor.ink,
+    color: color ?? AppColor.textPrimary,
     fontSize: fontSize ?? 13,
   );
 }

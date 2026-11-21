@@ -15,20 +15,22 @@ enum AppOfferCardAction { accept, decline }
 ///
 /// Shows the merchant name, the merchant pickup information (or a neutral
 /// "not available"), the customer delivery **area** and the delivery fee
-/// (integer fils formatted as JOD, never a double), with «قبول» (brand
-/// primary, filled) and «رفض» (outlined in the theme's error color)
-/// actions.
+/// (the **full** fee, integer fils formatted as JOD, never a double), with
+/// «قبول» (the theme's filled red primary action with a check icon) and
+/// «رفض» (neutral outline, dark label, close icon) actions (D-A69; the
+/// new-offer sheet uses the same treatment).
 ///
 /// It owns no state: the caller passes the offer, the callbacks (null
 /// disables an action), which action is [busyAction], and an optional
 /// [notice] line. A tap is an **intent**; the card never removes itself or
 /// changes its look until the caller passes new values.
 ///
-/// Look (owner design, Task 33): each detail starts with a decorative forest
-/// (`colorScheme.secondary`) Material outlined icon at the logical start —
-/// storefront (merchant), location pin (pickup), flag (delivery area),
-/// payments (fee). A soft line (`AppColor.border` at 45 % opacity, 0.7 px)
-/// separates the details from the fee, which is shown in forest.
+/// Look (Task 33 layout, D-A69 colors): a white card with a light
+/// [AppColor.divider] outline and a restrained shadow; each detail starts
+/// with a decorative dark-neutral (`colorScheme.secondary`) outlined icon
+/// at the logical start — storefront (merchant), location pin (pickup),
+/// flag (delivery area), payments (fee). A thin [AppColor.divider] line
+/// separates the details from the fee, which is emphasized in red.
 ///
 /// Full parent width, content height (it never has a fixed height); texts
 /// wrap instead of being truncated. One screen-reader summary for the
@@ -101,7 +103,14 @@ class AppOrderOfferCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColor.border),
+        border: Border.all(color: AppColor.divider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColor.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -156,10 +165,10 @@ class AppOrderOfferCard extends StatelessWidget {
                     style: detailStyle,
                   ),
                   const SizedBox(height: 20),
-                  Divider(
+                  const Divider(
                     height: 1,
                     thickness: 0.7,
-                    color: AppColor.border.withValues(alpha: 0.45),
+                    color: AppColor.divider,
                   ),
                   const SizedBox(height: 20),
                   // Wrap instead of a Row: at narrow widths and large text
@@ -190,7 +199,7 @@ class AppOrderOfferCard extends StatelessWidget {
                       Text(
                         '${ltrIsolate(fee)} ${l10n.walletCurrencySymbol}',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: iconColor,
+                          color: colors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -219,7 +228,11 @@ class AppOrderOfferCard extends StatelessWidget {
                 Expanded(
                   child: AppButton(
                     label: l10n.offerAccept,
+                    icon: const Icon(Icons.check_circle_outline),
                     expand: true,
+                    // Affirmative primary action: the theme's filled red (D-A69),
+
+                    // with its pressed and disabled states.
                     isLoading: busyAction == AppOfferCardAction.accept,
                     onPressed: busy
                         ? _ignore(busyAction, AppOfferCardAction.accept)
@@ -230,13 +243,18 @@ class AppOrderOfferCard extends StatelessWidget {
                 Expanded(
                   child: AppButton(
                     label: l10n.offerDecline,
+                    icon: const Icon(Icons.close),
                     expand: true,
-                    // Outlined: surface fill, error-colored label and
-                    // border. Disabled falls back to AppButton's default.
+
+                    // Neutral outline with an explicit «رفض» label and close
+
+                    // icon, distinct from the red Accept (D-A69). Disabled falls
+
+                    // back to the theme's disabled colors.
                     backgroundColor: colors.surface,
-                    foregroundColor: colors.error,
+                    foregroundColor: AppColor.textPrimary,
                     border: declineActive
-                        ? BorderSide(color: colors.error)
+                        ? const BorderSide(color: AppColor.inputOutline)
                         : null,
                     isLoading: busyAction == AppOfferCardAction.decline,
                     onPressed: busy

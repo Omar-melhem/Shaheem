@@ -1,0 +1,18 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "captain": {
+    "id": "demo-captain-001",
+    "role": "captain",
+    "display_name": "أحمد الشهم",
+    "username": "demo_captain",
+    "city": "عمّان",
+    "phone": null,
+    "profile_complete": true
+  },
+  "availability": {
+    "is_available": true,
+    "location_permission": "demo_simulated",
+    "notification_permission": "demo_simulated"
+  }
+}

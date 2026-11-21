@@ -337,7 +337,7 @@ void main() {
         expect(style.fontFamily, AppFonts.ibmPlexSansArabic);
         expect(style.fontSize, v.size);
         expect(style.fontWeight, v.weight);
-        expect(style.color, AppColor.ink);
+        expect(style.color, AppColor.textPrimary);
         expect(style.height, v.theme.height);
         // The theme's DefaultTextStyle supplies "none".
         expect(style.decoration, anyOf(isNull, TextDecoration.none));
@@ -362,7 +362,7 @@ void main() {
         expect(style.fontSize, 22);
         expect(style.fontFamily, AppFonts.ibmPlexSansArabic);
         expect(style.fontWeight, v.weight);
-        expect(style.color, AppColor.ink);
+        expect(style.color, AppColor.textPrimary);
         expect(style.height, v.theme.height);
       });
 
@@ -372,7 +372,7 @@ void main() {
             v.build(
               title: title,
               style: const TextStyle(
-                color: AppColor.secondary,
+                color: AppColor.success,
                 fontWeight: FontWeight.w300,
                 decoration: TextDecoration.lineThrough,
               ),
@@ -380,7 +380,7 @@ void main() {
           ),
         );
         final style = painted(tester, title);
-        expect(style.color, AppColor.secondary);
+        expect(style.color, AppColor.success);
         expect(style.fontWeight, FontWeight.w300);
         expect(style.decoration, TextDecoration.lineThrough);
         expect(style.fontSize, v.size);
@@ -394,7 +394,7 @@ void main() {
             v.build(
               title: title,
               style: const TextStyle(
-                color: AppColor.secondary,
+                color: AppColor.success,
                 fontSize: 22,
                 decoration: TextDecoration.lineThrough,
               ),
@@ -478,7 +478,7 @@ void main() {
             style: TextStyle(
               inherit: false,
               fontSize: 18,
-              color: AppColor.sand,
+              color: AppColor.selectedTabContainer,
             ),
             color: AppColor.primary,
           ),

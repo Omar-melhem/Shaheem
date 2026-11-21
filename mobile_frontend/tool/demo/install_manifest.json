@@ -1,0 +1,249 @@
+{
+  "task": 37,
+  "manifest_version": 1,
+  "description": "SHAHM debug demonstration mode. Remove with: bash tool/demo/remove_demo.sh --apply",
+  "created_files": [
+    {
+      "path": "lib/demo/demo_app.dart",
+      "sha256": "50261e09d747583b49452a7a2a019a91eea09037ee337ae7de5bf05baf1487ee"
+    },
+    {
+      "path": "lib/demo/demo_mode.dart",
+      "sha256": "291356f0ed246000119a93f730abe487f9c3c3bb64f837344a33e5b46e9ec354"
+    },
+    {
+      "path": "lib/demo/demo_state.dart",
+      "sha256": "b2b8cd585c445c6b42610d96acf2db8ce05330a8556e3e00481b828c3ca1aa5a"
+    },
+    {
+      "path": "lib/demo/model/demo_fixtures.dart",
+      "sha256": "5984e66e27f811a32ddb4f115a4400d306cabbd73432e51d5ff4104c30b7a82e"
+    },
+    {
+      "path": "lib/demo/repo/demo_auth_repository.dart",
+      "sha256": "6e6b582bc7f502a6eaa662412c9acea0565391f574c2fa022252ec682b54b630"
+    },
+    {
+      "path": "lib/demo/repo/demo_repositories.dart",
+      "sha256": "9523b3086e7bc69a30870f2bb757dbc2e0b86ed94028e83b5a76e71c6b536dde"
+    },
+    {
+      "path": "lib/demo/widget/demo_shell_bridge.dart",
+      "sha256": "b0e88bf7f5b33fb586c2da0fdbe0b48e2581e418ef2afe9fb8ca5f8b62d20d37"
+    },
+    {
+      "path": "lib/demo/widget/demo_strip.dart",
+      "sha256": "0cfab09f8826201fefd4d8cead480421234c96c2f2c0adc7a2b19e9ab574fb90"
+    },
+    {
+      "path": "lib/demo/widget/demo_home_wallet.dart",
+      "sha256": "29800418b892e1c7edcdb84ea8a441bb4b5a4cd3cfbf59cb882fbeacd382263d"
+    },
+    {
+      "path": "test/demo_mode_test.dart",
+      "sha256": "b6b9eae12ca31a4448dff6d080ad00bd7be4cb19e83dca08d2a306d9360a1673"
+    },
+    {
+      "path": "tool/demo/README.md",
+      "sha256": "df36facc979a808673020f700ecf1ef12c6c2e392b68b95ec2caa806dcb5d714"
+    },
+    {
+      "path": "tool/demo/install_manifest.json",
+      "sha256": null
+    },
+    {
+      "path": "tool/demo/remove_demo.sh",
+      "retain": true
+    },
+    {
+      "path": "tool/demo/remove_demo.dart",
+      "retain": true
+    }
+  ],
+  "owner_supplied_files": [
+    {
+      "path": "assets/demo/fixtures/auth.json",
+      "sha256": "ae45cf2b46d4cd6757ae7d1e8eb6cdba63642c8159ea752aca6f4afdd869fe51",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted"
+    },
+    {
+      "path": "assets/demo/fixtures/captain.json",
+      "sha256": "608186d55059523979ab3227213a32a84092250fc445b9b18eea1f701afe8893",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
+    },
+    {
+      "path": "assets/demo/fixtures/current_order.json",
+      "sha256": "44737d008e83367d06adbc83a4842cf09fb312fa610223ef8c0b4dfb33447d4c",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted"
+    },
+    {
+      "path": "assets/demo/fixtures/home.json",
+      "sha256": "1effa6d013a29a403f1e7c9ff6a7067bd780a0fc248a315b3ffe8c595adba3e5",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
+    },
+    {
+      "path": "assets/demo/fixtures/offers.json",
+      "sha256": "fbef2ee7e6636c49215b93b9c1bb6e750bd6f483646dd773fcc5af59085af5e4",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted"
+    },
+    {
+      "path": "assets/demo/fixtures/order_history.json",
+      "sha256": "fdda549395993d3800b99ce3d78dd0f6d02454b434163fce0347802766861065",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
+    },
+    {
+      "path": "assets/demo/fixtures/wallet.json",
+      "sha256": "5d2cca2796dfcb648a9f13eef705e142fa73f860c6bd610ebebc6528439b1784",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
+    }
+  ],
+  "edits": [
+    {
+      "file": "lib/main.dart",
+      "id": "main-import",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "7ac5fd80b49d7bc38f175df9cc6417d56c41eb83f928c70ff7855b4dcd016a09",
+      "region_preview": "// SHAHM_DEMO_START main-import"
+    },
+    {
+      "file": "lib/main.dart",
+      "id": "main-entry",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "219efc9d81bd612cfc34a82e37217d2a44abf6f508b1dc5be1d720d1e0e8a0b5",
+      "region_preview": "// SHAHM_DEMO_START main-entry"
+    },
+    {
+      "file": "lib/main.dart",
+      "id": "main-params",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "cd15f1deef84817b6af4971b83a8dc0c1f01b55a2f1450c4f40ce5392d56dbc8",
+      "region_preview": "// SHAHM_DEMO_START main-params"
+    },
+    {
+      "file": "lib/main.dart",
+      "id": "main-fields",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "b1b370e173250e5b66fd53d1f61f0187a1ce0c832f984e9209ef508c51135ef1",
+      "region_preview": "// SHAHM_DEMO_START main-fields"
+    },
+    {
+      "file": "lib/main.dart",
+      "id": "main-router",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "41c163507ad43a070807c7050557cf2b3659f7f3a96fed8e095043bda4241952",
+      "region_preview": "// SHAHM_DEMO_START main-router"
+    },
+    {
+      "file": "lib/main.dart",
+      "id": "main-overlay",
+      "kind": "region",
+      "original": "          child: GlobalConnectivityBanner(child: child!),\n",
+      "region_sha256": "bad23afd477ee46c58df206e57b1d853449190c86dbbdb886af47f781d9fa544",
+      "region_preview": "// SHAHM_DEMO_START main-overlay"
+    },
+    {
+      "file": "lib/util/routes/go_router.dart",
+      "id": "router-import",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "abb1c13e0d662c8e6dee9446c6194b5bb6e637f0393e3a7aba2b9591786872c5",
+      "region_preview": "// SHAHM_DEMO_START router-import"
+    },
+    {
+      "file": "lib/util/routes/go_router.dart",
+      "id": "router-param",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "e11f666baea15d89e8522dc511ef2359d8f241600acc601d54527cd7af59e854",
+      "region_preview": "// SHAHM_DEMO_START router-param"
+    },
+    {
+      "file": "lib/util/routes/go_router.dart",
+      "id": "router-home",
+      "kind": "region",
+      "original": "                  child: const HomeScreen(),\n",
+      "region_sha256": "c54789134ef19aee0e4975fcbb5847c2e287ad7996016cf07ffe94a58640a691",
+      "region_preview": "// SHAHM_DEMO_START router-home"
+    },
+    {
+      "file": "lib/util/routes/go_router.dart",
+      "id": "router-shell",
+      "kind": "region",
+      "original": "            child: AppNavBar(navigationShell: navigationShell),\n",
+      "region_sha256": "2e0a6cea86d1f704179fb1ab8652cd66e3c5d007d803180573a98684a7841f3d",
+      "region_preview": "// SHAHM_DEMO_START router-shell"
+    },
+    {
+      "file": "pubspec.yaml",
+      "id": "pubspec-assets",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "b852a6534a2b3c9a404eb59ae94311efa9bacc14562b48b9cd05e5be5cb1d56a",
+      "region_preview": "# SHAHM_DEMO_START pubspec-assets"
+    },
+    {
+      "file": "CLAUDE.md",
+      "id": "claude-removal",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "116afea907e00b7fa909fc0c877c70bac746f2035c4d4de4f0581c4fada56b44",
+      "region_preview": "<!-- SHAHM_DEMO_START claude-removal -->"
+    },
+    {
+      "file": "docs/project/PROJECT_STATUS.md",
+      "id": "status-demo",
+      "kind": "region",
+      "original": "",
+      "region_sha256": "5964694e2e2cf0447c3a9dd870d1cdf9cedabd6a6df0aac160338201d357ac8d",
+      "region_preview": "<!-- SHAHM_DEMO_START status-demo -->"
+    },
+    {
+      "file": "lib/helper/translation/app_ar.arb",
+      "id": "arb-demo-keys",
+      "kind": "exact",
+      "original": "  \"@declinedOfferOutcome\": {\"description\": \"Outcome line of a declined-offer record (Task 36).\"}\n}\n",
+      "installed": "  \"@declinedOfferOutcome\": {\"description\": \"Outcome line of a declined-offer record (Task 36).\"},\n  \"demoBadge\": \"وضع تجريبي — بيانات وهمية\",\n  \"@demoBadge\": {\"description\": \"Debug demo (Task 37) badge shown on every screen.\"},\n  \"demoShowNewOffer\": \"إظهار طلب جديد\",\n  \"@demoShowNewOffer\": {\"description\": \"Debug demo (Task 37): adds a fictional new instant offer.\"},\n  \"demoTools\": \"أدوات العرض\",\n  \"@demoTools\": {\"description\": \"Debug demo (Task 37): shows the demo tools.\"},\n  \"demoToolsHide\": \"إخفاء الأدوات\",\n  \"@demoToolsHide\": {\"description\": \"Debug demo (Task 37): hides the demo tools.\"},\n  \"demoScenarioNone\": \"بدون طلب حالي\",\n  \"@demoScenarioNone\": {\"description\": \"Debug demo (Task 37): no active order scenario.\"},\n  \"demoScenarioAssigned\": \"طلب مسند مسبقاً\",\n  \"@demoScenarioAssigned\": {\"description\": \"Debug demo (Task 37): fictional pre-assigned active order scenario.\"},\n  \"demoShowScheduled\": \"عرض مؤجل (للعرض فقط)\",\n  \"@demoShowScheduled\": {\"description\": \"Debug demo (Task 37): lists the visual-only scheduled sample offer.\"},\n  \"demoReset\": \"إعادة ضبط بيانات العرض\",\n  \"@demoReset\": {\"description\": \"Debug demo (Task 37): restores the original fixtures.\"},\n  \"demoSignOut\": \"تسجيل الخروج من العرض\",\n  \"@demoSignOut\": {\"description\": \"Debug demo (Task 37): signs the demo captain out and clears demo data.\"},\n  \"demoFixturesError\": \"تعذّر تحميل بيانات العرض التجريبي.\",\n  \"@demoFixturesError\": {\"description\": \"Debug demo (Task 37): the fixture files could not be read.\"}\n}\n"
+    }
+  ],
+  "regenerated": [
+    "lib/helper/translation/generated/app_localizations.dart",
+    "lib/helper/translation/generated/app_localizations_ar.dart"
+  ],
+  "baseline_sha256": {
+    "CLAUDE.md": "f89d3c70b0c96d187911f81c8a0a3e3db63e83c16c870932220059f28e5ebae6",
+    "docs/project/PROJECT_STATUS.md": "fab04ae5be74571b8555aebfbc72cd8844c00d6ec888f8045ee62deff92bb7c4",
+    "lib/helper/translation/app_ar.arb": "b97ffbd3255803832bd558c38110b0a15e4e59ebcb918831021073aeb741f965",
+    "lib/helper/translation/generated/app_localizations.dart": "6f9467791898d21c5cbeaf274af457c4d9cb19be7076deffc57cc2771765626b",
+    "lib/helper/translation/generated/app_localizations_ar.dart": "afa9cc8ed7b77991b2c8f78b60367322ec5280364c59a8d1b2c40590fcb7ba56",
+    "lib/main.dart": "3ebdbbb98684cb5e7965d921f43ef6bc8d299733339307a4538d6c86ba65229f",
+    "lib/util/routes/go_router.dart": "140f80e0073f1e7feaa7d545aab3e71ee20e418dd08556366ef695975f93fa5f",
+    "pubspec.yaml": "4da1344856762d415346bb418cdbf75b4824c469d737d97fd3646dece836a4bc"
+  },
+  "installed_sha256": {
+    "CLAUDE.md": "4f87fa0cc32ae944e1c26d993c26494a766c065c8e7ec22c08ba48bc57bdb551",
+    "docs/project/PROJECT_STATUS.md": "22118b5782d0ba609dce898c153fadcdd1b3b44398e21bb26877c6230d325539",
+    "lib/helper/translation/app_ar.arb": "0fc89eaca54b0b67b7093f09ff8c4337365fc1266bc90d42a7b72ca7f79457ba",
+    "lib/main.dart": "7a1da0b9eca46f637e6c8ccd36b426c5807903a92930a60cee5f9546ae9eaa00",
+    "lib/util/routes/go_router.dart": "4880d7588893fb513601e599c864fc6c6ed91f11a7f9e5f2d0ca648259bb4d63",
+    "pubspec.yaml": "e29efc9437177dc99c80a48c5afcf258f5b42fe66d905a710a078c5cac9ccce3"
+  },
+  "pre_install_backup": "/private/tmp/claude-501/-Users-yousef-hamdan-Documents-GitHub-Shaheem/b2a9dc35-29f3-46ba-a9d8-4b6045d83335/scratchpad/task37_backup",
+  "activation": "kDebugMode && bool.fromEnvironment('SHAHM_DEMO')",
+  "updates": [
+    {
+      "task": 38,
+      "date": "2026-11-16",
+      "summary": "Added lib/demo/widget/demo_home_wallet.dart and region router-home (go_router.dart); re-hashed only the regions/files Task 38 edited (main-params, main-fields, main-router, router-import, router-param, status-demo; demo_app, demo_state, demo_shell_bridge, demo_mode_test, README) after verifying every other recorded hash still matched. Baseline (pre-install) hashes and original texts unchanged."
+    },
+    {
+      "task": "39-44",
+      "date": "2026-11-20",
+      "summary": "Client revision (D-A69–D-A79): removed the notification feed from the demo (fixture notifications.json deleted, parser/state/repository/bridge updated), single wallet balance 4,000 fils without hold fields, lifetime delivery statistics (an older completed delivery added), recharge contact fields removed, the active-order scenario now survives demo sign-out to show startup routing. Re-hashed only: lib/demo/demo_app.dart, lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, lib/demo/widget/demo_shell_bridge.dart, lib/demo/widget/demo_strip.dart, lib/demo/widget/demo_home_wallet.dart, test/demo_mode_test.dart, tool/demo/README.md, assets/demo/fixtures/captain.json, assets/demo/fixtures/home.json, assets/demo/fixtures/order_history.json, assets/demo/fixtures/wallet.json; region(s): router-home. Every other recorded hash still matched (verified by --dry-run). Baseline (pre-install) hashes and original restore texts unchanged; they restore no Notifications provider, five-tab layout, hold field, recharge UI or old palette (the original texts contain only the plain production lines)."
+    }
+  ]
+}

@@ -1,28 +1,42 @@
 # SHAHM Flutter — Project Status
 
-**Documentation reconciliation: 2026-11-14.** This report describes the **last supplied Flutter code snapshot**, not a new build. Owner-approved target decisions through 2026-11-14 were documented only; source code, backend, device tests and dependency audits were **not** changed or rerun in this documentation pass. Earlier verification rows are historical, not current test results.
+## 0. Current target and implementation summary (client revision, 2026-11-20)
 
-The current state of the Flutter app, last verified against source code on
-**2026-11-11**. Product decisions were updated on **2026-11-12**. The Flutter
-source tree (`mobile_frontend/`) was not included in the workspace used for
-the 2026-11-12 and 2026-11-14 documentation-only updates, so those updates
-changed documentation only; they do not claim that any newly approved feature
-has been implemented or re-verified.
+**Authority:** target rules are D-A69–D-A79 (decisions §1.2) and
+`PRODUCT_OVERVIEW.md`. This table is the **current** status; §1–§4 below are
+older snapshots kept for traceability and are reconciled here where they
+conflict (for example §1 still lists five tabs, Notifications and holds —
+those rows are historical). §5 verification rows are dated history; only
+the rows dated 2026-11-20 describe this revision's runs.
 
-**Later read-only inspection (Task 01 preflight, 2026-11-14):** a repository
-checkout containing the Flutter source was inspected without building or
-running tests. Its code matched the snapshot described here (for example the
-`/profile` branch, placeholder repositories, required-only Login validators,
-no `get_it`, no bundled fonts). This was a source inspection only; the test
-results in §5 remain historical.
+Baseline inspected before this revision (HEAD `829fdef` plus uncommitted
+Tasks 34–38 work): five tabs with Wallet fifth and `/profile` as an overlay;
+Notifications feed with unread dot; Wallet with total/available/held,
+«طلب شحن» popup and credit/debit selector; forest Accept; cream
+backgrounds; Task 38 full-fee sheet and confirmed-decline refresh present;
+debug demo (Task 37) installed.
 
-Status key:
-- **Implemented:** in the code and covered by tests.
-- **Planned:** requested direction, not built.
-- **Pending:** blocked on a decision.
-- **Rejected:** decided against.
+| Area | Target (decision) | Implementation status | Backend/owner gap |
+|---|---|---|---|
+| Docs | Canonical docs reconciled (Task 39) | **Done 2026-11-20** (documentation only) | — |
+| Theme | Red/white/neutral, black/gray tabs (D-A69) | **Implemented** (`AppColor`, `AppTheme`, offer card/sheet, field focus/disabled, AppButton pressed/disabled) | Owner may revise shades centrally |
+| Navigation | Four tabs, Profile tab, no center button (D-A70) | **Implemented** | — |
+| Home AppBar | Greeting + availability + balance chip; no Profile button (D-A71) | **Implemented** (content-sized bar; `HomeActiveOrderCard` in body) | Availability API, permission adapter |
+| Notifications | Feed removed; order push retained (D-A72) | **Implemented** (feature, demo seed and keys deleted; offer sheet flow kept) | Push adapter, FCM/APNs credentials, event schema |
+| Current Order recovery | Standalone page, acceptance/startup/resume recovery (D-A73) | **Implemented** with test repositories and the demo; app-level `CurrentOrderCubit` with coalesced reads | Real `ActiveOrderRepository` (production placeholder = not configured, so no real process-restart recovery) |
+| Wallet | One balance, no holds, no recharge UI, debit-only history (D-A74, D-A76) | **Implemented** (`heldFils`/`availableFils`/`WalletCredit`/recharge popup/`RechargeContact` deleted) | Wallet API (endpoints, DTOs, window) |
+| Balance ceiling | 5,000 fils after credit, server-enforced (D-A75) | Documented contract only; Flutter shows values faithfully | Server enforcement; D-P38 existing over-cap balances |
+| Wallet metrics | Lifetime delivered count + earnings (D-A76) | **UI + read model implemented**; earnings always "unavailable" (D-P36); production placeholder = not configured | Statistics contract; earnings formula **D-P36** |
+| Profile | Name, phone, rating, Settings/Terms/About (D-A77) | **Implemented** (+ sign-out entry; About shows version "unavailable": no version source) | Rating contract/scale **D-P37**; Terms/Privacy URLs **D-P40** |
+| Account deletion | Confirmed, typed outcomes (D-A78) | **Flow implemented**; production adapter = not configured (nothing sent or deleted) | Deletion contract **D-P39** |
+| Demo | Updated manifest/fixtures, removable | **Updated**; dry run OK on live tree; `--apply` rehearsed on a full copy (analyze + 972 tests passed); live demo still installed | — |
 
----
+**API-dependent gaps (none of these exist in the checkout; `backend/` is
+empty):** active-order read model/endpoint; offers list/accept/decline
+commands; wallet balance + commission-debit history; lifetime delivery
+statistics; rating read model; account-deletion command and session
+revocation; availability command; push token registration and order-event
+schema; Terms and Privacy Policy URLs.
 
 ## 1. Implemented
 
@@ -62,7 +76,7 @@ Status key:
   external navigation (D-P29). In a real run the destination can only say
   that the orders service isn't connected, and the bar never shows the
   active-order look.
-- A data source for the unread dot (D-P24).
+- *(Superseded by D-A72: no unread dot.)*
 - The Wallet destination/screen, AppBar balance, ledger and manual recharge
   notification flow (approved target D-A50, not implemented).
 - Instant-order broadcast and progressive concurrent dispatch (D-A45–D-A46).
@@ -101,8 +115,8 @@ Status key:
   once the contract exists (D-P25); a map widget for `PickupMapBuilder`
   (D-P27); a location implementation of `CaptainLocationRepository` plus the
   platform permissions (D-P28).
-- **Unread indicator:** connect `unreadCount` in `AppNavBar` once
-  notification state exists (D-P24).
+- *(Superseded by D-A72)* ~~Unread indicator~~: was "connect `unreadCount` in `AppNavBar` once
+  notification state exists (D-P24)".
 - **Remove the debug preview** (D-A40) when real sign-in works.
 - Implement the approved captain Wallet navigation/screen and server-backed
   wallet data (D-A50, D-P10).
@@ -122,7 +136,7 @@ business/architecture resolutions, except deferred D-P19. Consult
 | Priority | Implementation/specification item | Current status |
 |---|---|---|
 | 1 | ASP.NET Core Identity/PostgreSQL REST API, OpenAPI concrete DTOs and policies, JWT 15-min/rotating 90-day refresh/one-device/suspension, RFC 9457 errors | Approved architecture, **not implemented** |
-| 2 | Atomic dispatch + wallet (20%, nearest-fils, -1,000-fils floor, scheduled immediate hold, post-pickup pending settlement, idempotency, outbox) | Approved business rules, **not implemented** |
+| 2 | Atomic dispatch + wallet (20%, nearest-fils, no holds, one completion debit, 5,000-fils balance ceiling, D-P41 floor point, post-pickup pending settlement, idempotency, outbox; D-A74/D-A75) | Approved business rules, **not implemented** |
 | 3 | Public broadcast 5 km/10 km/all city, global OFF withdrawal, 2-minute private offers, scheduled commitment separation and 30-minute cutoff | Approved, **not implemented** |
 | 4 | Flutter `get_it` composition, secure storage, backend repositories, available/active-order flows, Notifications Cubit, Wallet tab and AppBar/profile/menu | Approved, **not implemented** |
 | 5 | GPS `location` + `permission_handler` 30s target/90s freshness, FCM/APNs, Google Maps + Routes API DRIVE, server geofence, external pickup navigation | Approved, **not implemented; device/config tests pending** |
@@ -192,6 +206,12 @@ All commands run in `mobile_frontend/`.
 
 | Date | Command | Result |
 |---|---|---|
+| 2026-11-20 | `flutter gen-l10n`; `dart format lib test` | OK |
+| 2026-11-20 | `flutter analyze` | 1 issue: the existing `SplashBloc` info (baseline) |
+| 2026-11-20 | `flutter test` | **1,001 passed, 0 failed** (the notifications suite was deleted with the feature; new suites: active-order recovery, Profile/Settings) |
+| 2026-11-20 | `bash tool/demo/remove_demo.sh --dry-run` (live tree) | Dry run OK, nothing changed |
+| 2026-11-20 | `remove_demo.sh --apply` on a full copy of the working tree | Removed; gen-l10n, analyze and 972 tests passed; restored files contain no Notifications, five-tab, hold, recharge or old-palette code |
+| 2026-11-20 | iPhone 17 simulator (iOS 26.5, 402×874 pt), debug demo driven via the Dart VM service | Login, Home AppBar, new-offer sheet → accept → standalone Current Order, Back → Home card, Wallet, background (Settings app) → foreground recovery to Current Order from the Wallet tab, Back → Wallet, Profile, Settings → deletion confirmation → "not configured". Text scale 3.1 found a Home overflow under the demo strip → fixed and covered by a regression test. No physical device, no release build |
 | 2026-11-11 | `flutter pub get` | OK (added `responsive_framework` 1.5.1 and the SDK `flutter_localizations`) |
 | 2026-11-11 | `flutter gen-l10n` | OK: generated `lib/helper/translation/generated/app_localizations.dart` and `app_localizations_ar.dart` |
 | 2026-11-11 | `dart format .` | Clean |
@@ -523,6 +543,69 @@ responsive test host) contain no tests.
 
 **One order card (Task 33), 2026-11-15:** owner-approved. The owner's `HomeOrderPreviewCard` design moved into `AppOrderOfferCard` (Material outlined storefront/location/flag/payments icons, owner spacing, soft line `AppColor.border` at 45 %, 0.7 px, forest fee amount, outlined «رفض»); ARB labels, money formatting, semantics, busy/disabled states and the public API kept. **Deleted:** `home_screen/widget/order11.dart` (`HomeOrderPreviewCard`) and the commented-out `widget/order/order_card.dart`; the unused import in `home_screen.dart` removed. Tests: baseline 824 passed (analyze: 2 issues incl. the unused import) → **825 passed**; one decline-color assertion updated to the outlined design, one outlined-states test added, two Home tests made to settle the lazy list before tapping/asserting (no assertion removed). `flutter analyze`: only the existing `SplashBloc` info. Simulator (iPhone 17, design preview): matches the owner design.
 
+**Offer-sheet full fee + declined-history refresh (Task 38), 2026-11-16** — owner-requested:
+
+| Item | Result |
+|---|---|
+| New-offer sheet | One money row only: «أجرة التوصيل كاملة» with `deliveryFeeFils` as sent (e.g. `3.000 د.أ` for a 3,000-fils offer with a 600-fils commission snapshot), instant and scheduled, in every mode. Commission rate/amount, computed net, the earnings heading and note were removed (ARB keys `offerEarningsHeading`, `offerCommissionLabel`, `offerCommissionLabelNoRate`, `offerNetEarningsLabel`, `offerEarningsNote` and the then-unused `helper/money/percent_format.dart` deleted). Accept is still blocked for a missing/inconsistent snapshot (`offerAcceptBlock`, unchanged); domain snapshot and wallet contract unchanged. Home card unchanged |
+| Declined history | `DeclinedOffersCubit` moved from the Order History route to the shell (documented scope change; same sign-out lifetime, nothing read before Order History opens). New `refresh()`: ignored before the first load, coalesced into one follow-up read when it arrives during a load, dropped after sign-out/close. `PendingOffersCubit.onDeclineConfirmed` (new, mirrors `onAcceptConfirmed`) calls it after a **server-confirmed** decline from Home or the sheet, so the record appears while Order History stays visible, newest first, with no navigation. «لاحقاً»/dismiss, an unconfirmed/failed decline and an accept never refresh it. First entry, tab return, visible resume and Retry unchanged |
+| Tests | Baseline 1,007 passed / 1 failed (a pre-existing date-dependent demo test: fixed demo clock vs the real Wallet clock) → **1,015 passed, 0 failed**. Sheet tests now assert the full fee as the only amount (no %, no minus, no net, also for missing/inconsistent snapshots); new: decline while Order History is visible (one re-read, new row first, «لاحقاً» and unconfirmed add nothing), accept never re-reads history, `refresh()` coalescing/stale/sign-out, `onDeclineConfirmed` only on confirmation |
+| `flutter analyze` | 1 issue: the existing `SplashBloc` info |
+| Dependencies | None added or changed |
+
+<!-- SHAHM_DEMO_START status-demo -->
+**Debug-only demonstration mode (Task 37), 2026-11-15 — temporary, removable:** `flutter run --debug --dart-define=SHAHM_DEMO=true` runs the real app with fictional JSON fixtures (`assets/demo/fixtures/`), a fictional demo captain (`demo_captain` / `Demo1234!`, token deliberately not a JWT, memory only), a «وضع تجريبي — بيانات وهمية» strip on every screen with «إظهار طلب جديد» and demo tools, and simulated in-memory accept/decline. Inert without the define and in profile/release builds, but the fixtures are declared assets and are packaged in every build: **remove before any release** with `bash tool/demo/remove_demo.sh --apply` (details: `tool/demo/README.md`). Not a backend.
+
+**Demo consistency (Task 38), 2026-11-16:** in the authenticated demo, Home's wallet chip shows the demo wallet's `totalFils` (the same in-memory overview the Wallet tab reads; 18.750 د.أ with the fixtures, «—» when signed out); a demo reset re-reads the declined-offers history in place. Verified interactively on the iPhone 17 simulator (iOS 26.5, 402×874 pt) with pointer events injected into the running debug app through the Dart VM service (no physical device, no release build): Login → Home chip 18.750 = Wallet total (available 15.750, held 3.000) → chip opens Wallet → recharge popup "not available" → Order History (1 row) → «إظهار طلب جديد» → sheet with only «أجرة التوصيل كاملة 3.000 د.أ» → decline → new row first, same tab → «لاحقاً» → still 2 → reset → 1 row in place → accept → matching Current Order with map unavailable → text size accessibility-XL (scale 2.35): chip fits, sheet fee wraps, actions scroll above the safe area → sign-out → re-login 18.750 → ordinary launch without the define shows plain Login. Observed, not changed here: at scale 2.35 the bottom tab labels break mid-word.
+
+<!-- SHAHM_DEMO_END status-demo -->
+**New-order offer sheet, card actions, declined offers, Wallet title (Task 36), 2026-11-15** — owner-requested:
+
+| Item | Result |
+|---|---|
+| New-offer sheet | `NewOrderOfferSheet` presented by `NewOfferSheetHost` (mounted once in the shell, root navigator) above any tab or the Profile route when the server list gains an unseen offer; one at a time, deduplicated by id, foreground and signed-in only, never on Splash/Login; «لاحقاً» / barrier / back close without answering (not while a command runs) |
+| Content | «حالي» / «مؤجل» badge, merchant, pickup, delivery **area**, scheduled pickup time (scheduled only), full fee, snapshot commission rate + amount, net = fee − commission (integer fils; estimate, not a wallet credit); "not available" when the server sent nothing |
+| Actions | Accept only for an instant offer with a complete snapshot; instant accept confirmed → `CurrentOrderCubit.refreshed()` → Current Order only for the matching `orderId`, otherwise an honest popup; decline confirmed → sheet closes, no navigation; failures keep the sheet with the reason |
+| Scheduled offers | Shown with type and time; **Accept off** ("Admin confirms directly") — D-A47 / D-A61 unchanged; owner decision D-P35 opened |
+| State | `PendingOffersCubit` moved from the Home route to the shell (Home and the sheet share it); `CaptainOrderOffer` gained optional `kind`, `orderId`, `scheduledPickupAt`, `commission` (`OfferCommissionSnapshot`); `CurrentOrderCubit.refreshed()` (Notifications reuses it) |
+| Order History | «العروض التي رفضتها»: read-only server records (`OrderHistoryRepository`, `GetDeclinedOffers`, `DeclinedOffersCubit`, `DeclinedOfferTile`); placeholder reports "not configured"; no local row after a decline; completed-delivery history still a later task |
+| Card / Wallet | `AppOrderOfferCard` «قبول» forest + check icon, «رفض» outlined error + close icon; Wallet app bar title is text only |
+| Design preview | `lib/preview/new_offer_sheet_preview.dart`: the real sheet with labelled fictional instant/scheduled offers; not imported by the app |
+| Tests | Baseline 926 passed → **984 passed** (new `test/new_offer_sheet_test.dart`: 59; Order History removed from the placeholder-screen test; navigation placeholder test and two card-color assertions updated to the forest accept) |
+| `flutter analyze` | 1 issue: the existing `SplashBloc` info |
+
+**Blocked / TO SPECIFY:** offers wire fields for kind, `orderId`, scheduled pickup time and the commission snapshot (rate, amount); the declined-offers history query; push/SignalR as a trigger to re-read offers; D-P35 (in-app acceptance of scheduled offers) and a future-commitments destination. Until then, no production offer opens the sheet (the placeholder reports "not configured").
+
+**Wallet app bar + operational Notifications (Task 35), 2026-11-15** — owner-requested:
+
+| Item | Result |
+|---|---|
+| Wallet app bar | Profile action removed (no action slot, button, tooltip or semantics node). Home app bar keeps Profile; Profile still opens Wallet |
+| Notifications screen | Placeholder replaced: title + «الإشعارات التشغيلية», lazy list of `NotificationCard` (Admin announcement: server title/message/time, informational; assigned order: «لديك طلب مسند» only, never order details), «جديد» marker from server read state, honest loading / not configured / signed out / offline / failure + Retry / confirmed-empty states |
+| Data | `NotificationRepository` + `GetNotifications` (newest first) + shell-scoped `NotificationsCubit`; `NotificationRepositoryPlaceholder` reports "not configured" (no list, no count, no network). Unread dot = server `unreadCount` only |
+| Assigned tap | Re-reads `CurrentOrderCubit`; opens the Current Order tab only if the server's active order has the notified `orderId`; different / no order, orders not configured or failed check → popup, nothing else shown; one check at a time. A notice without an order reference is not tappable |
+| Design preview | `lib/preview/notifications_preview.dart`: real screen, two labelled fictional notices; orders source is the real placeholder |
+| Tests | Baseline 894 passed → **926 passed** (new `test/notifications_test.dart`: 32). Updated: Wallet "Profile on Wallet app bar" test → "no Profile on Wallet, Home keeps it" (scales 1 and 3); Notifications removed from the placeholder-screen test; navigation placeholder test now expects the not-configured line |
+| `flutter analyze` | 1 issue: the existing `SplashBloc` info |
+| Simulator (iPhone 17) | Wallet preview app bar (no Profile icon) and Notifications preview screenshots checked; navigation and taps verified in widget tests only |
+
+**Blocked / TO SPECIFY:** notifications API (list, paging, unread count, read mutation), server kind mapping and the assigned-order reference field, push/SignalR re-read triggers, a destination for future (scheduled) assignments; deep-linking to a specific order beyond the current active order is **not** available (Current Order shows only the server's single active order).
+
+**Wallet navigation, 7-day history and recharge contact (Task 34), 2026-11-15** — owner-approved (D-A50 / D-A66 supplement):
+
+| Item | Result |
+|---|---|
+| Navigation | Five tabs, Wallet fifth (`/wallet`); Profile is a protected route above the shell (`/profile`) from the Home app bar (the Wallet app bar action was removed in Task 35); Home balance chip (also «—») and Profile «المحفظة» open the same Wallet tab |
+| Wallet screen | Server total / available / held (fils, «—» when unknown, negatives kept), «طلب شحن», selectors «سجل الشحن» / «سجل الخصم», lazy cards (`WalletCreditCard`, `WalletDebitCard`), honest loading / not configured / no session / offline / failure / confirmed-empty states |
+| Data | `WalletRepository` + `GetWallet` (7-day display window, start inclusive, newest first, future-dated excluded) + `WalletCubit`; `WalletRepositoryPlaceholder` reports "not configured" (no balance, no history, no network) |
+| Recharge contact | `AppPopup` with the official number and «نسخ الرقم» (`Clipboard.setData`, success/failure shown in the popup only after the result); `RechargeContact.whatsAppNumber` is **null** (no official number provided), so the popup says it is unavailable and has no copy action. No request, payment or ledger write |
+| Design preview | `lib/preview/wallet_preview.dart` renders the real Wallet screen with labelled fictional data (negative total, credit, long-name debits) |
+| Tests | Baseline 825 passed → **894 passed** (new `test/wallet_test.dart`: 68; one new guard test). Updated for the fifth-tab migration: bar, navigation, guard, Home app bar and tab re-entry tests (Profile → Wallet; the Home "read-only chip" assertion now expects a Wallet button and a Profile action) |
+| `flutter analyze` | 1 issue: the existing `SplashBloc` info |
+| Simulator (iPhone 17) | Wallet design preview screenshot checked (balances incl. negative sign order, «طلب شحن», selectors, credit card). Navigation taps and clipboard copy verified in widget tests only (no tap automation on the simulator) |
+
+**Blocked / TO SPECIFY:** wallet API (endpoints, DTOs, errors, pagination, server-side window), the official recharge WhatsApp number, feeding the Home chip from the wallet source, Wallet reload on app resume.
+
 **Blockers for real offers:** offers API contract (TO SPECIFY: endpoints, DTOs, error codes, `Idempotency-Key`), dispatch rounds/private offers and expiry on the backend, push/SignalR transport, the real Current Order API.
 
 **Blockers for real availability:** backend API contract (TO SPECIFY: endpoints, DTOs, Problem Details codes, `Idempotency-Key` handling); native permission setup (Android `ACCESS_BACKGROUND_LOCATION`, `POST_NOTIFICATIONS`; iOS `NSLocationWhenInUseUsageDescription` / `NSLocationAlwaysAndWhenInUseUsageDescription`, `UIBackgroundModes` `location`/`remote-notification`, `permission_handler` Podfile macros) with approved copy; a plugin-backed `AvailabilityPermissionGateway`; GPS uploads every 30 s with 90 s freshness; FCM/APNs registration; Play background-location declaration and prominent disclosure (G-04); physical-device validation.
@@ -536,6 +619,10 @@ responsive test host) contain no tests.
 | 2026-11-14 | **Post-validation review (Task 04, documentation only):** Task 03 source re-verified; Login-validation wording synced in routing, state-management, decisions, shared-UI and Claude Project docs; password length unit recorded as an open owner decision. No code or test changes |
 | 2026-11-14 | **AppTextFormField contract (Task 08):** owner-approved API implemented: required non-blank `label`, `AppTextFieldStyle` for every visual state (with working border widths), asserts for controller/initialValue, multi-line obscuring, `endIcon` vs visibility toggle and keyboard assistance on obscured fields; toggle disabled on disabled fields; unused arguments removed; `showObscureToggle` renamed `showVisibilityToggle`. Login layout, entry behavior and appearance unchanged. `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md` added |
 | 2026-11-15 | **Brand foundation (Task 10):** IBM Plex Sans Arabic bundled and applied through `AppTheme`, `TextThemeStyle`, text widgets and button labels; Ink default text; `AppColor.inputBorder` for a WCAG-compliant field border; `AppButton` height became a minimum so large text no longer clips. Login layout, copy, validation and auth unchanged |
+| 2026-11-16 | **Offer sheet + history refresh (Task 38):** the new-offer sheet shows only the full delivery fee (owner change; accept gating unchanged); `DeclinedOffersCubit` shell-scoped with a coalescing `refresh()` after a confirmed decline, so Order History updates while visible; full suite 1,015 passed |
+| 2026-11-15 | **New-offer sheet (Task 36):** shell-level bottom sheet for newly listed offers (type, area, fee/commission/net, forest accept), shell-scoped offers Cubit, declined-offers history section (read-only), forest accept + icons on the card, Wallet title text only; scheduled acceptance left to owner decision D-P35 |
+| 2026-11-15 | **Notifications (Task 35):** Wallet app bar Profile action removed; operational Notifications screen (Admin + assigned order), verified assigned-order tap, server-only unread dot; placeholder backend |
+| 2026-11-15 | **Wallet (Task 34):** Wallet fifth tab, Profile from the app bar, read-only balances, 7-day recharge/debit history, contact-only «طلب شحن» popup with clipboard copy; placeholder backend, no recharge number configured |
 | 2026-11-15 | **One order card (Task 33):** owner preview design moved into `AppOrderOfferCard`; duplicate preview card and stub deleted |
 | 2026-11-15 | **Custom widget standard (Task 32):** policy rewritten as a concise idiomatic Flutter guide; `AppOrderOfferCard` pilot already compliant (no code change) |
 | 2026-11-15 | **Order card icons (Task 31):** storefront, pickup pin, checkered-flag delivery area and coins fee icons plus a softened sand divider on `AppOrderOfferCard` and the owner's Home preview card. No API, copy or token change |

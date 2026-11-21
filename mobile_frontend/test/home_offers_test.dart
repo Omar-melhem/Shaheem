@@ -10,6 +10,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
+import 'package:mobile_frontend/data/repositories/active_order_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/order_offer_repository_placeholder.dart';
@@ -23,6 +28,7 @@ import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
 import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/main.dart';
 import 'package:mobile_frontend/preview/home_offers_preview.dart';
+import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
@@ -110,13 +116,23 @@ void main() {
 
     PendingOffersCubit build({OrderOfferRepository? source}) {
       final r = source ?? repo;
-      return PendingOffersCubit(
+      final cubit = PendingOffersCubit(
         GetEligibleOffers(r),
         AcceptOrderOffer(r),
         DeclineOrderOffer(r),
         () => session,
-        onAcceptConfirmed: () => acceptCallbacks++,
       );
+      // A confirmed acceptance is observable from state (D-A73: the sheet
+      // host reacts to it): count each transition into "accepted".
+      var previous = cubit.state.message;
+      cubit.stream.listen((state) {
+        if (state.message == PendingOffersMessage.accepted &&
+            previous != PendingOffersMessage.accepted) {
+          acceptCallbacks++;
+        }
+        previous = state.message;
+      });
+      return cubit;
     }
 
     setUp(() {
@@ -396,26 +412,40 @@ void main() {
       expect(find.textContaining(l10n.offerPickupUnknown), findsOneWidget);
     });
 
-    testWidgets('«قبول» is the brand action; «رفض» is outlined in the theme '
-        'error red with readable text (Task 33)', (tester) async {
+    testWidgets('«قبول» is the filled red primary with a check icon; '
+        '«رفض» is a neutral outline with a close icon (D-A69)', (tester) async {
       await pumpCard(tester, offer(1));
       final decline = tester.widget<AppButton>(
         find.widgetWithText(AppButton, l10n.offerDecline),
       );
       final scheme = AppTheme.light.colorScheme;
       expect(decline.backgroundColor, scheme.surface);
-      expect(decline.foregroundColor, scheme.error);
-      expect(decline.border, BorderSide(color: scheme.error));
+      expect(decline.foregroundColor, AppColor.textPrimary);
+      expect(decline.border, const BorderSide(color: AppColor.inputOutline));
       final accept = tester.widget<AppButton>(
         find.widgetWithText(AppButton, l10n.offerAccept),
       );
-      expect(accept.backgroundColor, isNull); // theme primary
+      // D-A69: Accept keeps AppButton's default red (theme pressed and
+      // disabled states), so no per-call colors are passed.
+      expect(accept.backgroundColor, isNull);
+      expect(accept.foregroundColor, isNull);
+      final acceptMaterial = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.widgetWithText(AppButton, l10n.offerAccept),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(acceptMaterial.color, AppColor.primary);
+      expect((accept.icon! as Icon).icon, Icons.check_circle_outline);
+      expect((decline.icon! as Icon).icon, Icons.close);
       double contrast(Color a, Color b) {
         final la = a.computeLuminance(), lb = b.computeLuminance();
         return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
       }
 
-      expect(contrast(scheme.error, scheme.surface), greaterThan(4.5));
+      expect(contrast(AppColor.textPrimary, scheme.surface), greaterThan(4.5));
       expect(contrast(scheme.onPrimary, scheme.primary), greaterThan(4.5));
     });
 
@@ -497,6 +527,11 @@ void main() {
 
   group('Home section', () {
     final cards = find.byType(AppOrderOfferCard);
+    // The page body's scrollable (the Home AppBar has its own, D-A71).
+    final homeBody = find.descendant(
+      of: find.byType(CustomScrollView),
+      matching: find.byType(Scrollable),
+    );
 
     /// Pumps Home with a signed-in captain and [repository] for offers.
     Future<PendingOffersCubit> pumpHome(
@@ -538,6 +573,16 @@ void main() {
               BlocProvider.value(value: session),
               BlocProvider.value(value: availability),
               BlocProvider.value(value: offers),
+              // The app-level active-order owner Home reads (D-A73); the
+              // placeholder reports "not configured", so nothing is shown.
+              BlocProvider(
+                create: (_) => CurrentOrderCubit(
+                  const GetActiveOrder(ActiveOrderRepositoryPlaceholder()),
+                  const GetCaptainLocation(
+                    CaptainLocationRepositoryPlaceholder(),
+                  ),
+                ),
+              ),
             ],
             child: const HomeScreen(),
           ),
@@ -629,7 +674,7 @@ void main() {
         await tester.scrollUntilVisible(
           find.byKey(ValueKey('offer-$count')),
           600,
-          scrollable: find.byType(Scrollable).first,
+          scrollable: homeBody,
         );
         expect(find.byKey(ValueKey('offer-$count')), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -654,8 +699,8 @@ void main() {
       final second = tester.getRect(find.byKey(const ValueKey('offer-2')));
       final toggle = tester.getRect(find.byType(AppAvailabilityToggle));
       expect(first.width, second.width);
-      // Same horizontal extent as the availability card's content column.
-      expect(first.width, greaterThan(toggle.width));
+      // The same content edge as the Home AppBar's availability row.
+      expect(first.width, toggle.width);
       expect(first.width, lessThan(375));
       expect(second.height, greaterThan(first.height));
     });
@@ -687,10 +732,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('offer-1')), findsNothing);
       // The confirmation is in the section header, above the cards.
-      tester
-          .state<ScrollableState>(find.byType(Scrollable).first)
-          .position
-          .jumpTo(0);
+      tester.state<ScrollableState>(homeBody).position.jumpTo(0);
       await tester.pumpAndSettle();
       expect(find.text(l10n.offersAcceptedMessage), findsOneWidget);
       expect(repo.accepted, ['offer-1']);
@@ -719,7 +761,7 @@ void main() {
         expect(b.onPressed, isNull);
       }
       // The header (with «تحديث») is above; scroll back to it.
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.drag(homeBody, const Offset(0, 2000));
       await tester.pumpAndSettle();
       expect(find.text(l10n.refresh), findsOneWidget);
     });
@@ -745,11 +787,7 @@ void main() {
           );
           expect(tester.takeException(), isNull);
           final card = find.byKey(const ValueKey('offer-1'));
-          await tester.scrollUntilVisible(
-            card,
-            200,
-            scrollable: find.byType(Scrollable).first,
-          );
+          await tester.scrollUntilVisible(card, 200, scrollable: homeBody);
           await tester.pumpAndSettle();
           for (final p in tester.renderObjectList<RenderParagraph>(
             find.descendant(of: card, matching: find.byType(RichText)),
@@ -784,7 +822,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('offer-3')),
         300,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: homeBody,
       );
       expect(tester.takeException(), isNull);
     });

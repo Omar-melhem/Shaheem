@@ -40,17 +40,22 @@ FLUTTER ENGINEERING
   Do not look up get_it from inside Cubit/business objects. No injectable
   generator. Provide test overrides.
 - gen_l10n ARB Arabic and locale-driven RTL, central semantic AppColor tokens,
-  bundled IBM Plex Sans Arabic, default Ink #242424 including Headline4.
-  Brand tokens: maroon #8C2335, forest #263D34, cream #F5F0E8,
-  sand #C8A98A, ink #242424; design future centrally swappable palettes.
-  Keep a comprehensive reusable semantic/extended AppColor palette rather
-  than deleting every unused shade; remove redundant aliases after audit.
+  bundled IBM Plex Sans Arabic. Theme (D-A69, 2026-11-20): white
+  backgrounds, red primary #C62828 (pressed #A61B1B), text #171717 /
+  #616161, input outline #737373, divider #E5E5E5, black/gray tabs (never
+  red), semantic success #166534 (available only), error #B91C1C, warning
+  #92400E. One central palette; the old maroon/forest/cream/sand is
+  superseded.
 - Shared UI widgets, directional layout, responsive_framework, phosphor_icons.
   Never put business logic in widgets or hardcoded strings/colors in screens.
-- Signed-in bottom navigation: Home, Notifications, Current Order center,
-  Order History, Wallet. Profile moves to AppBar/menu; Wallet shows Backend
-  balances and ledger, AppBar shows total balance. Device label شهم, web
-  title SHAHM | شهم. The existing code still has an old Profile tab.
+- Signed-in bottom navigation (D-A70): four tabs in RTL order Home
+  «الرئيسية», My Orders «طلباتي», Wallet «المحفظة», My Account «حسابي».
+  No Notifications feed/tab/unread count (D-A72; operational order push
+  stays). Home AppBar holds greeting, availability switch and balance chip;
+  no Profile button. Current Order is a protected standalone page opened on
+  confirmed acceptance and recovered on startup/foreground return (D-A73).
+  Profile tab: name, phone, rating, Settings (account deletion), Terms,
+  About (D-A77, D-A78). Device label شهم, web title SHAHM | شهم.
 - Current Order uses Backend active statuses accepted, heading_to_pickup,
   picked_up, on_the_way; one active delivery per captain. A confirmed future
   scheduled order is a separate commitment, never an early active order.
@@ -75,8 +80,8 @@ AUTH/API AND REALTIME
   (accept, confirm pickup PIN, start delivery, complete, cancel, reassign)
   for sensitive transitions. Standard GET/PATCH for resource reads/fields.
 - REST/PostgreSQL are authoritative. ASP.NET SignalR for foreground events,
-  FCM/APNs for background mobile delivery, PostgreSQL for notification unread
-  count/history. Separate SignalR event schema. Lightweight PostgreSQL
+  FCM/APNs for operational order alerts (no in-app notification feed or
+  unread count, D-A72). Separate SignalR event schema. Lightweight PostgreSQL
   transactional outbox for critical business events, not GPS telemetry.
   Do not assume any push delivery is guaranteed; validate expired offers on
   server; client resyncs on reconnect/resume. No mandatory microservices/CQRS.
@@ -110,9 +115,8 @@ DELIVERY / DISPATCH
   heading_to_pickup → picked_up → on_the_way → delivered. A separate
   Start Delivery button is required after an external customer phone call.
 - After pickup, only Admin may cancel/reassign; keep same order and audit
-  handover. Do not automatically settle unresolved financial holds; Admin
-  marks pending settlement, confirms release/transfer to replacement captain,
-  and only replacement captain is debited on successful completion. Manual
+  handover. Admin marks pending settlement; only the completing replacement
+  captain is debited on successful completion (no holds exist). Manual
   compensation is separate; no automatic cancellation fines in MVP.
 
 WALLET/GPS/MAPS/PUSH
@@ -120,12 +124,17 @@ WALLET/GPS/MAPS/PUSH
   only future snapshots. Delivery fee in 0.500 JOD increments per area.
   Commission only on fee, calculate integer fils with nearest-fils rounding.
   Snapshot rate/amount on first public dispatch, first confirmed private
-  accept, or Admin-confirmed scheduled assignment. Hold commission only on
-  captain acceptance or scheduled Admin confirmation, not on public offer.
-  Atomic wallet eligibility: proposed available balance must stay at least
-  -1,000 fils. Completion converts hold into ONE final debit. Cancellation
-  before pickup releases hold. Append-only ledger; external CliQ/bank/
-  e-wallet transfer must be confirmed manually by Admin before credit.
+  accept, or Admin-confirmed scheduled assignment. NO commission holds at
+  any stage (D-A74). One wallet balance. The server debits the commission
+  ONCE, idempotently, on confirmed delivery completion; accept/decline never
+  debit; cancellation before completion creates no debit. Maximum resulting
+  balance after a recharge credit is 5,000 fils (D-A75), enforced atomically
+  by the server, never clamped in the app. The -1,000-fils floor's new
+  application point is open (D-P41). Append-only ledger; external CliQ/bank/
+  e-wallet transfer must be confirmed manually by Admin before credit. The
+  captain Wallet UI has no recharge action and shows balance, lifetime
+  delivered-count and earnings cards (earnings formula open, D-P36) and
+  commission-debit history only (D-A76).
 - GPS packages location + permission_handler behind LocationRepository.
   Require precise/background GPS + push permissions to become Available;
   request when toggling Available, NOT on startup. Background tracking while
@@ -139,8 +148,9 @@ WALLET/GPS/MAPS/PUSH
   route/distance/ETA to MERCHANT pickup only, no live traffic, no customer
   route; separate native Open in Google Maps button for pickup leg. Costs
   and API keys are controlled outside source code.
-- FCM/APNs new-offer notification only includes pickup/destination areas and
-  fee; no customer phone. Backend/PostgreSQL owns notification history/unread.
+- FCM/APNs operational order alerts only: a new-offer push includes
+  pickup/destination areas and fee; no customer phone. A push only triggers
+  an authoritative re-read; there is no in-app notification history/unread.
 
 WORKFLOW AND HONESTY
 - One feature at a time. Inspect actual Flutter files, then plan/implement,

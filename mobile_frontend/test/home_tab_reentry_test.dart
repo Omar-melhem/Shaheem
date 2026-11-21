@@ -17,7 +17,7 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/home_lifecycle_bridge.dart';
-import 'package:mobile_frontend/view/screens/notifications_screen/view/notifications_screen.dart';
+import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 import 'package:mobile_frontend/view/widget/order/app_order_offer_card.dart';
@@ -128,9 +128,8 @@ void main() {
   });
 
   for (final away in [
-    MainNavDestination.notifications,
-    MainNavDestination.currentOrder,
     MainNavDestination.orderHistory,
+    MainNavDestination.wallet,
     MainNavDestination.profile,
   ]) {
     testWidgets('Home → ${away.name} → Home (app stays in foreground) '
@@ -217,12 +216,12 @@ void main() {
   testWidgets('resume while another tab is visible loads nothing; coming '
       'back to Home then re-reads once (Task 29)', (tester) async {
     await launch(tester);
-    await tapTab(tester, MainNavDestination.notifications);
+    await tapTab(tester, MainNavDestination.orderHistory);
     resume(tester);
     await tester.pumpAndSettle();
     // Home is hidden: no background work.
     expect(loads(), (1, 1));
-    expect(find.byType(NotificationsScreen), findsOneWidget);
+    expect(find.byType(OrderHistoryScreen), findsOneWidget);
 
     await tapTab(tester, MainNavDestination.home);
     expect(loads(), (2, 2));
@@ -253,7 +252,7 @@ void main() {
   testWidgets('resume then an immediate switch to Home (signals close '
       'together) sends one request per feature', (tester) async {
     await launch(tester);
-    await tapTab(tester, MainNavDestination.notifications);
+    await tapTab(tester, MainNavDestination.orderHistory);
     // Keep the answer in flight so both signals overlap.
     offersRepo.pending = Completer();
     availabilityRepo.getPending = Completer();
@@ -344,7 +343,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
 
-    await tapTab(tester, MainNavDestination.notifications);
+    await tapTab(tester, MainNavDestination.orderHistory);
     await tapTab(tester, MainNavDestination.home);
     // The Cubits refuse without a session before calling any backend.
     expect(loads(), (0, 0));
@@ -385,7 +384,7 @@ void main() {
         expect(builtCards(), lessThan(10));
 
         // Tab away and back re-reads once and stays lazy.
-        await tapTab(tester, MainNavDestination.notifications);
+        await tapTab(tester, MainNavDestination.orderHistory);
         await tapTab(tester, MainNavDestination.home);
         expect(builtCards(), lessThan(10));
       });

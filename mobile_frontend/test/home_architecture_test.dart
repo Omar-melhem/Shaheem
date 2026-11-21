@@ -6,6 +6,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_app_bar.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
+import 'package:mobile_frontend/data/repositories/active_order_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
 import 'package:mobile_frontend/domain/entities/app_user.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
 import 'package:mobile_frontend/domain/repositories/order_offer_repository.dart';
@@ -74,7 +80,8 @@ void main() {
         'home_app_bar.dart': 'HomeAppBar',
         'wallet_balance_chip.dart': 'WalletBalanceChip',
         'home_greeting.dart': 'HomeGreeting',
-        'home_availability_card.dart': 'HomeAvailabilityCard',
+        'home_availability_bar.dart': 'HomeAvailabilityBar',
+        'home_active_order_card.dart': 'HomeActiveOrderCard',
         'home_availability_notice.dart': 'HomeAvailabilityNotice',
         'home_availability_rationale_listener.dart':
             'HomeAvailabilityRationaleListener',
@@ -150,6 +157,16 @@ void main() {
               BlocProvider.value(value: session),
               BlocProvider.value(value: availability),
               BlocProvider.value(value: offers),
+              // The app-level active-order owner Home reads (D-A73); the
+              // placeholder reports "not configured", so nothing is shown.
+              BlocProvider(
+                create: (_) => CurrentOrderCubit(
+                  const GetActiveOrder(ActiveOrderRepositoryPlaceholder()),
+                  const GetCaptainLocation(
+                    CaptainLocationRepositoryPlaceholder(),
+                  ),
+                ),
+              ),
             ],
             child: const HomeScreen(),
           ),
@@ -203,7 +220,7 @@ void main() {
 
     testWidgets('a greeting change rebuilds only the greeting', (tester) async {
       await pumpHome(tester);
-      final appBar = tester.widget(find.byType(AppBar));
+      final appBar = tester.widget(find.byType(HomeAppBar));
       final toggle = tester.widget(find.byType(AppAvailabilityToggle));
       final card = tester.widget(find.byKey(const ValueKey('offer-1')));
 
@@ -214,7 +231,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(l10n.homeGreeting('سارة')), findsOneWidget);
       // Same widget instances: those sections did not rebuild.
-      expect(identical(tester.widget(find.byType(AppBar)), appBar), isTrue);
+      expect(identical(tester.widget(find.byType(HomeAppBar)), appBar), isTrue);
       expect(
         identical(tester.widget(find.byType(AppAvailabilityToggle)), toggle),
         isTrue,
@@ -225,16 +242,16 @@ void main() {
       );
     });
 
-    testWidgets('an offers change does not rebuild the availability card or '
+    testWidgets('an offers change does not rebuild the availability switch or '
         'the app bar', (tester) async {
       await pumpHome(tester);
-      final appBar = tester.widget(find.byType(AppBar));
+      final appBar = tester.widget(find.byType(HomeAppBar));
       final toggle = tester.widget(find.byType(AppAvailabilityToggle));
       offersRepo.offers = [offer(1)];
       await offers.load();
       await tester.pumpAndSettle();
       expect(find.byType(AppOrderOfferCard), findsOneWidget);
-      expect(identical(tester.widget(find.byType(AppBar)), appBar), isTrue);
+      expect(identical(tester.widget(find.byType(HomeAppBar)), appBar), isTrue);
       expect(
         identical(tester.widget(find.byType(AppAvailabilityToggle)), toggle),
         isTrue,

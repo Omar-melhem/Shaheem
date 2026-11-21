@@ -82,6 +82,22 @@ about routes or feature state (C-19). Details:
 **Known exception:** `util/tools/` imports widgets from `view/widget/`
 (D-P14).
 
+### 2.1 Client revision responsibilities (2026-11-20)
+
+No directory migration. Targeted changes only (D-A70–D-A79):
+- **Removed:** the notification feed slice (`captain_notification.dart`,
+  `notification_exceptions.dart`, `notification_repository*.dart`,
+  `get_notifications.dart`, `view/screens/notifications_screen/`, preview,
+  test, demo fixture) and the recharge contact helper
+  (`helper/contact/recharge_contact.dart`).
+- **Wallet model:** `WalletSummary` keeps one balance; `heldFils` and the
+  hold-derived `availableFils` are removed. Lifetime delivery statistics are
+  a separate typed read model behind the wallet repository boundary.
+- **Profile:** rating read model and account-deletion port/use case live in
+  `domain/`, with "not configured" placeholders in `data/`.
+- **Current Order:** `CurrentOrderCubit` moves from the shell builder to the
+  authenticated scope shared with the standalone page (D-A73).
+
 ## 3. Widget separation (permanent rule, D-A09)
 
 - **Screen files** compose the layout and coordinate state only.

@@ -147,9 +147,16 @@ checking.
   Use POST business commands for order state changes and stable RFC 9457
   Problem Details error codes. Keep domain repositories and use cases
   independent of generated types.
-- SignalR pushes foreground changes, while FCM/APNs provide mobile push;
-  **PostgreSQL** remains authoritative for orders, offers, wallet and unread
-  notifications. Resume/reconnect or relevant push triggers a REST recheck.
+- SignalR pushes foreground changes, while FCM/APNs carry **operational
+  order alerts** (D-A72); **PostgreSQL** remains authoritative for orders,
+  offers and wallet. There is no notification feed or unread count. An order
+  event (push, SignalR, resume/reconnect) only **requests an authoritative
+  REST re-read**: pending offers through `PendingOffersCubit`, the active
+  order through `CurrentOrderCubit`'s coalesced recovery read. Event payloads
+  never become state. Subscriptions are owned by the authenticated scope and
+  are cancelled on sign-out, session change or account deletion; late
+  answers are dropped by generation checks. No production push adapter
+  exists yet (no credentials, no event schema invented).
   Never hold a persistent mobile SignalR channel in the background as a
   requirement.
 - PostgreSQL transactional outbox persists critical business events with
@@ -159,9 +166,10 @@ checking.
   checked by Backend. No new offers when location expires; do not cancel an
   existing delivery. Availability requires location **and** push permission.
 - End-user navigation state: `AppSessionCubit` is the single memory-only
-  holder of user/session readiness. `NotificationsCubit` (future) is the
-  state holder for server unread count; `CurrentOrderCubit` (existing shell
-  instance) refreshes at approved events, without periodic polling.
+  holder of user/session readiness (name and phone for Profile come from
+  it). `CurrentOrderCubit` (authenticated-scope instance, D-A73) refreshes on
+  acceptance, startup and foreground return, without periodic polling.
+  There is no `NotificationsCubit`.
 
 ### 3.3 Historical Flutter domain contract (not yet production-integrated)
 
@@ -182,8 +190,9 @@ under the outdated D-P16 pending policy.
 
 Write the concrete auth/OpenAPI DTOs, token rotation/session database tables,
 server-side suspension and one-device invalidation, centralized HTTP error
-handling, notification token registration, SignalR groups/events and GPS
-uploads. The backend and real credential storage were not present in the
+handling, push token registration for order alerts, SignalR
+groups/events, GPS uploads, and the account-deletion session revocation
+contract (D-P39). The backend and real credential storage were not present in the
 supplied Flutter code; device and integration testing has not been run.
 
 ## 5. Tests

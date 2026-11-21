@@ -13,6 +13,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
+import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
+import 'package:mobile_frontend/data/repositories/active_order_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/captain_location_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/auth_repository_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/availability_permission_gateway_placeholder.dart';
 import 'package:mobile_frontend/data/repositories/captain_availability_repository_placeholder.dart';
@@ -113,8 +118,16 @@ class _HomeOffersPreviewAppState extends State<HomeOffersPreviewApp> {
     () => true,
   );
 
+  // The real active-order owner over the "not configured" placeholder, so
+  // Home shows no invented order (D-A73).
+  late final _currentOrder = CurrentOrderCubit(
+    const GetActiveOrder(ActiveOrderRepositoryPlaceholder()),
+    const GetCaptainLocation(CaptainLocationRepositoryPlaceholder()),
+  );
+
   @override
   void dispose() {
+    _currentOrder.close();
     _offers.close();
     _availability.close();
     _session.close();
@@ -128,6 +141,7 @@ class _HomeOffersPreviewAppState extends State<HomeOffersPreviewApp> {
         BlocProvider.value(value: _session),
         BlocProvider.value(value: _availability),
         BlocProvider.value(value: _offers),
+        BlocProvider.value(value: _currentOrder),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

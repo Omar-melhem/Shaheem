@@ -1,0 +1,55 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "completed_deliveries": [
+    {
+      "id": "demo-order-done-1",
+      "status": "delivered",
+      "kind": "instant",
+      "merchant_name": "مطعم التلة",
+      "delivery_area": "الدوار الرابع",
+      "delivery_fee_fils": 2500,
+      "occurred_minutes_ago": 1500
+    },
+    {
+      "id": "demo-order-done-2",
+      "status": "delivered",
+      "kind": "instant",
+      "merchant_name": "بيت المعجنات",
+      "delivery_area": "طبربور",
+      "delivery_fee_fils": 3000,
+      "occurred_minutes_ago": 7200
+    },
+    {
+      "id": "demo-order-done-3",
+      "status": "delivered",
+      "kind": "instant",
+      "merchant_name": "مطعم الحارة القديمة",
+      "delivery_area": "الشميساني",
+      "delivery_fee_fils": 3500,
+      "occurred_minutes_ago": 20160
+    }
+  ],
+  "declined_offers": [
+    {
+      "id": "demo-declined-1",
+      "offer_id": "demo-offer-old-1",
+      "order_id": "demo-order-old-1",
+      "kind": "instant",
+      "merchant_name": "مقهى اللوز",
+      "delivery_area": "الجاردنز",
+      "declined_minutes_ago": 3000
+    }
+  ],
+  "future_commitments": [
+    {
+      "id": "demo-scheduled-1",
+      "status": "assigned_future",
+      "merchant_name": "محل هدية",
+      "delivery_area": "مرج الحمام",
+      "scheduled_in_minutes": 2880,
+      "notice": "Preview only; use existing future-commitment UI if present."
+    }
+  ],
+  "completed_note": "Lifetime delivered count (D-A76) = every row here, including demo-order-done-3 (14 days ago, outside the 7-day debit window). Earnings are not derived (formula pending, D-P36)."
+}

@@ -32,7 +32,7 @@ void main() {
       final text = renderedText(tester);
       expect(text.style!.fontSize, 15);
       expect(text.style!.fontWeight, FontWeight.bold);
-      expect(text.style!.color, AppColor.ink);
+      expect(text.style!.color, AppColor.textPrimary);
       expect(text.style!.fontFamily, AppFonts.ibmPlexSansArabic);
       expect(text.style!.height, 1.2);
       expect(text.maxLines, 1);

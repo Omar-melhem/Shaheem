@@ -69,46 +69,132 @@ class AppLocalizationsAr extends AppLocalizations {
   String get homeTitle => 'الرئيسية';
 
   @override
-  String get notificationsTitle => 'الإشعارات';
-
-  @override
   String get currentOrderTitle => 'الطلب الحالي';
 
   @override
-  String get orderHistoryTitle => 'سجل الطلبات';
+  String get orderHistoryTitle => 'طلباتي';
 
   @override
-  String get profileTitle => 'الملف الشخصي';
+  String get profileTitle => 'حسابي';
+
+  @override
+  String get profileNameLabel => 'الاسم';
+
+  @override
+  String get profileNameUnavailable => 'الاسم غير متوفر';
+
+  @override
+  String get profilePhoneLabel => 'رقم الهاتف';
+
+  @override
+  String get profilePhoneUnavailable => 'رقم الهاتف غير متوفر';
+
+  @override
+  String get profileRatingTitle => 'التقييم';
+
+  @override
+  String get profileRatingLoading => 'جارٍ تحميل التقييم...';
+
+  @override
+  String get profileRatingUnavailable => 'التقييم غير متوفر';
+
+  @override
+  String get profileRatingNone => 'لا توجد تقييمات بعد';
+
+  @override
+  String profileRatingOutOf(String value, String max) {
+    return '$value من $max';
+  }
+
+  @override
+  String profileRatingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تقييم',
+      many: '$count تقييماً',
+      few: '$count تقييمات',
+      two: 'تقييمان',
+      one: 'تقييم واحد',
+      zero: 'لا توجد تقييمات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileSignOut => 'تسجيل الخروج';
+
+  @override
+  String get profileSignOutConfirm => 'هل تريد تسجيل الخروج من حسابك؟';
+
+  @override
+  String get settingsTitle => 'الإعدادات';
+
+  @override
+  String get settingsAccountSection => 'الحساب';
+
+  @override
+  String get accountDeletionEntry => 'حذف الحساب';
+
+  @override
+  String get accountDeletionEntryHint =>
+      'طلب حذف حسابك وبياناتك الشخصية المرتبطة به';
+
+  @override
+  String get accountDeletionSubmitting => 'جارٍ إرسال طلب الحذف...';
+
+  @override
+  String get accountDeletionConfirmTitle => 'حذف الحساب؟';
+
+  @override
+  String get accountDeletionConfirmMessage =>
+      'سيُرسل طلب لحذف حسابك في شهم وبياناتك الشخصية المرتبطة به. قد يستغرق إكمال الحذف بعض الوقت، وقد يلزم الاحتفاظ ببعض السجلات وفق المتطلبات القانونية؛ ستُوضَّح التفاصيل عند تفعيل خدمة الحذف. لا يمكن التراجع عن الحذف بعد اكتماله.';
+
+  @override
+  String get accountDeletionConfirmAction => 'تأكيد الحذف';
+
+  @override
+  String get accountDeletionNotConfigured =>
+      'خدمة حذف الحساب غير متصلة بالتطبيق بعد، لذلك لم يُرسل أي طلب ولم يُحذف حسابك.';
+
+  @override
+  String get accountDeletionNoInternet =>
+      'لا يوجد اتصال بالإنترنت، ولم يُرسل الطلب. حاول مرة أخرى.';
+
+  @override
+  String get accountDeletionFailed =>
+      'تعذّر إرسال طلب الحذف، ولم يُحذف حسابك. حاول مرة أخرى.';
+
+  @override
+  String get accountDeletionReauthRequired =>
+      'لأمان حسابك، يجب تسجيل الدخول مجدداً قبل طلب الحذف.';
+
+  @override
+  String get accountDeletionSignInAgain => 'تسجيل الدخول مجدداً';
+
+  @override
+  String get accountDeletionPending =>
+      'تم استلام طلب حذف حسابك وهو قيد المعالجة. لم يُحذف الحساب بعد.';
+
+  @override
+  String get aboutTitle => 'حول التطبيق';
+
+  @override
+  String get aboutDescription => 'تطبيق الكباتن في منصة شهم لتوصيل الطلبات.';
+
+  @override
+  String get aboutVersionLabel => 'الإصدار';
+
+  @override
+  String get aboutVersionUnavailable =>
+      'رقم الإصدار غير متوفر في هذه النسخة من التطبيق.';
 
   @override
   String get mainNavigationLabel => 'التنقل الرئيسي';
 
   @override
-  String get navUnreadNotifications => 'توجد إشعارات غير مقروءة';
-
-  @override
-  String get navActiveOrder => 'لديك طلب فعال';
-
-  @override
-  String get navCheckingActiveOrder => 'جارٍ التحقق من طلبك الحالي';
-
-  @override
-  String get navCurrentOrderHint => 'عرض طلبك الفعال وموقع استلامه على الخريطة';
-
-  @override
-  String get underConstructionTitle => 'قيد التطوير';
-
-  @override
-  String get notificationsPlaceholderMessage =>
-      'صفحة الإشعارات قيد التطوير وستتوفر قريباً.';
-
-  @override
   String get orderHistoryPlaceholderMessage =>
-      'صفحة سجل الطلبات قيد التطوير وستتوفر قريباً.';
-
-  @override
-  String get profilePlaceholderMessage =>
-      'صفحة الملف الشخصي قيد التطوير وستتوفر قريباً.';
+      'سجل التوصيلات المكتملة قيد التطوير وسيتوفر قريباً.';
 
   @override
   String get loginTitle => 'تسجيل الدخول';
@@ -295,6 +381,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get homeGreetingNoName => 'مرحباً بك';
 
   @override
+  String homeActiveOrderMessage(String merchant) {
+    return 'لديك طلب قيد التنفيذ من $merchant.';
+  }
+
+  @override
+  String get homeActiveOrderOpen => 'عرض الطلب الحالي';
+
+  @override
+  String get homeActiveOrderCheckFailed =>
+      'تعذّر التحقق من طلبك الحالي. هذا لا يعني عدم وجود طلب.';
+
+  @override
   String get walletCurrencySymbol => 'د.أ';
 
   @override
@@ -308,9 +406,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get walletBalanceUnavailableSemantics =>
       'إجمالي رصيد المحفظة غير متوفر حالياً';
-
-  @override
-  String get availabilityCardTitle => 'استقبال الطلبات';
 
   @override
   String get availabilityToggleLabel => 'استقبال عروض الطلبات الجديدة';
@@ -444,7 +539,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get offerDeliveryAreaLabel => 'منطقة التسليم';
 
   @override
-  String get offerDeliveryFeeLabel => 'قيمة التوصيل';
+  String get offerDeliveryFeeLabel => 'أجرة التوصيل';
 
   @override
   String offerCardSemantics(
@@ -473,4 +568,185 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get previewCaption => 'معاينة تصميم — بيانات افتراضية';
+
+  @override
+  String get walletTitle => 'المحفظة';
+
+  @override
+  String get walletOpenHint => 'فتح المحفظة';
+
+  @override
+  String get walletTotalBalance => 'الرصيد';
+
+  @override
+  String get walletValueUnknownSemantics => 'غير معروف';
+
+  @override
+  String get walletDebitHistory => 'سجل الخصم';
+
+  @override
+  String get walletHistoryWindowNote =>
+      'يعرض السجل عمليات خصم العمولة خلال آخر 7 أيام.';
+
+  @override
+  String get walletDeliveredCount => 'الطلبات المسلّمة';
+
+  @override
+  String get walletEarnings => 'الأرباح';
+
+  @override
+  String get walletMetricsLifetimeNote => 'منذ بدء العمل';
+
+  @override
+  String get walletEarningsUnavailable => 'غير متوفر حالياً';
+
+  @override
+  String get walletMetricsNotConfigured => 'خدمة الإحصائيات غير متصلة بعد.';
+
+  @override
+  String get walletMetricsLoadFailed => 'تعذّر تحميل الإحصائيات.';
+
+  @override
+  String get walletMerchantLabel => 'المطعم';
+
+  @override
+  String get walletDebitDateLabel => 'تاريخ الخصم';
+
+  @override
+  String get walletCommissionDebitLabel => 'قيمة الخصم (العمولة)';
+
+  @override
+  String get walletFieldUnavailable => 'غير متوفر';
+
+  @override
+  String get walletDebitsEmpty => 'لا توجد عمليات خصم خلال آخر 7 أيام.';
+
+  @override
+  String get walletLoading => 'جارٍ تحميل المحفظة…';
+
+  @override
+  String get walletNotConfigured =>
+      'خدمة المحفظة غير متصلة بعد، لذلك لا يمكن عرض الرصيد أو السجل حالياً.';
+
+  @override
+  String get walletNoSession => 'سجّل الدخول لعرض محفظتك.';
+
+  @override
+  String get walletNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تعذّر تحميل المحفظة.';
+
+  @override
+  String get walletLoadFailed => 'تعذّر تحميل المحفظة. حاول مرة أخرى.';
+
+  @override
+  String walletDebitSemantics(
+    String amount,
+    String merchant,
+    String area,
+    String date,
+  ) {
+    return 'خصم عمولة بقيمة $amount دينار أردني، المطعم: $merchant، منطقة التسليم: $area، بتاريخ $date';
+  }
+
+  @override
+  String get newOfferSheetTitle => 'عرض طلب جديد';
+
+  @override
+  String get offerKindInstant => 'حالي';
+
+  @override
+  String get offerKindScheduled => 'مؤجل';
+
+  @override
+  String get offerScheduledPickupLabel => 'موعد الاستلام';
+
+  @override
+  String get offerValueUnavailable => 'غير متوفر';
+
+  @override
+  String get offerGrossFeeLabel => 'أجرة التوصيل كاملة';
+
+  @override
+  String get offerEarningsMissing =>
+      'تفاصيل العمولة غير متوفرة لهذا العرض، لذلك لا يمكن قبوله من هنا.';
+
+  @override
+  String get offerScheduledAdminOnly =>
+      'الطلبات المؤجلة يؤكدها المشرف مباشرة، ولا يمكن قبولها من التطبيق حالياً.';
+
+  @override
+  String get offerAcceptFull => 'قبول الطلب';
+
+  @override
+  String get offerDeclineFull => 'رفض الطلب';
+
+  @override
+  String get offerLater => 'لاحقاً';
+
+  @override
+  String get offerAcceptedNotOpened =>
+      'تم قبول العرض، لكن تعذّر فتح الطلب الحالي الآن. ستجده في الصفحة الرئيسية عند توفّره.';
+
+  @override
+  String get declinedOffersHeading => 'العروض التي رفضتها';
+
+  @override
+  String get declinedOffersNote =>
+      'عروض رفضتها أنت فقط. رفض العرض لا يلغي طلب المتجر.';
+
+  @override
+  String get declinedOffersLoading => 'جارٍ تحميل العروض المرفوضة…';
+
+  @override
+  String get declinedOffersNotConfigured =>
+      'خدمة سجل العروض المرفوضة غير متصلة بعد.';
+
+  @override
+  String get declinedOffersNoSession => 'سجّل الدخول لعرض العروض المرفوضة.';
+
+  @override
+  String get declinedOffersNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تعذّر تحميل العروض المرفوضة.';
+
+  @override
+  String get declinedOffersLoadFailed => 'تعذّر تحميل العروض المرفوضة الآن.';
+
+  @override
+  String get declinedOffersEmpty => 'لا توجد عروض مرفوضة.';
+
+  @override
+  String get declinedOfferGenericTitle => 'عرض طلب';
+
+  @override
+  String get declinedOfferOutcome => 'رفضتَ هذا العرض';
+
+  @override
+  String get demoBadge => 'وضع تجريبي — بيانات وهمية';
+
+  @override
+  String get demoShowNewOffer => 'إظهار طلب جديد';
+
+  @override
+  String get demoTools => 'أدوات العرض';
+
+  @override
+  String get demoToolsHide => 'إخفاء الأدوات';
+
+  @override
+  String get demoScenarioNone => 'بدون طلب حالي';
+
+  @override
+  String get demoScenarioAssigned => 'طلب مسند مسبقاً';
+
+  @override
+  String get demoShowScheduled => 'عرض مؤجل (للعرض فقط)';
+
+  @override
+  String get demoReset => 'إعادة ضبط بيانات العرض';
+
+  @override
+  String get demoSignOut => 'تسجيل الخروج من العرض';
+
+  @override
+  String get demoFixturesError => 'تعذّر تحميل بيانات العرض التجريبي.';
 }

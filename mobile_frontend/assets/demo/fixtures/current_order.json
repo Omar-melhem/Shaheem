@@ -1,0 +1,32 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "default_active_order_id": null,
+  "scenarios": {
+    "assigned": {
+      "id": "demo-order-active-1",
+      "status": "accepted",
+      "kind": "instant",
+      "merchant_name": "مطعم النخلة",
+      "pickup_display": "عبدون - عمّان",
+      "delivery_area": "الدوار السابع",
+      "delivery_fee_fils": 3750,
+      "commission_fils": 750,
+      "captain_net_fils": 3000,
+      "pickup_pin": "1234",
+      "demo_pin_only": true
+    },
+    "on_the_way": {
+      "id": "demo-order-active-2",
+      "status": "on_the_way",
+      "kind": "instant",
+      "merchant_name": "متجر الخير",
+      "pickup_display": "الشميساني",
+      "delivery_area": "صويلح",
+      "delivery_fee_fils": 2750,
+      "commission_fils": 550,
+      "captain_net_fils": 2200
+    }
+  },
+  "demo_only_warning": "No real GPS, customer details, backend PIN verification or live settlement."
+}

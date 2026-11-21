@@ -162,7 +162,7 @@ class AppTools {
       context,
       title: title ?? l10n.alert,
       message: content ?? l10n.proceedQuestion,
-      icon: const Icon(Icons.warning_amber_rounded, color: AppColor.red),
+      icon: const Icon(Icons.warning_amber_rounded, color: AppColor.error),
       barrierDismissible: false,
       actions: [
         AppPopupAction(

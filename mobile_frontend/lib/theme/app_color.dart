@@ -1,98 +1,96 @@
 import 'package:flutter/painting.dart';
 
-/// SHAHM brand palette, supplied by the Product Owner and shared with the
-/// web prototype (`web_frontend/tailwind.config.js`).
+/// SHAHM's single color palette (D-A69, client revision 2026-11-20): white
+/// backgrounds, red primary actions and neutral text/navigation.
+///
+/// Every screen reads colors from here, usually through `ColorScheme` and
+/// the component themes in `AppTheme`, so the owner can revise a shade in
+/// one place. The exact hex values are an implementation selection for the
+/// requested red/white direction (see `docs/ui/DESIGN_SYSTEM.md` §1 for the
+/// contrast checks). There is no second brand palette.
 class AppColor {
   AppColor._();
 
-  // Primary — maroon
-  static const Color primary50 = Color(0xFFFBF2F4);
-  static const Color primary100 = Color(0xFFF5E0E4);
-  static const Color primary200 = Color(0xFFE9BCC5);
-  static const Color primary300 = Color(0xFFD58E9C);
-  static const Color primary400 = Color(0xFFB85468);
-  static const Color primary500 = Color(0xFF8C2335);
-  static const Color primary600 = Color(0xFF7A1E2E);
-  static const Color primary700 = Color(0xFF641826);
-  static const Color primary800 = Color(0xFF4E131E);
-  static const Color primary900 = Color(0xFF3A0E16);
-  static const Color primary = primary500;
+  // ── Brand red ──────────────────────────────────────────────────────────
 
-  // Secondary — forest green
-  static const Color secondary50 = Color(0xFFEEF3F1);
-  static const Color secondary100 = Color(0xFFD6E2DD);
-  static const Color secondary200 = Color(0xFFADC5BB);
-  static const Color secondary300 = Color(0xFF7FA294);
-  static const Color secondary400 = Color(0xFF4F7466);
-  static const Color secondary500 = Color(0xFF263D34);
-  static const Color secondary600 = Color(0xFF20342C);
-  static const Color secondary700 = Color(0xFF1A2A24);
-  static const Color secondary800 = Color(0xFF14201B);
-  static const Color secondary900 = Color(0xFF0E1613);
-  static const Color secondary = secondary500;
+  /// Prominent primary actions, including Accept (5.62:1 on white).
+  static const Color primary = Color(0xFFC62828);
 
-  // Text — ink
-  static const Color ink = Color(0xFF242424);
-  static const Color inkSoft = Color(0xFF4A4A4A);
-  static const Color inkMuted = Color(0xFF6E6A64);
+  /// Content drawn on [primary].
+  static const Color onPrimary = Color(0xFFFFFFFF);
 
-  // Background — cream (beige)
-  static const Color cream = Color(0xFFF5F0E8);
-  static const Color creamDark = Color(0xFFEDE5D8);
-  static const Color creamDeep = Color(0xFFE3D8C6);
+  /// Pressed state of a red action.
+  static const Color primaryPressed = Color(0xFFA61B1B);
 
-  // Accent / border — sand
-  static const Color sand = Color(0xFFC8A98A);
-  static const Color sandLight = Color(0xFFE6D6C5);
-  static const Color sandDark = Color(0xFFA88866);
+  /// Low-emphasis red tint for status/highlight backgrounds.
+  static const Color primaryContainer = Color(0xFFFDECEC);
+
+  /// Text and icons on [primaryContainer].
+  static const Color onPrimaryContainer = Color(0xFF8F1D1D);
+
+  // ── Neutral surfaces ───────────────────────────────────────────────────
 
   static const Color white = Color(0xFFFFFFFF);
 
-  // Semantic
-  static const Color background = cream;
+  /// Screens (Scaffold) and the Home AppBar.
+  static const Color background = white;
+
+  /// Cards, navigation bar, sheets and dialogs.
   static const Color surface = white;
-  static const Color textPrimary = ink;
-  static const Color textSecondary = inkMuted;
-  static const Color border = sandLight;
 
-  /// Resting border of text inputs. An existing neutral (inkMuted) chosen
-  /// because it reaches WCAG 1.4.11 non-text contrast on both sides of a
-  /// field: 5.37:1 on the white fill and 4.74:1 on the cream background.
-  /// No sand shade does (sandDark: 3.29:1 white, 2.90:1 cream).
-  static const Color inputBorder = inkMuted;
-  static const Color splashBackground = cream;
+  /// Neutral inset surfaces where grouping needs a subtle fill.
+  static const Color surfaceContainer = Color(0xFFF5F5F5);
 
-  static const Color blackIcons = Color.fromRGBO(5, 5, 5, 1.0);
-  static const Color greyIcons = Color.fromARGB(255, 237, 237, 242);
-  static const Color red = Color(0xffff0000);
-  static const Color googleLogo = Color(0xffDB4437);
-  static const Color flatred = Color.fromRGBO(239, 90, 86, 1.0);
-  static const Color thirdWhite = Color(0xffF5F5F7);
-  static const Color backgroundColor = Color.fromARGB(255, 242, 241, 241);
-  static const Color lightGreyColor = Color.fromRGBO(245, 245, 245, 1.0);
-  static const Color success = Color.fromRGBO(0, 168, 98, 1.0);
-  static const Color failed = Color.fromRGBO(239, 90, 86, 1.0);
-  static const Color shadow = Color.fromRGBO(183, 183, 183, 0.5);
-  static const Color notification = Color(0xffC5B100);
-  static const Color green = Color(0xff1CD345);
-  static const Color orange = Color(0xffE57C00);
-  static const Color purple = Color(0xff6F51FE);
-  static const Color lightGreen = Color.fromARGB(255, 163, 201, 180);
-  static const Color focusColor = Color.fromRGBO(55, 145, 93, 1.0);
-  static const Color yellow = Color.fromRGBO(252, 182, 20, 1.0);
-  static const Color babyPink = Color(0xfffdcfec);
-  static const Color babyBlue = Color(0xffcfdcfd);
-  static const Color foshi = Color(0xffebcffd);
-  static const Color lemon = Color(0xfffdedcf);
-  static const Color darkMood = Color(0xff949494);
-  static const Color blue = Color(0xff007AFF);
-  static const Color black = Color(0xff000000);
-  static const Color darkBlue = Color.fromARGB(255, 0, 46, 96);
-  static const Color lightBlack = Color(0xff303437);
-  static const Color lightOrange = Color(0xffFDDACF);
-  static const Color textPink = Color(0xffFD17A9);
-  static const Color primaryBlueColor = Color(0xff00BEC5);
-  static const Color opacityLine = Color(0xff828282);
-  static const Color lightFont = Color(0xffBDBDBD);
-  static const Color boldTextColor = Color(0xff192126);
+  /// Opaque black, used only for the translucent iOS loading overlay.
+  static const Color black = Color(0xFF000000);
+
+  // ── Text and navigation ────────────────────────────────────────────────
+
+  /// Main text (17.93:1 on white).
+  static const Color textPrimary = Color(0xFF171717);
+
+  /// Secondary readable text (6.19:1 on white).
+  static const Color textSecondary = Color(0xFF616161);
+
+  /// Neutral emphasis mapped to `ColorScheme.secondary` (icons, section
+  /// headings). It is **not** a success color; use [success] for that.
+  static const Color secondary = textPrimary;
+
+  /// Selected tab icon and label (dark, never red).
+  static const Color navSelected = textPrimary;
+
+  /// Unselected tab icon and label.
+  static const Color navUnselected = textSecondary;
+
+  /// Neutral pill behind the selected tab icon (second cue beyond color).
+  static const Color selectedTabContainer = Color(0xFFEEEEEE);
+
+  // ── Boundaries ─────────────────────────────────────────────────────────
+
+  /// Visible control boundary such as a text field (4.74:1 on white,
+  /// above the 3:1 non-text minimum).
+  static const Color inputOutline = Color(0xFF737373);
+
+  /// Decorative separators and card outlines. Never an input boundary.
+  static const Color divider = Color(0xFFE5E5E5);
+
+  /// Visible keyboard-focus outline (combined with a wider stroke).
+  static const Color focus = textPrimary;
+
+  // ── Disabled ───────────────────────────────────────────────────────────
+
+  static const Color disabledBackground = Color(0xFFF0F0F0);
+  static const Color disabledForeground = Color(0xFF767676);
+
+  // ── Semantic status ────────────────────────────────────────────────────
+
+  /// Available/success state only (e.g. the availability switch), never a
+  /// primary action.
+  static const Color success = Color(0xFF166534);
+
+  /// Validation, failure and destructive actions such as account deletion.
+  static const Color error = Color(0xFFB91C1C);
+
+  /// Semantic warning.
+  static const Color warning = Color(0xFF92400E);
 }

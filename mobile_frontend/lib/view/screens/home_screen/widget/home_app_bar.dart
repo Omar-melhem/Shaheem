@@ -1,95 +1,115 @@
-// Home app bar: title (when it fits) and the wallet total.
+// Home AppBar: greeting, wallet balance and availability (D-A71).
 
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
+import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
+import 'package:mobile_frontend/util/routes/routes_string.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_availability_bar.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_greeting.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
 
-/// App bar: title (only when it fits beside the balance) and the wallet
-/// total. Grows with the text scale so the balance is never clipped.
-class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
+/// The Home AppBar (client revision, D-A71), following the hierarchy of the
+/// client's reference image without its logo or patterned header:
+///
+/// 1. **First row:** the personalized greeting ([HomeGreeting]) at the
+///    reading start, and the wallet balance chip ([WalletBalanceChip],
+///    opening the Wallet tab) at the end. When both don't fit (narrow
+///    screen, long name, large text) the chip moves under the greeting
+///    instead of being dropped or truncated.
+/// 2. **Second row:** the controlled availability switch and its status,
+///    with any notice underneath ([HomeAvailabilityBar]).
+///
+/// There is no Profile button: Profile is the «حسابي» tab (D-A70). The
+/// «الرئيسية» title is not drawn (the greeting replaces it visually) but is
+/// kept as a screen-reader header.
+///
+/// **Adaptive height:** Material's `AppBar` needs a fixed preferred height,
+/// which cannot fit a wrapping greeting plus a variable notice, so this is
+/// a content-sized app bar placed above the scrollable body. It grows with
+/// its content (narrow widths, text scale up to 3, error or rationale
+/// text) and only becomes internally scrollable beyond [maxHeightFraction]
+/// of the page's available height, so nothing is ever hidden and the body
+/// never overflows. White surface, light bottom
+/// divider, and the top safe area applied here once.
+class HomeAppBar extends StatelessWidget {
   const HomeAppBar({
     super.key,
-    required this.walletTotalFils,
-    required this.height,
+    required this.walletBalanceFils,
+    required this.availableHeight,
   });
 
-  final int? walletTotalFils;
+  /// Total wallet balance in integer fils from the single authoritative
+  /// wallet source (the same value the Wallet tab shows). Null shows «—».
+  final int? walletBalanceFils;
 
-  /// Toolbar height from [heightFor]. The Scaffold sizes the app bar from
-  /// [preferredSize], which has no context, so the caller passes it.
-  final double height;
+  /// The height the Home page actually has for the bar and the body (the
+  /// Scaffold body's constraint, which already excludes the navigation bar
+  /// and anything mounted above the app). The bar is capped at
+  /// [maxHeightFraction] of it, so the offers below always keep room.
+  final double availableHeight;
 
-  static const double _verticalPadding = 8;
+  /// The largest share of [availableHeight] the bar may take before its
+  /// content scrolls inside it.
+  static const double maxHeightFraction = 0.6;
 
-  /// At least the standard toolbar height, taller when the text scale
-  /// needs it: room for two lines of balance text (amount and currency may
-  /// wrap onto separate lines on narrow screens with large text).
-  static double heightFor(BuildContext context) {
-    final chipStyle = WalletBalanceChip.textStyle(Theme.of(context));
-    final line =
-        MediaQuery.textScalerOf(context).scale(chipStyle.fontSize!) * 1.5;
-    return math.max(
-      kToolbarHeight,
-      2 * line + 2 * WalletBalanceChip.verticalPadding + 2 * _verticalPadding,
-    );
-  }
-
-  @override
-  Size get preferredSize => Size.fromHeight(height);
+  /// Key of the bar's surface, for tests.
+  static const Key surfaceKey = Key('home-app-bar');
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final scaler = MediaQuery.textScalerOf(context);
-    final titleStyle =
-        theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge!;
+    // The same side padding as the body, so the bar and the offer cards
+    // share one content edge.
+    final side = AppBreakpoints.screenPadding(context);
+    final chip = WalletBalanceChip(
+      balanceFils: walletBalanceFils,
+      // The same canonical route as the Wallet tab: switches to that
+      // branch instead of stacking a second Wallet page.
+      onPressed: () => context.go(RoutesString.wallet),
+    );
 
-    return AppBar(
-      automaticallyImplyLeading: false,
-      centerTitle: false,
-      toolbarHeight: height,
-      titleSpacing: AppBreakpoints.screenPadding(context),
-      title: LayoutBuilder(
-        builder: (context, constraints) {
-          final chip = WalletBalanceChip(totalFils: walletTotalFils);
-          final titleWidth = _textWidth(l10n.homeTitle, titleStyle, scaler);
-          final chipWidth = WalletBalanceChip.naturalWidth(
-            context,
-            walletTotalFils,
-          );
-          final titleFits = titleWidth + 16 + chipWidth <= constraints.maxWidth;
-          return Row(
-            children: [
-              if (titleFits)
-                Text(l10n.homeTitle, style: titleStyle, maxLines: 1)
-              else
-                // Kept for screen readers when there is no room to show it.
-                Semantics(
-                  header: true,
-                  label: l10n.homeTitle,
-                  child: const SizedBox.shrink(),
-                ),
-              const Spacer(),
-              Flexible(flex: 0, child: chip),
-            ],
-          );
-        },
+    return Material(
+      key: surfaceKey,
+      color: AppColor.background,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColor.divider)),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: availableHeight * maxHeightFraction,
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsetsDirectional.fromSTEB(side, 12, side, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    header: true,
+                    label: l10n.homeTitle,
+                    child: const SizedBox.shrink(),
+                  ),
+                  // A Wrap keeps the greeting first and moves the chip to
+                  // its own run when they cannot share one line.
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [const HomeGreeting(), chip],
+                  ),
+                  const SizedBox(height: 8),
+                  const HomeAvailabilityBar(),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
-  }
-
-  static double _textWidth(String text, TextStyle style, TextScaler scaler) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.rtl,
-      textScaler: scaler,
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
   }
 }

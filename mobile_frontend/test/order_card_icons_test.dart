@@ -1,5 +1,5 @@
 // The one order card, `AppOrderOfferCard` (Tasks 31 and 33: the owner's
-// design — icons, spacing, soft divider, forest fee, outlined «رفض»), with
+// design — icons, spacing, light divider, red fee, outlined «رفض»), with
 // the real font.
 
 import 'package:flutter/material.dart';
@@ -85,7 +85,7 @@ void main() {
     ),
   );
 
-  /// Expects [icon] once, decorative, [size] px, forest, [gap] px on the
+  /// Expects [icon] once, decorative, [size] px, dark neutral, [gap] px on the
   /// logical start side of [text] (right in RTL, left in LTR).
   void expectIconBeside(
     WidgetTester tester,
@@ -114,22 +114,13 @@ void main() {
     expect((iconRect.center.dy - textRect.center.dy).abs(), lessThan(14));
   }
 
-  /// The line above the fee is the softened sand border token, thin.
+  /// The line above the fee is the light divider token, thin.
   void expectSoftDivider(WidgetTester tester) {
     final divider = tester.widget<Divider>(find.byType(Divider));
     expect(divider.thickness, 0.7);
-    expect(divider.color, AppColor.border.withValues(alpha: 0.45));
-    // Clearly softer than the previous default line: the theme's
-    // outlineVariant at 1 px.
-    final previous = Theme.of(
-      tester.element(find.byType(Divider)),
-    ).colorScheme.outlineVariant;
-    // ColorScheme.light's default outlineVariant: black.
-    expect(previous, const Color(0xFF000000));
-    expect(
-      divider.color!.computeLuminance(),
-      greaterThan(previous.computeLuminance() + 0.5),
-    );
+    // D-A69 decorative divider token (light neutral).
+    expect(divider.color, AppColor.divider);
+    expect(divider.color!.computeLuminance(), greaterThan(0.75));
   }
 
   group('AppOrderOfferCard (production)', () {
@@ -199,8 +190,8 @@ void main() {
         tester.widget<Text>(fee).data,
         '${ltrIsolate('2.500')} ${l10n.walletCurrencySymbol}',
       );
-      // The amount is forest and bold, as in the owner design.
-      expect(tester.widget<Text>(fee).style?.color, AppColor.secondary);
+      // The full fee is emphasized in red and bold (D-A69).
+      expect(tester.widget<Text>(fee).style?.color, AppColor.primary);
       expect(tester.widget<Text>(fee).style?.fontWeight, FontWeight.bold);
       // Owner spacing: 20 px on both sides of the line.
       final dividerRect = tester.getRect(find.byType(Divider));
@@ -274,7 +265,7 @@ void main() {
       expect((accepted, declined), (1, 1));
     });
 
-    testWidgets('«رفض» is outlined in the error color while it can act; '
+    testWidgets('«رفض» is a neutral outline while it can act; '
         'disabled falls back to the shared disabled look', (tester) async {
       AppButton decline() => tester.widget<AppButton>(
         find.widgetWithText(AppButton, l10n.offerDecline),
@@ -283,9 +274,9 @@ void main() {
 
       await pump(tester, card(offer(1), onAccept: () {}, onDecline: () {}));
       expect(decline().backgroundColor, scheme.surface);
-      expect(decline().foregroundColor, scheme.error);
-      expect(decline().border, BorderSide(color: scheme.error));
-      // «قبول» stays the filled brand action.
+      expect(decline().foregroundColor, AppColor.textPrimary);
+      expect(decline().border, const BorderSide(color: AppColor.inputOutline));
+      // «قبول» keeps AppButton's default theme red (D-A69).
       expect(
         tester
             .widget<AppButton>(find.widgetWithText(AppButton, l10n.offerAccept))
@@ -293,7 +284,7 @@ void main() {
         isNull,
       );
 
-      // Its own command running: still outlined, spinner in error color.
+      // Its own command running: still outlined, with its spinner.
       await pump(
         tester,
         card(
@@ -303,10 +294,10 @@ void main() {
           busy: AppOfferCardAction.decline,
         ),
       );
-      expect(decline().border, BorderSide(color: scheme.error));
+      expect(decline().border, const BorderSide(color: AppColor.inputOutline));
       expect(decline().isLoading, isTrue);
 
-      // «قبول» running, or no callback: disabled, no red outline.
+      // «قبول» running, or no callback: disabled, no outline.
       await pump(
         tester,
         card(

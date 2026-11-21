@@ -21,14 +21,17 @@ part 'pending_offers_state.dart';
 /// another tab, on resume and on an explicit refresh: never by polling. It
 /// asks for no device permission.
 class PendingOffersCubit extends Cubit<PendingOffersState> {
-  /// [onAcceptConfirmed] runs after the server confirmed an acceptance
-  /// (the shell refreshes Current Order); it never navigates.
+  /// [onDeclineConfirmed] runs after the server confirmed a decline (the
+  /// shell refreshes the declined-offers history, Task 38). It never
+  /// navigates and never runs for a dismissed sheet or an unconfirmed/
+  /// failed command. A confirmed acceptance is observed by
+  /// `NewOfferSheetHost` from this Cubit's state (D-A73).
   PendingOffersCubit(
     this._getOffers,
     this._accept,
     this._decline,
     this._hasSession, {
-    this.onAcceptConfirmed,
+    this.onDeclineConfirmed,
   }) : super(const PendingOffersState());
 
   final GetEligibleOffers _getOffers;
@@ -38,8 +41,8 @@ class PendingOffersCubit extends Cubit<PendingOffersState> {
   /// Whether a real captain session exists right now.
   final bool Function() _hasSession;
 
-  /// Runs after a server-confirmed acceptance (e.g. refresh Current Order).
-  final VoidCallback? onAcceptConfirmed;
+  /// Runs after a server-confirmed decline (e.g. refresh Order History).
+  final VoidCallback? onDeclineConfirmed;
 
   int _generation = 0;
 
@@ -125,7 +128,7 @@ class PendingOffersCubit extends Cubit<PendingOffersState> {
               : PendingOffersMessage.declined,
         ),
       );
-      if (action == OfferAction.accept) onAcceptConfirmed?.call();
+      if (action == OfferAction.decline) onDeclineConfirmed?.call();
       // Replace the local view with the server's current list.
       await _load(keepMessage: true);
       return;

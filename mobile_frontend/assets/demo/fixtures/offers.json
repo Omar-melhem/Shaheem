@@ -1,0 +1,73 @@
+{
+  "schema": "shahm-demo-v1",
+  "demo_only": true,
+  "offers": [
+    {
+      "id": "demo-offer-101",
+      "order_id": "demo-order-101",
+      "kind": "instant",
+      "merchant_name": "مطعم السنابل",
+      "pickup_display": "الشميساني - عمّان",
+      "delivery_area": "تلاع العلي",
+      "delivery_fee_fils": 2500,
+      "commission_rate_percent": 20,
+      "commission_fils": 500,
+      "captain_net_fils": 2000,
+      "expires_in_seconds": 120,
+      "status": "eligible"
+    },
+    {
+      "id": "demo-offer-102",
+      "order_id": "demo-order-102",
+      "kind": "instant",
+      "merchant_name": "مخبز صباح الخير",
+      "pickup_display": "الجبيهة - عمّان",
+      "delivery_area": "خلدا",
+      "delivery_fee_fils": 3250,
+      "commission_rate_percent": 20,
+      "commission_fils": 650,
+      "captain_net_fils": 2600,
+      "expires_in_seconds": 120,
+      "status": "eligible"
+    },
+    {
+      "id": "demo-offer-201",
+      "order_id": "demo-order-201",
+      "kind": "scheduled",
+      "merchant_name": "متجر الورد",
+      "pickup_display": "الصويفية - عمّان",
+      "delivery_area": "دابوق",
+      "delivery_fee_fils": 4000,
+      "commission_rate_percent": 20,
+      "commission_fils": 800,
+      "captain_net_fils": 3200,
+      "scheduled_in_minutes": 1440,
+      "status": "preview_only_not_actionable"
+    }
+  ],
+  "incoming_offer_template": {
+    "id_pattern": "demo-new-offer-{sequence}",
+    "order_id_pattern": "demo-new-order-{sequence}",
+    "kind": "instant",
+    "merchant_name": "مطعم زيت وزعتر",
+    "pickup_display": "الرابية - عمّان",
+    "delivery_area": "أم أذينة",
+    "delivery_fee_fils": 3000,
+    "commission_rate_percent": 20,
+    "commission_fils": 600,
+    "captain_net_fils": 2400,
+    "expires_in_seconds": 120,
+    "status": "eligible"
+  },
+  "unavailable_offer_scenario": {
+    "id": "demo-expired-offer",
+    "status": "expired",
+    "kind": "instant",
+    "merchant_name": "سوق المدينة",
+    "pickup_display": "وسط البلد",
+    "delivery_area": "العبدلي",
+    "delivery_fee_fils": 2000,
+    "commission_fils": 400,
+    "captain_net_fils": 1600
+  }
+}
