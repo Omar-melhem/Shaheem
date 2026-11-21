@@ -6,17 +6,10 @@ import type {
   LatLng,
   Merchant,
   MerchantAreaPrice,
-  OpsAlert,
   OrderStatus,
-  PlatformSettings,
   ServiceArea,
   StatusHistoryEntry,
-  SupportContact,
   WalletTransaction,
-  DispatchOffer,
-  DeliveryRoute,
-  PricingCopyAudit,
-  MerchantCoverage,
 } from '@/domain/types';
 import { MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
 import { haversineMeters, polygonCentroid } from '@/domain/geo';

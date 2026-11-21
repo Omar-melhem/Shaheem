@@ -12,7 +12,7 @@ describe('createMerchant', () => {
     [{ areaId: 'a-khalda', cityId: 'irbid' }, 'اختر منطقة تابعة للمدينة المختارة'],
     [{ pickup: { lat: 31.0, lng: 35.0 } }, PIN_OUTSIDE_AREA],
     [{ username: 'ab' }, 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل'],
-    [{ password: '123' }, 'كلمة المرور: 6 أحرف على الأقل'],
+    [{ password: '123' }, 'كلمة المرور 6 أحرف على الأقل'],
     [{ username: 'captain1' }, 'اسم المستخدم مستخدم لحساب آخر'],
     [{ username: 'ADMIN' }, 'اسم المستخدم مستخدم لحساب آخر'],
   ])('rejects %j', (over, message) => {

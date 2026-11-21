@@ -4,6 +4,7 @@ import { useAppStore, type MerchantInput } from '@/app/state';
 import { isUnchangedLegacyLocation, pickupLocationError } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
@@ -46,7 +47,7 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
       if (locationError) e.location = locationError;
     }
     if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (form.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
+    if (!isPasswordLongEnough(form.password)) e.password = PASSWORD_TOO_SHORT;
     setErrors(e);
     if (Object.keys(e).length) return;
     setSubmitting(true);

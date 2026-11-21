@@ -1,9 +1,34 @@
 import type { AppData } from '@/application/data';
 import type { AppRepository } from '@/application/ports/AppRepository';
 export const STORAGE_KEY = 'shahm-demo-v9';
+
+const ARRAY_KEYS = ['merchants', 'captains', 'areas', 'routes', 'prices', 'coverage', 'pricingAudit', 'orders', 'offers', 'walletTx', 'supportContacts', 'alerts'] as const;
+
+/**
+ * Minimal shape check for data read back from localStorage (it can be corrupted or edited by hand).
+ * Anything that fails falls back to fresh demo data instead of crashing the app.
+ */
+export function isAppDataShape(value: unknown): value is AppData {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    ARRAY_KEYS.every((k) => Array.isArray(v[k])) &&
+    !!v.settings && typeof v.settings === 'object' &&
+    !!v.demo && typeof v.demo === 'object' &&
+    typeof v.seq === 'number' && Number.isFinite(v.seq)
+  );
+}
+
 export const browserRepository: AppRepository = {
   load() {
-    try { const raw = localStorage.getItem(STORAGE_KEY); if (!raw) return null; const saved = JSON.parse(raw); return saved.version === 1 ? saved.state : null; } catch { return null; }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { version?: unknown; state?: unknown };
+      return saved?.version === 1 && isAppDataShape(saved.state) ? saved.state : null;
+    } catch {
+      return null;
+    }
   },
   save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: data, version: 1 })); },
 };

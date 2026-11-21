@@ -24,6 +24,7 @@ import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { isDestinationActive } from '@/domain/regions';
 import { isGovernorateId } from '@/domain/governorates';
 import { cityName, isCityInGovernorate } from '@/domain/cities';
+import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
 import { CUSTOMER_PHONE_ERROR, PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
@@ -126,7 +127,7 @@ function usernameTaken(data: AppData, username: string, exceptId?: ID): boolean 
 
 function validateCredentials(data: AppData, creds: { username: string; password: string }, exceptId?: ID): string | null {
   if (!/^[a-zA-Z0-9._-]{3,30}$/.test(creds.username.trim())) return 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل';
-  if (creds.password.length < 6) return 'كلمة المرور: 6 أحرف على الأقل';
+  if (!isPasswordLongEnough(creds.password)) return PASSWORD_TOO_SHORT;
   if (usernameTaken(data, creds.username, exceptId)) return 'اسم المستخدم مستخدم لحساب آخر';
   return null;
 }
@@ -244,8 +245,10 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
           return fail('اسم المستخدم أو كلمة المرور غير صحيحة');
         },
 
-        tick: (now) =>
-          set((d) => {
+        // A failed save (storage full or unavailable) must not throw from the 1-second timer: the
+        // in-memory state stays as it was and the next tick simply tries again.
+        tick: (now) => {
+          try { set((d) => {
             // 1. Expire offers whose response window has passed.
             const expiredOrders = new Set<ID>();
             for (const offer of d.offers) {
@@ -285,7 +288,8 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
                 order.gpsStaleAlerted = false;
               }
             }
-          }),
+          }); } catch { /* keep the last good state */ }
+        },
 
         // ----- Merchants -----
         createMerchant: (input) =>

@@ -17,6 +17,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useAppStore } from '@/app/state';
+import { isInQueue } from '@/domain/orderStatus';
 import { useNow } from '@/shared/hooks/application';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 import { DemoToolsButton } from '@/features/demo/DemoToolsButton';
@@ -44,7 +45,8 @@ const NAV: Array<Extract<ShellNavItem, { to: string }>> = [
  * notifications in the top bar. Sign-out lives in Settings (with its confirmation), not here.
  */
 export function AdminLayout() {
-  const queueCount = useAppStore((s) => s.orders.filter((o) => o.status === 'pending_dispatch' || o.status === 'dispatch_expired').length);
+  // Orders in the Admin queue (the shared QUEUE_STATUSES rule): waiting, needs Admin, and scheduled ones awaiting coordination.
+  const queueCount = useAppStore((s) => s.orders.filter((o) => isInQueue(o.status)).length);
   const nav = NAV.map((item) =>
     item.to === '/admin/dispatch' && queueCount > 0
       ? { ...item, badge: <span className="rounded-full bg-amber-400 px-2 text-xs font-extrabold text-ink" aria-label={`${queueCount} بانتظار الإدارة`}>{queueCount}</span> }

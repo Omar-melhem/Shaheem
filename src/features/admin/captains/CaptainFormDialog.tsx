@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppStore, type CaptainInput } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
+import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 
@@ -26,7 +27,7 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
     if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
     else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
     if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (form.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
+    if (!isPasswordLongEnough(form.password)) e.password = PASSWORD_TOO_SHORT;
     setErrors(e);
     if (Object.keys(e).length) return;
     const result = captain === 'new' ? createCaptain(form) : updateCaptain((captain as Captain).id, form);

@@ -4,6 +4,7 @@ import { enableCrossTabSync } from '@/app/state';
 import { useSimulationClock } from '@/shared/hooks/application';
 import { Toaster } from '@/shared/components/toast';
 import { ScrollToTop } from '@/app/ScrollToTop';
+import { AppErrorBoundary } from '@/app/AppErrorBoundary';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { HomeRedirect, RequireSession } from '@/features/auth/RequireSession';
 import { AdminLayout } from '@/features/admin/AdminLayout';
@@ -31,6 +32,7 @@ export function App() {
   useEffect(() => enableCrossTabSync(), []);
 
   return (
+    <AppErrorBoundary>
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
@@ -83,5 +85,6 @@ export function App() {
       </Routes>
       <Toaster />
     </BrowserRouter>
+    </AppErrorBoundary>
   );
 }
