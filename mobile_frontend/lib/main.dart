@@ -103,7 +103,6 @@ class MainApp extends StatefulWidget {
     // SHAHM_DEMO_START main-params
     this.demoAppOverlay,
     this.demoShellBuilder,
-    this.demoHomeBuilder,
     // SHAHM_DEMO_END main-params
     this.pickupMapBuilder,
     this.debugShellPreview,
@@ -158,10 +157,6 @@ class MainApp extends StatefulWidget {
 
   /// Debug demo only (Task 37): wraps the main shell's content.
   final TransitionBuilder? demoShellBuilder;
-
-  /// Debug demo only (Task 38): builds Home with its wallet total.
-  final Widget Function(BuildContext context, Widget Function(int? total) home)?
-  demoHomeBuilder;
   // SHAHM_DEMO_END main-fields
 
   /// In-app map for an active order's pickup. Null until a maps provider is
@@ -247,7 +242,6 @@ class _MainAppState extends State<MainApp> {
       pickupMapBuilder: widget.pickupMapBuilder,
       // SHAHM_DEMO_START main-router
       demoShellBuilder: widget.demoShellBuilder,
-      demoHomeBuilder: widget.demoHomeBuilder,
       // SHAHM_DEMO_END main-router
       debugShellPreview: widget.debugShellPreview,
     );

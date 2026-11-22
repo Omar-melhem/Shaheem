@@ -2,8 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 // SHAHM_DEMO_START router-import
-import 'package:flutter/widgets.dart'
-    show BuildContext, Builder, TransitionBuilder, Widget;
+import 'package:flutter/widgets.dart' show Builder, TransitionBuilder;
 // SHAHM_DEMO_END router-import
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +29,7 @@ import 'package:mobile_frontend/view/screens/order_history_screen/view/order_his
 import 'package:mobile_frontend/view/screens/about_screen/view/about_screen.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/cubit/profile_rating_cubit.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/view/profile_screen.dart';
+import 'package:mobile_frontend/view/screens/route_error_screen/view/route_error_screen.dart';
 import 'package:mobile_frontend/view/screens/settings_screen/cubit/account_deletion_cubit.dart';
 import 'package:mobile_frontend/view/screens/settings_screen/view/settings_screen.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
@@ -62,7 +62,8 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 /// [getEligibleOffers], [acceptOrderOffer] and [declineOrderOffer] build the
 /// shell-scoped `PendingOffersCubit` (shared by Home and the new-offer
 /// sheet, Task 36). [getWallet] and [getDeliveryStatistics] build the
-/// Wallet-scoped `WalletCubit` (balance and lifetime statistics, D-A76);
+/// shell-scoped `WalletCubit` shared by Home's balance chip and the Wallet
+/// tab (balance and lifetime statistics, D-A71, D-A76, R02);
 /// [getDeclinedOffers] the shell-scoped `DeclinedOffersCubit` (read by
 /// My Orders, refreshed after a confirmed decline, Task 38).
 /// [getCaptainRating] builds the Profile-scoped `ProfileRatingCubit`;
@@ -95,9 +96,6 @@ GoRouter createAppRouter({
   // SHAHM_DEMO_START router-param
   // Debug demo only (Task 37): wraps the shell's content.
   TransitionBuilder? demoShellBuilder,
-  // Debug demo only (Task 38): builds Home with its wallet total.
-  Widget Function(BuildContext context, Widget Function(int? total) home)?
-  demoHomeBuilder,
   // SHAHM_DEMO_END router-param
 }) {
   // TODO(debug-preview): remove with DebugShellPreview.
@@ -113,6 +111,10 @@ GoRouter createAppRouter({
       activeOrder: currentOrderCubit.state,
       debugPreviewActive: preview.isActive,
     ),
+    // Unknown or failed locations (R01): a localized surface instead of
+    // go_router's English page. The redirect above has already applied the
+    // auth policy, so only a signed-in captain reaches it.
+    errorBuilder: (context, state) => RouteErrorScreen.fromState(state),
     routes: [
       GoRoute(
         path: RoutesString.splash,
@@ -197,6 +199,22 @@ GoRouter createAppRouter({
                 () => sessionCubit.state is SessionAuthenticated,
               ),
             ),
+            // WalletCubit is shell-scoped since R02 (API-05): Home's balance
+            // chip and the Wallet tab select one snapshot. Creating the
+            // shell reads the balance once (never the statistics, which
+            // Wallet reads on its first show); sign-out closes it.
+            BlocProvider(
+              lazy: false,
+              create: (_) => WalletCubit(
+                getWallet,
+                getDeliveryStatistics,
+                () => sessionCubit.state is SessionAuthenticated,
+                sessionOwner: () => switch (sessionCubit.state) {
+                  SessionAuthenticated(:final user) => user.id,
+                  _ => null,
+                },
+              )..loadBalance(),
+            ),
             BlocProvider(
               create: (context) => PendingOffersCubit(
                 getEligibleOffers,
@@ -207,18 +225,24 @@ GoRouter createAppRouter({
               ),
             ),
           ],
-          child: NewOfferSheetHost(
-            hasSession: () => sessionCubit.state is SessionAuthenticated,
-            // SHAHM_DEMO_START router-shell
-            child: demoShellBuilder == null
-                ? AppNavBar(navigationShell: navigationShell)
-                : Builder(
-                    builder: (context) => demoShellBuilder(
-                      context,
-                      AppNavBar(navigationShell: navigationShell),
+          // An account replacement without sign-out must not show the
+          // previous captain's wallet: the listener applies the new owner.
+          child: BlocListener<AppSessionCubit, AppSessionState>(
+            bloc: sessionCubit,
+            listener: (context, _) => context.read<WalletCubit>().syncSession(),
+            child: NewOfferSheetHost(
+              hasSession: () => sessionCubit.state is SessionAuthenticated,
+              // SHAHM_DEMO_START router-shell
+              child: demoShellBuilder == null
+                  ? AppNavBar(navigationShell: navigationShell)
+                  : Builder(
+                      builder: (context) => demoShellBuilder(
+                        context,
+                        AppNavBar(navigationShell: navigationShell),
+                      ),
                     ),
-                  ),
-            // SHAHM_DEMO_END router-shell
+              // SHAHM_DEMO_END router-shell
+            ),
           ),
         ),
         branches: [
@@ -238,14 +262,13 @@ GoRouter createAppRouter({
                     availabilityPermissions,
                     () => sessionCubit.state is SessionAuthenticated,
                   ),
-                  // SHAHM_DEMO_START router-home
-                  child: demoHomeBuilder == null
-                      ? const HomeScreen()
-                      : demoHomeBuilder(
-                          context,
-                          (total) => HomeScreen(walletBalanceFils: total),
-                        ),
-                  // SHAHM_DEMO_END router-home
+                  // The balance chip selects the shell's single wallet
+                  // snapshot (R02, D-A71): the same value Wallet shows.
+                  child: BlocSelector<WalletCubit, WalletState, int?>(
+                    selector: (state) => state.balanceFils,
+                    builder: (context, balanceFils) =>
+                        HomeScreen(walletBalanceFils: balanceFils),
+                  ),
                 ),
               ),
             ],
@@ -265,17 +288,8 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: RoutesString.wallet,
-                // Feature-scoped: created with the Wallet branch, closed
-                // when the shell leaves the tree (sign-out), which drops
-                // late answers. Read-only (D-A50).
-                builder: (context, state) => BlocProvider(
-                  create: (_) => WalletCubit(
-                    getWallet,
-                    getDeliveryStatistics,
-                    () => sessionCubit.state is SessionAuthenticated,
-                  ),
-                  child: const WalletScreen(),
-                ),
+                // Read-only (D-A50); its data is the shell's WalletCubit.
+                builder: (context, state) => const WalletScreen(),
               ),
             ],
           ),

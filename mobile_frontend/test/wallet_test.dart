@@ -276,6 +276,128 @@ void main() {
       return cubit;
     }
 
+    // R02 (API-05): one shared, session-safe source for Home and Wallet.
+    group('shared source (R02)', () {
+      WalletCubit owned(FakeWalletRepository repo, Object? Function() owner) {
+        final cubit = WalletCubit(
+          GetWallet(repo, now: () => now),
+          GetDeliveryStatistics(repo),
+          () => owner() != null,
+          sessionOwner: owner,
+        );
+        addTearDown(cubit.close);
+        return cubit;
+      }
+
+      test('loadBalance reads only the balance; ensureLoaded then reads '
+          'only the statistics', () async {
+        final repo = FakeWalletRepository(
+          overview: overview(),
+          statistics: const CaptainDeliveryStatistics(deliveredCount: 2),
+        );
+        final cubit = owned(repo, () => 'a');
+        await cubit.loadBalance();
+        expect((repo.calls, repo.statisticsCalls), (1, 0));
+        expect(cubit.state.balanceFils, 4000);
+        await cubit.ensureLoaded();
+        expect((repo.calls, repo.statisticsCalls), (1, 1));
+        await cubit.ensureLoaded();
+        expect((repo.calls, repo.statisticsCalls), (1, 1));
+      });
+
+      test('overlapping triggers send one read', () async {
+        final repo = FakeWalletRepository(overview: overview())
+          ..pending = Completer<WalletOverview>();
+        final cubit = owned(repo, () => 'a');
+        final first = cubit.loadBalance();
+        unawaited(cubit.loadBalance());
+        unawaited(cubit.ensureLoaded());
+        repo.pending!.complete(overview());
+        await first;
+        expect(repo.calls, 1);
+      });
+
+      for (final (label, fils) in [
+        ('zero', 0),
+        ('negative', -1000),
+        ('over the 5,000 ceiling', 6200),
+      ]) {
+        test('$label is kept exactly as returned', () async {
+          final repo = FakeWalletRepository(overview: overview(balance: fils));
+          final cubit = owned(repo, () => 'a');
+          await cubit.loadBalance();
+          expect(cubit.state.balanceFils, fils);
+        });
+      }
+
+      test('unknown is null, never a substitute zero', () async {
+        final repo = FakeWalletRepository(
+          error: const WalletServiceUnavailableException(),
+        );
+        final cubit = owned(repo, () => 'a');
+        expect(cubit.state.balanceFils, isNull);
+        await cubit.loadBalance();
+        expect(cubit.state.status, WalletStatus.failure);
+        expect(cubit.state.balanceFils, isNull);
+      });
+
+      test('an old captain\'s late answer is dropped after an account '
+          'replacement, and the new captain is read', () async {
+        Object? owner = 'a';
+        final repo = FakeWalletRepository(overview: overview(balance: 4000))
+          ..pending = Completer<WalletOverview>();
+        final cubit = owned(repo, () => owner);
+        final stale = cubit.loadBalance();
+
+        owner = 'b';
+        final oldAnswer = repo.pending!;
+        repo.pending = null;
+        repo.overview = overview(balance: 1200);
+        await cubit.syncSession();
+        expect(cubit.state.balanceFils, 1200);
+
+        oldAnswer.complete(overview(balance: 4000));
+        await stale;
+        expect(cubit.state.balanceFils, 1200);
+        expect(repo.calls, 2);
+      });
+
+      test('an owner change clears values before any new read finishes', () {
+        Object? owner = 'a';
+        final repo = FakeWalletRepository(overview: overview());
+        final cubit = owned(repo, () => owner);
+        return cubit.loadBalance().then((_) {
+          expect(cubit.state.balanceFils, 4000);
+          owner = 'b';
+          repo.pending = Completer<WalletOverview>();
+          unawaited(cubit.syncSession());
+          expect(cubit.state.balanceFils, isNull);
+          expect(cubit.state.status, WalletStatus.loading);
+        });
+      });
+
+      test('sign-out clears everything and reads nothing', () async {
+        Object? owner = 'a';
+        final repo = FakeWalletRepository(overview: overview());
+        final cubit = owned(repo, () => owner);
+        await cubit.loadBalance();
+        owner = null;
+        await cubit.syncSession();
+        expect(cubit.state.status, WalletStatus.noSession);
+        expect(cubit.state.balanceFils, isNull);
+        expect(repo.calls, 1);
+      });
+
+      test('the same owner re-emitted does not reset or re-read', () async {
+        final repo = FakeWalletRepository(overview: overview());
+        final cubit = owned(repo, () => 'a');
+        await cubit.loadBalance();
+        await cubit.syncSession();
+        expect(cubit.state.balanceFils, 4000);
+        expect(repo.calls, 1);
+      });
+    });
+
     test('no session: nothing is read', () async {
       final repo = FakeWalletRepository(overview: overview());
       final cubit = build(repo, session: () => false);
@@ -453,21 +575,21 @@ void main() {
       final date = ltrIsolate(formatLocalDateTime(at));
       expect(find.text(l10n.walletDebitHistory), findsOneWidget);
       expect(
-        find.text('${l10n.walletMerchantLabel}: مطعم السنابل'),
+        find.text(l10n.walletDebitMerchantLine('مطعم السنابل')),
         findsOneWidget,
       );
-      expect(
-        find.text('${l10n.walletDebitDateLabel}: $date'),
-        findsNWidgets(2),
-      );
-      expect(
-        find.text('${l10n.walletCommissionDebitLabel}: ${money(600)}'),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.walletDebitDateLine(date)), findsNWidgets(2));
       expect(
         find.text(
-          '${l10n.walletMerchantLabel}: ${l10n.walletFieldUnavailable}',
+          l10n.walletDebitAmountLine(
+            ltrIsolate(formatJodFils(600)),
+            walletCurrency(),
+          ),
         ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.walletDebitMerchantLine(l10n.walletFieldUnavailable)),
         findsOneWidget,
       );
     });
@@ -501,7 +623,7 @@ void main() {
       await pumpWallet(tester, data: overview(balance: 4000));
       expect(
         find.bySemanticsLabel(
-          '${l10n.walletTotalBalance}: 4.000 ${walletCurrency()}',
+          l10n.walletBalanceCardSemantics('4.000 ${walletCurrency()}'),
         ),
         findsOneWidget,
       );
@@ -572,14 +694,21 @@ void main() {
       expect(MainNavDestination.values.length, 4);
     });
 
-    testWidgets('Home balance chip («—») → the Wallet tab; the bar tab → the '
-        'same Wallet; never two Wallet pages', (tester) async {
+    testWidgets('Home balance chip (shared balance) → the Wallet tab; the bar '
+        'tab → the same Wallet; never two Wallet pages', (tester) async {
       await launch(tester);
-      expect(find.text(l10n.walletBalanceUnknownValue), findsOneWidget);
+      // R02: the shell read the balance once; Home never reads statistics.
+      expect(
+        find.bySemanticsLabel(l10n.walletBalanceSemantics(formatJodFils(4000))),
+        findsOneWidget,
+      );
+      expect(repo.calls, 1);
+      expect(repo.statisticsCalls, 0);
       await tester.tap(find.byType(WalletBalanceChip));
       await tester.pumpAndSettle();
       expect(branch(tester), MainNavDestination.wallet.index);
       final first = tester.state(find.byType(WalletScreen));
+      // Wallet's first show reads only what was still unread.
       expect(repo.calls, 1);
       expect(repo.statisticsCalls, 1);
 
@@ -590,6 +719,60 @@ void main() {
       expect(identical(tester.state(find.byType(WalletScreen)), first), isTrue);
       expect(find.byType(WalletScreen, skipOffstage: false), findsOneWidget);
       expect(repo.calls, 2);
+      expect(repo.statisticsCalls, 2);
+    });
+
+    testWidgets('R02: a statistics failure on Wallet leaves the Home chip '
+        'and the Wallet balance in agreement', (tester) async {
+      await launch(tester);
+      repo.statisticsError = const WalletServiceUnavailableException();
+      await tester.tap(tab(MainNavDestination.wallet));
+      await tester.pumpAndSettle();
+      final cubit = BlocProvider.of<WalletCubit>(
+        tester.element(find.byType(WalletScreen)),
+      );
+      expect(cubit.state.statisticsStatus, WalletStatus.failure);
+      expect(cubit.state.balanceFils, 4000);
+      await tester.tap(tab(MainNavDestination.home));
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel(l10n.walletBalanceSemantics(formatJodFils(4000))),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('R02: an unreadable wallet shows «—» on Home, never zero', (
+      tester,
+    ) async {
+      repo = FakeWalletRepository(
+        error: const WalletServiceUnavailableException(),
+      );
+      await tester.pumpWidget(
+        MainApp(
+          connectivityService: FakeInternetConnectionService(),
+          authRepository: FakeAuthRepository(hasSession: true),
+          walletRepository: repo,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.walletBalanceUnknownValue), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.walletBalanceUnavailableSemantics),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('R02: sign-out closes the shared source with the shell and '
+        'reads nothing more', (tester) async {
+      await launch(tester);
+      expect(repo.calls, 1);
+      final session = BlocProvider.of<AppSessionCubit>(
+        tester.element(find.byType(AppNavBar)),
+      );
+      await session.endSession();
+      await tester.pumpAndSettle();
+      expect(find.byType(AppNavBar), findsNothing);
+      expect(repo.calls, 1);
     });
 
     testWidgets('Wallet app bar: text title, no actions', (tester) async {

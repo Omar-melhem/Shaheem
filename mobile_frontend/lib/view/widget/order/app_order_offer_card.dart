@@ -152,16 +152,14 @@ class AppOrderOfferCard extends StatelessWidget {
                   _DetailLine(
                     icon: Icons.location_on_outlined,
                     color: iconColor,
-                    text: '${l10n.offerPickupLabel}: $pickup',
+                    text: l10n.offerPickupLine(pickup),
                     style: detailStyle,
                   ),
                   const SizedBox(height: 14),
                   _DetailLine(
                     icon: Icons.flag_outlined,
                     color: iconColor,
-                    text:
-                        '${l10n.offerDeliveryAreaLabel}: '
-                        '${offer.deliveryAreaName}',
+                    text: l10n.offerDeliveryAreaLine(offer.deliveryAreaName),
                     style: detailStyle,
                   ),
                   const SizedBox(height: 20),

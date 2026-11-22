@@ -52,6 +52,11 @@ class GetCaptainRating {
       return const RatingNotConfigured();
     } on CaptainAccountNetworkUnavailableException {
       return const RatingNoInternet();
+    } on TimeoutException {
+      // Read timeout (R04): the service did not answer; this read has no
+      // separate "service unavailable" outcome, so it is a retryable
+      // failure — never "offline" and never "not configured".
+      return const RatingFailure();
     } on Object {
       return const RatingFailure();
     }
@@ -85,9 +90,16 @@ final class AccountDeletionNoInternet extends AccountDeletionResult {
   const AccountDeletionNoInternet();
 }
 
-/// The server failed or the answer is unknown; nothing is assumed deleted.
+/// The server failed; nothing is assumed deleted.
 final class AccountDeletionFailure extends AccountDeletionResult {
   const AccountDeletionFailure();
+}
+
+/// No answer arrived in time (R04, ARCH-06): the request may or may not
+/// have reached the server, so the outcome is unknown. Never "deleted",
+/// and never "not sent" either.
+final class AccountDeletionUnconfirmed extends AccountDeletionResult {
+  const AccountDeletionUnconfirmed();
 }
 
 /// The server asks for a fresh sign-in first.
@@ -105,7 +117,8 @@ class RequestAccountDeletion {
 
   final CaptainAccountRepository _repository;
 
-  /// Safety net; a timeout is a failure (never "deleted").
+  /// Safety net; a timeout is an unknown outcome
+  /// ([AccountDeletionUnconfirmed]), never "deleted" or "not sent".
   final Duration timeout;
 
   Future<AccountDeletionResult> call() async {
@@ -123,6 +136,8 @@ class RequestAccountDeletion {
       return const AccountDeletionNoInternet();
     } on CaptainAccountReauthenticationRequiredException {
       return const AccountDeletionReauthenticationRequired();
+    } on TimeoutException {
+      return const AccountDeletionUnconfirmed();
     } on Object {
       return const AccountDeletionFailure();
     }

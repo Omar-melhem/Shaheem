@@ -186,6 +186,42 @@ active order. Adapt the error mapping and 401/refresh handling during the
 real auth feature migration. Blocked credentials must **not** be retained
 under the outdated D-P16 pending policy.
 
+### 3.4 Timeout classification (R04, 2026-11-22, ARCH-06)
+
+Every use case wraps its repository call in `.timeout(...)` as a safety net.
+What a `TimeoutException` means depends on the **kind of operation**, not on
+one generic state framework:
+
+| Operation | Use case | Timeout → | Known offline → | Not distinguished |
+|---|---|---|---|---|
+| Read: session check | `CheckAuthStatus` | `AuthCheckServiceUnavailable` (session kept, never logout) | (connectivity checked first by Splash) | — |
+| Read: current user | `GetCurrentUser` | `CurrentUserUnavailable` (never "unauthorized") | — | — |
+| Read: active order | `GetActiveOrder` | `ActiveOrderServiceUnavailable` (never "no order") | `ActiveOrderNoInternet` | — |
+| Read: availability | `GetCaptainAvailability` | `AvailabilityServiceUnavailable` | `AvailabilityNoInternet` | — |
+| Read: wallet / statistics | `GetWallet`, `GetDeliveryStatistics` | `WalletFailure` / `DeliveryStatisticsFailure` (retryable; never zero) | `…NoInternet` | No separate service state in these contracts |
+| Read: eligible offers | `GetEligibleOffers` | `EligibleOffersFailure` (never "no offers") | `EligibleOffersNoInternet` | Same |
+| Read: declined offers | `GetDeclinedOffers` | `DeclinedOffersFailure` (never "empty") | `DeclinedOffersNoInternet` | Same |
+| Read: rating | `GetCaptainRating` | `RatingFailure` (never "no ratings") | `RatingNoInternet` | Same |
+| Command: sign in | `SignIn` | `SignInServiceUnavailable` (no session created) | `SignInNoInternet` | — |
+| Command: availability change | `ChangeCaptainAvailability` | `AvailabilityServiceUnavailable` → the Cubit keeps the last confirmed value and shows "could not confirm" | same notice | — |
+| Command: accept / decline offer | `AcceptOrderOffer`, `DeclineOrderOffer` | `OfferCommandUnconfirmed` (neither success nor rejection; the offer/active-order reads reconcile) | `OfferCommandUnconfirmed` | — |
+| Command: account deletion | `RequestAccountDeletion` | **`AccountDeletionUnconfirmed`** (added R04): "no answer in time; we don't know whether the request arrived; your account is not treated as deleted"; no further submission from that screen | `AccountDeletionNoInternet` ("not sent") | — |
+
+**Rules (lesson L-05):**
+- A read timeout is "the service did not answer": the read's
+  service-unavailable outcome where the contract has one, otherwise its
+  retryable failure. It is never "offline", never "not configured", never
+  an empty list, zero or "none", and never a logout.
+- A command timeout is an **unknown outcome**. Never report success, never
+  report rejection, never say "not sent". Prevent an automatic resend and
+  let the authoritative read path reconcile.
+- A server rejection stays a rejection (typed exception), not a transport
+  failure; explicit blocked/revoked-session results keep their own path.
+- Add a new public state only when a consumer must show something different
+  (as the deletion copy had to); don't widen contracts for symmetry.
+- Tests: `test/timeout_policy_test.dart`, `test/auth_use_cases_test.dart`,
+  `test/current_order_test.dart`.
+
 ## 4. Remaining implementation work (not undecided product rules)
 
 Write the concrete auth/OpenAPI DTOs, token rotation/session database tables,

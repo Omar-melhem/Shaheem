@@ -6,6 +6,7 @@ import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/cubit/splash_cubit.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 
 /// Explains that an internet connection is required and offers Retry.
 ///
@@ -59,18 +60,13 @@ class NoInternetScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  FilledButton(
-                    // Disabled while checking, so taps can't overlap.
-                    onPressed: isChecking
-                        ? null
-                        : () => context.read<SplashCubit>().retry(),
-                    child: isChecking
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(context.l10n.retry),
+                  // The shared AppButton (R07, SW-03): while checking it shows
+                  // its spinner, is announced as loading and ignores taps, so
+                  // retries can't overlap (the Cubit also ignores them).
+                  AppButton(
+                    label: context.l10n.retry,
+                    isLoading: isChecking,
+                    onPressed: () => context.read<SplashCubit>().retry(),
                   ),
                 ],
               ),

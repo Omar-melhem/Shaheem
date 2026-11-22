@@ -55,9 +55,9 @@ class ProfileIdentityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Semantics(
-                    label:
-                        '${l10n.profileNameLabel}: '
-                        '${name ?? l10n.profileNameUnavailable}',
+                    label: l10n.profileNameSemantics(
+                      name ?? l10n.profileNameUnavailable,
+                    ),
                     excludeSemantics: true,
                     child: Text(
                       name ?? l10n.profileNameUnavailable,
@@ -71,9 +71,9 @@ class ProfileIdentityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Semantics(
-                    label:
-                        '${l10n.profilePhoneLabel}: '
-                        '${phone ?? l10n.profilePhoneUnavailable}',
+                    label: l10n.profilePhoneSemantics(
+                      phone ?? l10n.profilePhoneUnavailable,
+                    ),
                     excludeSemantics: true,
                     child: Row(
                       children: [

@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds need network access: the connectivity monitor
+         (internet_connection_checker_plus) and the future SHAHM API.
+         The debug/profile manifests only declare it for the Flutter tool. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile_frontend"
+        android:label="شهم"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

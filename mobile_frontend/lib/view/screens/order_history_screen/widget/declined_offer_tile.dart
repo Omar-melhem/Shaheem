@@ -67,7 +67,7 @@ class DeclinedOfferTile extends StatelessWidget {
                     Text(
                       kind == null
                           ? l10n.declinedOfferOutcome
-                          : '${l10n.declinedOfferOutcome} · $kind',
+                          : l10n.declinedOfferOutcomeWithKind(kind),
                       style: theme.textTheme.bodyMedium,
                     ),
                     if (at != null) ...[

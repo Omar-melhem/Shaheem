@@ -155,7 +155,7 @@ void main() {
         expectIconBeside(
           tester,
           Icons.location_on_outlined,
-          find.text('${l10n.offerPickupLabel}: الشميساني - عمّان'),
+          find.text(l10n.offerPickupLine('الشميساني - عمّان')),
           direction,
           size: 22,
           gap: 10,
@@ -163,7 +163,7 @@ void main() {
         expectIconBeside(
           tester,
           Icons.flag_outlined,
-          find.text('${l10n.offerDeliveryAreaLabel}: تلاع العلي'),
+          find.text(l10n.offerDeliveryAreaLine('تلاع العلي')),
           direction,
           size: 22,
           gap: 10,

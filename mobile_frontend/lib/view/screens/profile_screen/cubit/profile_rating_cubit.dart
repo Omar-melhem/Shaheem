@@ -55,17 +55,33 @@ class ProfileRatingCubit extends Cubit<ProfileRatingState> {
 
   int _generation = 0;
 
-  /// Reads the rating. Ignored while a read is running.
+  /// Whether a read is running (also while a confirmed answer stays shown).
+  bool _reading = false;
+
+  /// Reads the rating. Ignored while a read is running, so overlapping
+  /// triggers (re-show and resume together) send one request.
+  ///
+  /// A re-read after a confirmed answer (R03: tab re-shown, app resumed
+  /// while visible) keeps that answer on screen until the new one arrives,
+  /// so the card does not flash "loading"; any other read shows loading.
   Future<void> load() async {
-    if (state.status == ProfileRatingStatus.loading) return;
+    if (_reading) return;
     if (!_hasSession()) {
       _generation++;
       emit(const ProfileRatingState(status: ProfileRatingStatus.noSession));
       return;
     }
     final generation = ++_generation;
-    emit(const ProfileRatingState(status: ProfileRatingStatus.loading));
-    final result = await _getRating();
+    if (state.status != ProfileRatingStatus.loaded) {
+      emit(const ProfileRatingState(status: ProfileRatingStatus.loading));
+    }
+    _reading = true;
+    final RatingResult result;
+    try {
+      result = await _getRating();
+    } finally {
+      _reading = false;
+    }
     if (isClosed || generation != _generation) return;
     if (!_hasSession()) {
       emit(const ProfileRatingState(status: ProfileRatingStatus.noSession));

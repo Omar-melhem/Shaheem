@@ -26,6 +26,16 @@ other documents link to it instead of repeating it.
 | [`decisions/ARCHITECTURAL_DECISIONS.md`](decisions/ARCHITECTURAL_DECISIONS.md) | Registry of every decision: Approved, Pending or Rejected |
 | [`CLAUDE_PROJECT_INSTRUCTIONS.md`](CLAUDE_PROJECT_INSTRUCTIONS.md) | Text for the Claude Project "Instructions" field, plus the knowledge-file list |
 
+## Quality and audits (added 2026-11-22, D-A80)
+
+| Document | Purpose |
+|---|---|
+| [`quality/REMEDIATION_STATUS.md`](quality/REMEDIATION_STATUS.md) | The single tracker: every audit finding, its classification, status, verification and lesson |
+| [`quality/ENGINEERING_LESSONS.md`](quality/ENGINEERING_LESSONS.md) | Enduring prevention rules from confirmed issues (L-01…L-14) and recorded non-implemented recommendations |
+| [`quality/AUDIT_METHOD.md`](quality/AUDIT_METHOD.md) | How to run and count an audit; historical audit files and the demo-removal scanner |
+| [`quality/reports/2026-11-22-post-fix/`](quality/reports/2026-11-22-post-fix/) | Revised reports: 01 application audit, 02 file inventory, 03 system data requirements (atomic dictionary, backlog) — **current** |
+| [`01_APPLICATION_AUDIT_REPORT.md`](01_APPLICATION_AUDIT_REPORT.md), [`02_FILE_BY_FILE_INVENTORY.md`](02_FILE_BY_FILE_INVENTORY.md), [`03_SYSTEM_DATA_REQUIREMENTS.md`](03_SYSTEM_DATA_REQUIREMENTS.md) | **Baseline** audit of `cefad0a` (Arabic), kept byte-identical as evidence; superseded by the revised reports. Do not edit: the demo-removal scanner exempts them only while their SHA-256 matches. New immutable snapshots go under `archive/audits/<date>-<rev>/` |
+
 ## Archive (historical, not authoritative)
 
 > **Unresolved documentation gap (verified 2026-11-14):** `docs/archive/` is

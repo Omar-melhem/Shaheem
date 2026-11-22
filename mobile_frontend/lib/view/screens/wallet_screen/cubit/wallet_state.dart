@@ -25,7 +25,7 @@ enum WalletStatus {
   loaded,
 }
 
-/// Wallet screen state (D-A76). Two independent reads:
+/// Wallet read-model state (D-A76), shared by Home and Wallet (R02). Two independent reads:
 /// - [status] / [overview]: the single balance and the commission debits;
 /// - [statisticsStatus] / [statistics]: the lifetime delivery statistics.
 ///
@@ -45,6 +45,11 @@ class WalletState {
 
   final WalletStatus statisticsStatus;
   final CaptainDeliveryStatistics? statistics;
+
+  /// The authoritative single balance in fils, or null while unknown (not
+  /// read, not configured, offline or failed). Never derived from the debit
+  /// list and never a substitute zero. Home's chip and Wallet both use it.
+  int? get balanceFils => overview?.summary.balanceFils;
 
   /// Whether a Retry makes sense for the wallet read.
   bool get canRetry =>

@@ -19,6 +19,7 @@ import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/view/profile_screen.dart';
+import 'package:mobile_frontend/view/screens/route_error_screen/view/route_error_screen.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/view/current_order_screen.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/view/splash_screen.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/view/wallet_screen.dart';
@@ -330,6 +331,78 @@ void main() {
         ).configuration.findMatch(Uri.parse('/notifications')).isEmpty,
         isTrue,
       );
+    });
+  });
+
+  // R01 (ARCH-08/LOC-01): unknown locations get a localized safe surface,
+  // and the auth policy still applies before any error page is built.
+  group('route errors', () {
+    for (final path in ['/notifications', '/unknown?token=secret']) {
+      testWidgets('signed in: $path shows the Arabic not-found surface', (
+        tester,
+      ) async {
+        await launch(tester);
+        router(tester).go(path);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RouteErrorScreen), findsOneWidget);
+        expect(find.text(l10n.routeNotFoundTitle), findsOneWidget);
+        expect(find.text(l10n.routeNotFoundMessage), findsOneWidget);
+        // Neither go_router's English page nor the location is shown.
+        expect(find.textContaining('Page Not Found'), findsNothing);
+        expect(find.textContaining('secret'), findsNothing);
+        expect(find.textContaining('/'), findsNothing);
+        expect(bar, findsNothing);
+
+        await tester.tap(find.text(l10n.routeErrorBackHome));
+        await tester.pumpAndSettle();
+        expectOn(tester, MainNavDestination.home);
+      });
+    }
+
+    testWidgets('signed out: an unknown path goes to Login, not the error '
+        'surface', (tester) async {
+      repo.hasSession = false;
+      await launch(tester);
+      GoRouter.of(
+        tester.element(find.byType(LoginScreen)),
+      ).go('/notifications');
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(RouteErrorScreen), findsNothing);
+    });
+
+    testWidgets('unresolved session: an unknown path stays on startup', (
+      tester,
+    ) async {
+      repo.userError = const ProfileUnavailableException();
+      await launch(tester);
+      GoRouter.of(tester.element(find.byType(SplashScreen))).go('/unknown');
+      await tester.pumpAndSettle();
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RouteErrorScreen), findsNothing);
+    });
+
+    test('only an unmatched location counts as "not found"', () {
+      expect(
+        RouteErrorScreen.isRouteNotFound(
+          GoException('no routes for location: /x'),
+        ),
+        isTrue,
+      );
+      expect(
+        RouteErrorScreen.isRouteNotFound(GoException('redirect loop detected')),
+        isFalse,
+      );
+      expect(RouteErrorScreen.isRouteNotFound(null), isFalse);
+    });
+
+    testWidgets('another routing failure is not called "not found"', (
+      tester,
+    ) async {
+      await tester.pumpWidget(testApp(const RouteErrorScreen(notFound: false)));
+      expect(find.text(l10n.routeErrorTitle), findsOneWidget);
+      expect(find.text(l10n.routeNotFoundTitle), findsNothing);
     });
   });
 

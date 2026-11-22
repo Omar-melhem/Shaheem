@@ -1,13 +1,11 @@
-// Widget tests for the repaired shared components: text widgets keep their
-// original defaults, and AppTools loading/dialog helpers work without GetX.
+// Widget tests for the repaired shared text widgets: they keep their
+// original defaults. (The AppTools loading/dialog/time helpers and their
+// tests were removed in R05 as verified-dead code.)
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/util/fonts.dart';
-import 'package:mobile_frontend/util/tools/android_loading.dart';
-import 'package:mobile_frontend/util/tools/ios_loading.dart';
-import 'package:mobile_frontend/util/tools/tools.dart';
 import 'package:mobile_frontend/view/widget/text/body_text1.dart';
 import 'package:mobile_frontend/view/widget/text/caption.dart';
 import 'package:mobile_frontend/view/widget/text/headline4.dart';
@@ -84,68 +82,5 @@ void main() {
       expect(style.fontSize, 22);
       expect(style.decoration, TextDecoration.underline);
     });
-  });
-
-  group('AppTools loading', () {
-    Future<BuildContext> pumpHost(
-      WidgetTester tester,
-      TargetPlatform platform,
-    ) async {
-      late BuildContext captured;
-      await tester.pumpWidget(
-        host(
-          Builder(
-            builder: (context) {
-              captured = context;
-              return const SizedBox();
-            },
-          ),
-          platform: platform,
-        ),
-      );
-      return captured;
-    }
-
-    testWidgets('Android: AndroidLoading in a dialog, then hidden', (
-      tester,
-    ) async {
-      final context = await pumpHost(tester, TargetPlatform.android);
-      appTools.showLoading(context);
-      await tester.pump();
-      expect(find.byType(AndroidLoading), findsOneWidget);
-      expect(find.text(l10n.loading), findsOneWidget);
-
-      appTools.hideLoading(context);
-      await tester.pumpAndSettle();
-      expect(find.byType(AndroidLoading), findsNothing);
-    });
-
-    testWidgets('iOS: IosLoading HUD, then hidden', (tester) async {
-      final context = await pumpHost(tester, TargetPlatform.iOS);
-      appTools.showLoading(context);
-      await tester.pump();
-      expect(find.byType(IosLoading), findsOneWidget);
-      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
-
-      appTools.hideLoading(context);
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(IosLoading), findsNothing);
-    });
-
-    testWidgets('confirm dialog default buttons close it', (tester) async {
-      final context = await pumpHost(tester, TargetPlatform.android);
-      appTools.showAlertDialogTwoFun(context);
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.proceedQuestion), findsOneWidget);
-
-      await tester.tap(find.text(l10n.cancel));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.proceedQuestion), findsNothing);
-    });
-  });
-
-  test('timeFormatter formats seconds as mm:ss', () {
-    expect(appTools.timeFormatter(0), '00:00');
-    expect(appTools.timeFormatter(75), '01:15');
   });
 }

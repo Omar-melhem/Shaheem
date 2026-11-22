@@ -5,7 +5,7 @@
   "created_files": [
     {
       "path": "lib/demo/demo_app.dart",
-      "sha256": "50261e09d747583b49452a7a2a019a91eea09037ee337ae7de5bf05baf1487ee"
+      "sha256": "9cae9133051845c7da9174ec7fa73fe0c309ad65044c53176486c31c9b991cf9"
     },
     {
       "path": "lib/demo/demo_mode.dart",
@@ -36,16 +36,12 @@
       "sha256": "0cfab09f8826201fefd4d8cead480421234c96c2f2c0adc7a2b19e9ab574fb90"
     },
     {
-      "path": "lib/demo/widget/demo_home_wallet.dart",
-      "sha256": "29800418b892e1c7edcdb84ea8a441bb4b5a4cd3cfbf59cb882fbeacd382263d"
-    },
-    {
       "path": "test/demo_mode_test.dart",
       "sha256": "b6b9eae12ca31a4448dff6d080ad00bd7be4cb19e83dca08d2a306d9360a1673"
     },
     {
       "path": "tool/demo/README.md",
-      "sha256": "df36facc979a808673020f700ecf1ef12c6c2e392b68b95ec2caa806dcb5d714"
+      "sha256": "ad11985b8144745516a7b84f0d7ab62d29b858ab31230e430fd3e11206db592c"
     },
     {
       "path": "tool/demo/install_manifest.json",
@@ -119,7 +115,7 @@
       "id": "main-params",
       "kind": "region",
       "original": "",
-      "region_sha256": "cd15f1deef84817b6af4971b83a8dc0c1f01b55a2f1450c4f40ce5392d56dbc8",
+      "region_sha256": "0b81d0d6ad461cf50d645cc5304ea15e07c6a2bee69a0976dad80d3bc1bf175b",
       "region_preview": "// SHAHM_DEMO_START main-params"
     },
     {
@@ -127,7 +123,7 @@
       "id": "main-fields",
       "kind": "region",
       "original": "",
-      "region_sha256": "b1b370e173250e5b66fd53d1f61f0187a1ce0c832f984e9209ef508c51135ef1",
+      "region_sha256": "4dc050c2d0c3121767b15cfaffdaf2aa000350342bfdee332a9ab67b88b4b66f",
       "region_preview": "// SHAHM_DEMO_START main-fields"
     },
     {
@@ -135,7 +131,7 @@
       "id": "main-router",
       "kind": "region",
       "original": "",
-      "region_sha256": "41c163507ad43a070807c7050557cf2b3659f7f3a96fed8e095043bda4241952",
+      "region_sha256": "d5275beba7354dbdfe88be10605cb53931118854dfae167084ce03aa3fdd0e71",
       "region_preview": "// SHAHM_DEMO_START main-router"
     },
     {
@@ -151,7 +147,7 @@
       "id": "router-import",
       "kind": "region",
       "original": "",
-      "region_sha256": "abb1c13e0d662c8e6dee9446c6194b5bb6e637f0393e3a7aba2b9591786872c5",
+      "region_sha256": "06c1b7cb2d864b27e6f6eb79a15cd106d75367462d814f5579e4c65b4dbbd47b",
       "region_preview": "// SHAHM_DEMO_START router-import"
     },
     {
@@ -159,23 +155,15 @@
       "id": "router-param",
       "kind": "region",
       "original": "",
-      "region_sha256": "e11f666baea15d89e8522dc511ef2359d8f241600acc601d54527cd7af59e854",
+      "region_sha256": "73f509fc1c5499ef79cdee80b8a8173fd87e6dea09ffef09ff6c578c2d3722cb",
       "region_preview": "// SHAHM_DEMO_START router-param"
-    },
-    {
-      "file": "lib/util/routes/go_router.dart",
-      "id": "router-home",
-      "kind": "region",
-      "original": "                  child: const HomeScreen(),\n",
-      "region_sha256": "c54789134ef19aee0e4975fcbb5847c2e287ad7996016cf07ffe94a58640a691",
-      "region_preview": "// SHAHM_DEMO_START router-home"
     },
     {
       "file": "lib/util/routes/go_router.dart",
       "id": "router-shell",
       "kind": "region",
-      "original": "            child: AppNavBar(navigationShell: navigationShell),\n",
-      "region_sha256": "2e0a6cea86d1f704179fb1ab8652cd66e3c5d007d803180573a98684a7841f3d",
+      "original": "              child: AppNavBar(navigationShell: navigationShell),\n",
+      "region_sha256": "dc559efd0b7e0bb60e99501c0e965efafefdaf93fa9ab38ac12e34e4f30ae30d",
       "region_preview": "// SHAHM_DEMO_START router-shell"
     },
     {
@@ -244,6 +232,11 @@
       "task": "39-44",
       "date": "2026-11-20",
       "summary": "Client revision (D-A69–D-A79): removed the notification feed from the demo (fixture notifications.json deleted, parser/state/repository/bridge updated), single wallet balance 4,000 fils without hold fields, lifetime delivery statistics (an older completed delivery added), recharge contact fields removed, the active-order scenario now survives demo sign-out to show startup routing. Re-hashed only: lib/demo/demo_app.dart, lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, lib/demo/widget/demo_shell_bridge.dart, lib/demo/widget/demo_strip.dart, lib/demo/widget/demo_home_wallet.dart, test/demo_mode_test.dart, tool/demo/README.md, assets/demo/fixtures/captain.json, assets/demo/fixtures/home.json, assets/demo/fixtures/order_history.json, assets/demo/fixtures/wallet.json; region(s): router-home. Every other recorded hash still matched (verified by --dry-run). Baseline (pre-install) hashes and original restore texts unchanged; they restore no Notifications provider, five-tab layout, hold field, recharge UI or old palette (the original texts contain only the plain production lines)."
+    },
+    {
+      "task": "R00-R11",
+      "date": "2026-11-22",
+      "summary": "Audit remediation (D-A80). R02 made the real shell-scoped WalletCubit the single Home/Wallet balance source, so the demo Home-wallet connector became redundant: deleted lib/demo/widget/demo_home_wallet.dart, removed its router/main hooks and the router-home region (Home is no longer a demo region; nothing is restored there). Re-hashed only: regions main-params, main-fields, main-router (lib/main.dart), router-import, router-param, router-shell (lib/util/routes/go_router.dart; router-shell re-indented under the shell's session BlocListener, so its restore text now carries the new indentation); files lib/demo/demo_app.dart and tool/demo/README.md. R00 added the narrow sha-pinned historical-audit classification to remove_demo.dart (retained file, unhashed). Every other recorded hash still matched (verified by --dry-run). Baseline (pre-install) hashes unchanged; installed_sha256 is the historical install record and was not rewritten."
     }
   ]
 }

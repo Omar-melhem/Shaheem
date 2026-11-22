@@ -41,7 +41,7 @@ Decisions referenced: D-A02, D-A09, D-A17, D-A27, D-A28 (see
 | `domain/` | Entities, repository contracts, use cases, typed domain errors | Flutter imports, DTOs, widgets, Cubits | `entities/`, `errors/`, `repositories/`, `use_cases/`. Task 24: `CaptainAvailability` / `AvailabilityRequirement` / `RequirementStatus` / `AvailabilityPrerequisites`, `CaptainAvailabilityRepository` (API contract TO SPECIFY), `AvailabilityPermissionGateway` (platform permission port), `GetCaptainAvailability` / `ChangeCaptainAvailability`. Task 26: `CaptainOrderOffer`, `OrderOfferRepository` (API contract TO SPECIFY), `GetEligibleOffers` / `AcceptOrderOffer` / `DeclineOrderOffer` |
 | `helper/` | App-level service integrations and localization resources, each with a clear single responsibility | A miscellaneous dumping ground | `network/internet_connection_service.dart`, `translation/` (ARB + generated `AppLocalizations` + `l10n_extension.dart`) |
 | `theme/` | Colors, typography, `ThemeData` | Feature logic | `app_color.dart`, `app_theme.dart`, `text_themes.dart` |
-| `util/` | Constants, strings, image paths, fonts, routes, pure validators, UI helper tools | Order or wallet business rules | `images.dart`, `fonts.dart`, `responsive/` (`AppBreakpoints`), `routes/` (paths, router, guard, and the temporary `debug_shell_preview.dart`, D-A40), `validators/`, `tools/` |
+| `util/` | Constants, strings, image paths, fonts, routes, pure validators | Order or wallet business rules | `images.dart`, `fonts.dart`, `responsive/` (`AppBreakpoints`), `routes/` (paths, router, guard, and the temporary `debug_shell_preview.dart`, D-A40), `validators/`. (`tools/` was deleted in R05, 2026-11-22: no live consumer) |
 | `view/` | Screens, widgets, feature Cubits/Blocs, app-level state | API calls, JSON parsing, business calculations | `app_state/`, `navigation/`, `screens/`, `widget/` |
 
 **Inside `view/`:**
@@ -56,7 +56,7 @@ view/
 │   ├── view/             the screen file (composition only)
 │   ├── cubit/ or bloc/   feature state
 │   └── widget/           feature-specific widgets
-└── widget/<category>/    cross-feature shared widgets: text/, padding/,
+└── widget/<category>/    cross-feature shared widgets: text/,
                           text_field/, buttons/, pop_up_screen/, toast/,
                           navigation/ (MainNavigationBar), placeholder/,
                           status/ (AppStatusMessage)
@@ -79,8 +79,20 @@ branch is open, switching, back). `view/widget/navigation/` holds the visual
 about routes or feature state (C-19). Details:
 `ROUTING_AND_STARTUP.md` §7.
 
-**Known exception:** `util/tools/` imports widgets from `view/widget/`
-(D-P14).
+**Router composition (ARCH-01 resolution, 2026-11-22).** `util/routes/`
+holds the route table and the redirect policy by documented project choice.
+`go_router.dart` is the **composition boundary** for navigation: it
+legitimately imports screens and feature Cubits to build and scope them,
+and `route_guard.dart` reads the app-level states it decides on. That is not
+a layering defect and is not moved (no `lib/app/`). The rule that still
+applies: `domain/` imports nothing from `data/`, `view/`, `util/routes/` or
+Flutter; `data/` never imports `view/`; screens never decide startup/auth
+navigation (only `resolveRedirect` does). Shared navigation helpers used by
+several features live in `view/navigation/` (e.g. `current_order_navigation.dart`,
+R05), not inside one feature's host widget.
+
+The former exception "`util/tools/` imports `view/widget/`" no longer
+exists: the folder was deleted in R05.
 
 ### 2.1 Client revision responsibilities (2026-11-20)
 
@@ -194,10 +206,19 @@ parallel old/new implementations behind.
 | `flutter_localizations` (SDK) + `intl` | gen_l10n localization (D-A30) | Used (added 2026-11-11) |
 | `responsive_framework` 1.5.1 | Central breakpoints (D-A31) | Used (added 2026-11-11) |
 | `phosphor_icons` 3.0.1 | Icons of the main navigation destinations (D-A37) | Used (added 2026-11-11) |
-| `toasty_box` | Nothing since 2026-11-11: toasts moved to `ScaffoldMessenger` (D-A32) | Legacy unused in snapshot; remove **only after complete audit** |
+| ~~`toasty_box`~~ | Nothing since 2026-11-11 (toasts are `AppToast`, D-A32) | **Removed R09 (2026-11-22)** after the audit below |
 | `url_launcher` 6.3.3 (Android 6.3.33, iOS 6.4.2 resolved) | **Used since Task 13:** `lib/helper/legal/legal_page_launcher.dart`, in `LaunchMode.inAppWebView` only (legal pages, never external). Still approved for the planned external Google Maps navigation (D-A57, D-A62) | Used. Re-verify the in-app-only behavior after any upgrade |
-| `bloc`, `meta` (transitive) | Only imported by the unused legacy `SplashBloc` | See D-P13 |
-| `google_maps_flutter`, `geocoding`, `location`, `permission_handler`, `http`, `dropdown_search`, `flutter_localization` (third-party, unrelated to the SDK `flutter_localizations`), `google_api_headers` | Nothing in `lib/`: declared but not imported (a full audit of `test/` and platform folders hasn't been done) | Audit `lib/`, `test/`, Android/iOS and transitive needs. **Keep approved** `google_maps_flutter`, `location`, `permission_handler`, `url_launcher` for planned features. Remove genuinely unused packages only after proof of non-use |
+| ~~`bloc`~~ (direct) | Only imported by the unused legacy `SplashBloc` | **Direct declaration removed R09** after `SplashBloc` was deleted (R05, D-P13); `bloc` and `meta` remain **transitive** through `flutter_bloc` |
+| ~~`dropdown_search`~~, ~~`flutter_localization`~~ (third-party, unrelated to the SDK `flutter_localizations`), ~~`geocoding`~~ | No import in `lib/`, `test/`, `tool/`; no Android/iOS configuration; no approved feature needs them (addresses come from the server; maps D-A62 need Maps + Routes, not geocoding) | **Removed R09 (2026-11-22)** with `flutter pub remove`; their now-orphaned transitives (e.g. `shared_preferences*`, `universal_io`) left the lockfile |
+| `google_maps_flutter`, `location`, `permission_handler` | No import yet | **Kept: approved** for the map / GPS / permission feature tasks (D-A57, D-A62) |
+| `http` | No import yet | **Kept:** the planned REST client and the Routes API call need an HTTP client; the generated-client choice (D-A54) decides later whether it stays |
+| `google_api_headers` | No import yet | **Kept for the maps task:** supplies the Android/iOS app-restriction headers a mobile Google Routes API call needs; drop it in that task if the call is made server-side instead |
+
+**R09 audit evidence (2026-11-22):** `grep "package:<name>/"` over `lib`,
+`test`, `tool` (only `url_launcher` and the generated `intl` hits);
+`android/app/src/**` and `ios/Runner/**` contain no Maps key, geocoding,
+location or toast configuration; `flutter analyze` and `flutter test` were
+green after `flutter pub remove`.
 
 **Rules:**
 - New packages need a justification and approval first.

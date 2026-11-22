@@ -38,9 +38,17 @@ D-A13, D-A20, D-A38, D-A41, D-R06, D-R07, C-33.
 | `HomeAvailabilityCubit` (Task 24) | Feature (Home route inside the shell) | The Home route builder (`BlocProvider`); closed on sign-out | The captain's **server-confirmed** availability and the enable/disable flow (§3.3). Read only by the Home availability card |
 | `PendingOffersCubit` (Task 26; shell-scoped since Task 36) | Main shell | The shell route builder (`BlocProvider`); closed on sign-out | The offers the server says this captain can still accept, and the accept/decline commands (§3.3). Read by Home's «طلبات بانتظار القبول» and by `NewOfferSheetHost` (the new-offer sheet above every tab) |
 | `DeclinedOffersCubit` (Task 36; shell-scoped since Task 38) | Main shell | The shell route builder (`BlocProvider`); closed on sign-out | The offers **this captain** declined, as the server records them (read-only; a decline never adds a row locally). Read by Order History. `load()` runs on first entry, tab return, visible resume and Retry; `refresh()` runs after a server-confirmed decline (`PendingOffersCubit.onDeclineConfirmed`): ignored before the first load, coalesced into exactly one follow-up read while a load is running, dropped after sign-out/close |
-| `WalletCubit` | Feature (Wallet branch) | Wallet route builder; closed on sign-out | One server balance and the 7-day commission-debit history (D-A76). No holds, no recharge command, no client calculation |
-| Wallet delivery statistics (D-A76) | Feature (Wallet branch), independent of the balance | Wallet route builder; closed on sign-out | Lifetime delivered-order count and earnings from an explicit typed read model with their own loading / unavailable / not configured states; a statistics failure never clears the balance; unknown never reads as zero; earnings unavailable until D-P36 |
-| Profile rating (D-A77) | Feature (Profile branch) | Profile route builder; closed on sign-out | Typed rating read model (unknown vs no ratings vs value); name/phone are read from `AppSessionCubit`, never copied into a second store |
+| `WalletCubit` (shell-scoped since R02, 2026-11-22) | Main shell: **one** instance shared by Home's balance chip and the Wallet tab | The shell route builder (`BlocProvider(lazy: false)`, which calls `loadBalance()` once); closed on sign-out | One server balance and the 7-day commission-debit history (D-A76). No holds, no recharge command, no client calculation. Home selects `state.balanceFils` (`BlocSelector`); Wallet watches the whole state. Session-safe: values are tagged with the signed-in captain (`sessionOwner`, the user id); a shell-level session listener calls `syncSession()`, so an account change clears them before any read and a late answer for the previous captain is dropped |
+| Wallet delivery statistics (D-A76) | Same `WalletCubit`, independent read | Read only by Wallet (`ensureLoaded()` on first show, `load()` on re-show), never by Home | Lifetime delivered-order count and earnings from an explicit typed read model with their own loading / unavailable / not configured states; a statistics failure never clears the balance; unknown never reads as zero; earnings unavailable until D-P36 |
+| Profile rating (D-A77) | Feature (Profile branch) | Profile route builder; closed on sign-out | Typed rating read model (unknown vs no ratings vs value); name/phone are read from `AppSessionCubit`, never copied into a second store. Reloaded on re-show and visible resume since R03; a re-read keeps the confirmed value on screen; overlapping triggers send one request |
+
+- **One owner per cross-screen read model (R02, lesson L-02).** When two
+  screens show the same server value (the balance on Home and Wallet), they
+  select it from **one** Cubit at their least common scope. A second Cubit,
+  a cache or a screen input fed from elsewhere is forbidden: two owners can
+  disagree after a debit, and a removed demo hook once was the only source.
+  Lift the existing owner instead of adding one, keep unrelated reads of
+  that Cubit lazy, and tag session-scoped data with the session owner.
 | Account deletion (D-A78) | Feature (`/settings`) | Settings route builder | Confirmation → one submission → typed outcome; on completed deletion it asks `AppSessionCubit.endSession()` so every per-user scope closes |
 
 - **Making state app-wide** needs real cross-feature demand.
@@ -228,18 +236,19 @@ the bar's indicator; only its map is unavailable (C-33).
   delivery hint, not authoritative read state. The assigned-order tap
   re-reads `CurrentOrderCubit` and opens Current Order only on an `orderId`
   match (screen-side, not in a Cubit).
-- **Wallet Cubit (Task 34, revised by D-A74/D-A76):** `WalletCubit`,
+- **Wallet Cubit (Task 34, revised by D-A74/D-A76; scope changed by R02 —
+  see §2, which is current):** `WalletCubit`, historically
   scoped to the Wallet route (closed on sign-out). Reads the **single**
   server balance and the last-7-days commission debits through `GetWallet`
   (the one place the display window is applied); no held/available fields,
   no credit list in the UI; nothing is calculated on the phone. Statuses: initial, loading, noSession, notConfigured, noInternet,
   failure, loaded; the last overview stays visible while re-reading and is
   cleared by any failure; late answers (newer load, sign-out, close) are
-  dropped. Read-only: no recharge/payment command. The Home app-bar balance
-  is the `HomeScreen.walletTotalFils` input (same single balance value): the
-  production route passes nothing («—») until a wallet API exists; only the
-  temporary debug demo supplies it from its in-memory wallet (Task 38, see
-  `tool/demo/README.md`).
+  dropped. Read-only: no recharge/payment command. *Historical until R02:*
+  the Home chip was a screen input that production left null and only the
+  debug demo filled. **Current:** the router selects the shell
+  `WalletCubit`'s `balanceFils` into `HomeScreen(walletBalanceFils:)`; with
+  the production placeholder it is null («—», "not configured").
 - **Order workflow Bloc/Cubit:** use cases for task-oriented POST commands,
   not a mutable status PATCH field. Always recheck server state and typed
   business error codes; use stable idempotency keys per attempted operation.

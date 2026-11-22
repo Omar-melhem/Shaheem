@@ -86,6 +86,9 @@ class GetWallet {
       return const WalletNotConfigured();
     } on WalletNetworkUnavailableException {
       return const WalletNoInternet();
+    } on TimeoutException {
+      // Read timeout (R04): retryable failure, never "offline" or zero.
+      return const WalletFailure();
     } on Object {
       return const WalletFailure();
     }
@@ -142,6 +145,9 @@ class GetDeliveryStatistics {
       return const DeliveryStatisticsNotConfigured();
     } on WalletNetworkUnavailableException {
       return const DeliveryStatisticsNoInternet();
+    } on TimeoutException {
+      // Read timeout (R04): retryable failure, never "offline" or zero.
+      return const DeliveryStatisticsFailure();
     } on Object {
       return const DeliveryStatisticsFailure();
     }

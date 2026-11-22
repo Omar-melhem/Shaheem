@@ -31,25 +31,26 @@ class WalletDebitCard extends StatelessWidget {
       children: [
         _EntryLine(
           icon: Icons.storefront_outlined,
-          text: '${l10n.walletMerchantLabel}: $merchant',
+          text: l10n.walletDebitMerchantLine(merchant),
           emphasized: true,
         ),
         const SizedBox(height: 14),
         _EntryLine(
           icon: Icons.flag_outlined,
-          text: '${l10n.offerDeliveryAreaLabel}: $area',
+          text: l10n.offerDeliveryAreaLine(area),
         ),
         const SizedBox(height: 10),
         _EntryLine(
           icon: Icons.event_outlined,
-          text: '${l10n.walletDebitDateLabel}: ${ltrIsolate(date)}',
+          text: l10n.walletDebitDateLine(ltrIsolate(date)),
         ),
         const SizedBox(height: 10),
         _EntryLine(
           icon: Icons.payments_outlined,
-          text:
-              '${l10n.walletCommissionDebitLabel}: '
-              '${ltrIsolate(amount)} ${l10n.walletCurrencySymbol}',
+          text: l10n.walletDebitAmountLine(
+            ltrIsolate(amount),
+            l10n.walletCurrencySymbol,
+          ),
         ),
       ],
     );

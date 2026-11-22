@@ -23,7 +23,8 @@ import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 ///
 /// - [ProfileIdentityCard]: name and phone from the session.
 /// - [ProfileRatingCard]: the rating from `ProfileRatingCubit` (provided
-///   by the route), loaded once when the screen is created.
+///   by the route), loaded on the first show, on each re-show of the tab
+///   and on app resume while visible (R03).
 /// - Entries: Settings (`/settings`, with account deletion), Terms &
 ///   Conditions (the same in-app legal flow as Login, [legalPageLauncher])
 ///   and About (`/about`). There is no Wallet entry (D-A77): the Wallet is
@@ -48,6 +49,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Ignores a second Terms tap while the first is opening.
   bool _openingTerms = false;
 
+  late final AppLifecycleListener _lifecycle;
+
+  /// Whether the branch was visible at the last dependency change; null
+  /// before the first one (the mount load already covers it).
+  bool? _wasActive;
+
+  // Rating refresh (R03, STATE-01), the same visibility mechanics as My
+  // Orders: once on the first show, once each time the tab becomes visible
+  // again (go_router's indexed stack turns TickerMode off for hidden
+  // branches), and on app resume only while visible. Never on rebuilds,
+  // never by polling; the Cubit ignores a trigger while a read runs.
   @override
   void initState() {
     super.initState();
@@ -55,6 +67,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (cubit.state.status == ProfileRatingStatus.initial) {
       unawaited(cubit.load());
     }
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (_wasActive ?? true) {
+          unawaited(context.read<ProfileRatingCubit>().load());
+        }
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.valuesOf(context).enabled;
+    if (_wasActive == false && active) {
+      unawaited(context.read<ProfileRatingCubit>().load());
+    }
+    _wasActive = active;
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
   }
 
   Future<void> _openTerms() async {
@@ -76,11 +111,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       message: l10n.profileSignOutConfirm,
       actions: [
         AppPopupAction(label: l10n.cancel),
-        AppPopupAction(
+        // Typed result (R06): only this action completes with true.
+        AppPopupAction<bool>(
           label: l10n.profileSignOut,
           isPrimary: true,
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-          closesPopup: false,
+          result: true,
         ),
       ],
     );

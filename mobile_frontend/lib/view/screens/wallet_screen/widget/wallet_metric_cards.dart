@@ -135,7 +135,12 @@ class _MetricCard extends StatelessWidget {
     final spoken = value == null ? l10n.walletValueUnknownSemantics : shown;
     return Semantics(
       container: true,
-      label: [label, spoken, ?note].join('. '),
+      // One localized sentence (R08): the order and punctuation live in
+      // the ARB, not in code.
+      label: switch (note) {
+        null => l10n.walletMetricSemantics(label, spoken),
+        final note => l10n.walletMetricSemanticsWithNote(label, spoken, note),
+      },
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(

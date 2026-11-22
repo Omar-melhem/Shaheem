@@ -9,7 +9,6 @@ import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/util/images.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
-import 'package:mobile_frontend/util/tools/tools.dart';
 import 'package:mobile_frontend/view/screens/authentication/cubit/login_cubit.dart';
 import 'package:mobile_frontend/view/screens/authentication/widget/create_account_popup.dart';
 import 'package:mobile_frontend/view/screens/authentication/widget/debug_preview_button.dart';
@@ -71,7 +70,12 @@ class LoginScreen extends StatelessWidget {
         type: AppToastType.error,
       ),
       child: GestureDetector(
-        onTap: () => appTools.unFocusKeyboard(context),
+        // Tapping outside the fields hides the keyboard (R05: Flutter's
+        // focus API directly; the former AppTools wrapper did the same).
+        onTap: () {
+          final focus = FocusScope.of(context);
+          if (!focus.hasPrimaryFocus) focus.unfocus();
+        },
         behavior: HitTestBehavior.opaque,
         child: Scaffold(
           body: SafeArea(

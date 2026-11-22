@@ -12,7 +12,6 @@ import 'package:mobile_frontend/helper/translation/generated/app_localizations.d
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/fonts.dart';
-import 'package:mobile_frontend/util/tools/tools.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_icon_position.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
@@ -1459,6 +1458,117 @@ void main() {
     });
   });
 
+  // R06 (SW-02): typed action results instead of manual root-navigator pops.
+  group('AppPopup typed result', () {
+    Future<Future<bool?>> open(WidgetTester tester, {Widget? wrap}) async {
+      late BuildContext ctx;
+      await pump(tester, wrap ?? contextProbe((c) => ctx = c));
+      if (wrap != null) ctx = tester.element(find.byKey(const Key('probe')));
+      final result = showAppPopup<bool>(
+        ctx,
+        title: 'T',
+        actions: [
+          AppPopupAction(label: 'إلغاء'),
+          AppPopupAction<bool>(label: 'تأكيد', isPrimary: true, result: true),
+        ],
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('confirm completes with true', (tester) async {
+      final result = await open(tester);
+      await tester.tap(find.text('تأكيد'));
+      await tester.pumpAndSettle();
+      expect(await result, isTrue);
+      expect(find.byType(AppPopup), findsNothing);
+    });
+
+    for (final (name, close) in <(String, Future<void> Function(WidgetTester))>[
+      ('cancel', (t) => t.tap(find.text('إلغاء'))),
+      ('barrier', (t) => t.tapAt(const Offset(4, 4))),
+      ('system back', (t) => t.binding.handlePopRoute()),
+    ]) {
+      testWidgets('$name completes with null (never a confirmation)', (
+        tester,
+      ) async {
+        final result = await open(tester);
+        await close(tester);
+        await tester.pumpAndSettle();
+        expect(await result, isNull);
+        expect(find.byType(AppPopup), findsNothing);
+      });
+    }
+
+    testWidgets('a double tap confirms once and never pops the page below', (
+      tester,
+    ) async {
+      late BuildContext ctx;
+      var calls = 0;
+      await pump(tester, contextProbe((c) => ctx = c));
+      final result = showAppPopup<bool>(
+        ctx,
+        title: 'T',
+        actions: [
+          AppPopupAction<bool>(
+            label: 'تأكيد',
+            result: true,
+            onPressed: () => calls++,
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تأكيد'));
+      await tester.pump();
+      await tester.tap(find.text('تأكيد'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(await result, isTrue);
+      expect(calls, 1);
+      // The host page is still there.
+      expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('inside a nested navigator: pops only the dialog', (
+      tester,
+    ) async {
+      final result = await open(
+        tester,
+        wrap: Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute<void>(
+            builder: (_) => const SizedBox(key: Key('probe')),
+          ),
+        ),
+      );
+      await tester.tap(find.text('تأكيد'));
+      await tester.pumpAndSettle();
+      expect(await result, isTrue);
+      expect(find.byKey(const Key('probe')), findsOneWidget);
+    });
+
+    testWidgets('a callback that opens another dialog runs after the first '
+        'one closed', (tester) async {
+      late BuildContext ctx;
+      await pump(tester, contextProbe((c) => ctx = c));
+      final first = showAppPopup<bool>(
+        ctx,
+        title: 'أول',
+        actions: [
+          AppPopupAction<bool>(
+            label: 'التالي',
+            result: true,
+            onPressed: () => showAppPopup<void>(ctx, title: 'ثانٍ'),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('التالي'));
+      await tester.pumpAndSettle();
+      expect(await first, isTrue);
+      expect(find.text('أول'), findsNothing);
+      expect(find.text('ثانٍ'), findsOneWidget);
+    });
+  });
+
   group('AppPopup', () {
     testWidgets('title, message and action; action closes then runs', (
       tester,
@@ -1872,39 +1982,6 @@ void main() {
       });
     }
 
-    for (final scale in [2.0, 3.0]) {
-      testWidgets('scale $scale: AppTools confirm and alert wrappers fit', (
-        tester,
-      ) async {
-        var yes = 0;
-        await open(
-          tester,
-          width: 320,
-          height: 568,
-          scale: scale,
-          show: (c) => appTools.showAlertDialogTwoFun(c),
-        );
-        expect(tester.takeException(), isNull);
-        await tapAction(tester, l10n.confirm);
-        expect(find.byType(AppPopup), findsNothing);
-
-        late BuildContext ctx;
-        await tester.pumpWidget(testApp(contextProbe((c) => ctx = c)));
-        appTools.showAlertDialogOneFun(
-          ctx,
-          onTap: () {
-            yes++;
-            Navigator.of(ctx).pop();
-          },
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        await tapAction(tester, l10n.confirm);
-        expect(yes, 1);
-        expect(find.byType(AppPopup), findsNothing);
-      });
-    }
-
     testWidgets('enough space: the dialog hugs its content as before', (
       tester,
     ) async {
@@ -2028,17 +2105,6 @@ void main() {
       await tester.tap(find.byTooltip(l10n.close));
       await tester.pumpAndSettle();
       expect(find.text('ثانية'), findsNothing);
-    });
-
-    testWidgets('tools.dart helpers delegate to AppToast', (tester) async {
-      late BuildContext ctx;
-      await pump(tester, contextProbe((c) => ctx = c));
-      appTools.showErrorMessage('خطأ ما', ctx);
-      await tester.pump();
-      expect(
-        tester.widget<AppToast>(find.byType(AppToast)).type,
-        AppToastType.error,
-      );
     });
 
     group('rendered contract', () {
@@ -2621,26 +2687,6 @@ void main() {
         await tester.tap(find.text(retry), warnIfMissed: false);
         await tester.pump();
         expect(calls, 0);
-      });
-
-      testWidgets('all four AppTools helpers map to their type', (
-        tester,
-      ) async {
-        final ctx = await host(tester);
-        final cases = <void Function(String, BuildContext), AppToastType>{
-          appTools.showSuccessMessage: AppToastType.success,
-          appTools.showWarningMessage: AppToastType.warning,
-          appTools.showErrorMessage: AppToastType.error,
-          appTools.showInfoMessage: AppToastType.info,
-        };
-        for (final MapEntry(key: show, value: type) in cases.entries) {
-          show('رسالة', ctx);
-          await tester.pumpAndSettle();
-          final toast = tester.widget<AppToast>(find.byType(AppToast));
-          expect(toast.type, type);
-          expect(toast.message, 'رسالة');
-          expect(find.byTooltip(l10n.close), findsOneWidget);
-        }
       });
     });
   });

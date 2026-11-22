@@ -39,17 +39,6 @@ class WalletBalanceChip extends StatelessWidget {
       ? l10n.walletBalanceUnknownValue
       : '${ltrIsolate(formatJodFils(fils))} ${l10n.walletCurrencySymbol}';
 
-  /// Width of the chip on one line.
-  static double naturalWidth(BuildContext context, int? fils) =>
-      _singleLineWidth(
-        visibleText(context.l10n, fils),
-        textStyle(Theme.of(context)),
-        MediaQuery.textScalerOf(context),
-      ) +
-      iconSize +
-      gap +
-      2 * horizontalPadding;
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -107,17 +96,4 @@ class WalletBalanceChip extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Width of [text] on one line (the chip decides whether it fits).
-double _singleLineWidth(String text, TextStyle style, TextScaler scaler) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: TextDirection.rtl,
-    textScaler: scaler,
-    maxLines: 1,
-  )..layout();
-  final width = painter.width;
-  painter.dispose();
-  return width;
 }

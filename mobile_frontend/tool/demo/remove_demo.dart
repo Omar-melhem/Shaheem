@@ -36,6 +36,64 @@ const _scanFiles = ['pubspec.yaml', 'CLAUDE.md', 'l10n.yaml'];
 const _scanSkip = ['tool/demo/', 'lib/helper/translation/generated/'];
 const _textExtensions = ['.dart', '.arb', '.yaml', '.md', '.json', '.sh'];
 
+/// Historical audit evidence (R00, docs/quality/AUDIT_METHOD.md §5).
+///
+/// Immutable audit snapshots quote demo identifiers as evidence, so they
+/// must not count as executable leftovers. The classification is narrow on
+/// purpose:
+/// - the exact baseline report paths, and only while their bytes still
+///   match the recorded SHA-256 (an edited copy is scanned again, so new
+///   text cannot hide behind the exemption);
+/// - Markdown files under [_historicalAuditDir] (dated audit archives).
+/// Code, config, ARB, tests, assets and every other document are still
+/// scanned, and [_historicalReferenceProblems] rejects any attempt to use
+/// these files as runtime assets or imports.
+const _historicalAuditFiles = {
+  'docs/01_APPLICATION_AUDIT_REPORT.md':
+      '557182f713b6129020fda3a9cd55a5f21d067106d47be9e74102203120df4c37',
+  'docs/02_FILE_BY_FILE_INVENTORY.md':
+      '244a24c864922cf6750064b66f1ce727f5afd5b32d86b94fab88f9663fef6f42',
+  'docs/03_SYSTEM_DATA_REQUIREMENTS.md':
+      'a1f052569c3adda0e8a688319b91aabb9d9047e54473276cf51b8092e03b644a',
+};
+const _historicalAuditDir = 'docs/archive/audits/';
+
+/// Whether [path] is classified historical audit evidence (see
+/// [_historicalAuditFiles]). [text] is the content that would be scanned.
+bool _isHistoricalAudit(String path, String text) {
+  if (path.startsWith(_historicalAuditDir)) return path.endsWith('.md');
+  final pinned = _historicalAuditFiles[path];
+  return pinned != null && _sha256(utf8.encode(text)) == pinned;
+}
+
+/// Historical audit files must never become runtime inputs: an asset
+/// registration of `docs/` in pubspec.yaml, or an import or asset path
+/// naming the baseline reports or the audit archive, is reported.
+List<String> _historicalReferenceProblems(Map<String, String> overrides) {
+  final problems = <String>[];
+  final pubspec =
+      overrides['pubspec.yaml'] ?? File('pubspec.yaml').readAsStringSync();
+  if (RegExp(r'^\s*-\s*docs/', multiLine: true).hasMatch(pubspec)) {
+    problems.add('pubspec.yaml registers docs/ as an asset.');
+  }
+  final names = [
+    ..._historicalAuditFiles.keys.map((p) => p.split('/').last),
+    _historicalAuditDir,
+  ];
+  for (final root in ['lib', 'test']) {
+    final dir = Directory(root);
+    if (!dir.existsSync()) continue;
+    for (final f in dir.listSync(recursive: true)) {
+      if (f is! File || !f.path.endsWith('.dart')) continue;
+      final text = overrides[f.path] ?? f.readAsStringSync();
+      if (names.any(text.contains)) {
+        problems.add('${f.path} references historical audit documents.');
+      }
+    }
+  }
+  return problems;
+}
+
 /// Paths a manifest-owned file may have.
 const _ownedPrefixes = [
   'lib/demo/',
@@ -152,6 +210,7 @@ Future<void> main(List<String> args) async {
       '${leftovers.join('\n  ')}',
     );
   }
+  problems.addAll(_historicalReferenceProblems(newContents));
 
   // ---- Restoration report against the pre-install hashes.
   final baseline = (manifest['baseline_sha256'] as Map).cast<String, String>();
@@ -303,6 +362,7 @@ List<String> _scanLeftovers(
     if (deleted.contains(path) || _scanSkip.any(path.startsWith)) continue;
     if (!_textExtensions.any(path.endsWith)) continue;
     final text = overrides[path] ?? File(path).readAsStringSync();
+    if (_isHistoricalAudit(path, text)) continue;
     for (final pattern in _leftoverPatterns) {
       if (pattern.hasMatch(text)) {
         hits.add('$path (${pattern.pattern})');

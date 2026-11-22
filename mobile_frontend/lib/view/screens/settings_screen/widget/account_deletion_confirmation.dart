@@ -15,7 +15,8 @@ import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 /// service is in place (D-P39). It invents no retention period.
 Future<bool> showAccountDeletionConfirmation(BuildContext context) async {
   final l10n = context.l10n;
-  final navigator = Navigator.of(context, rootNavigator: true);
+  // The typed popup result (R06): only the confirm action completes with
+  // true; every other way out completes with null.
   final confirmed = await showAppPopup<bool>(
     context,
     icon: const Icon(Icons.delete_outline, size: 40, color: AppColor.error),
@@ -23,12 +24,11 @@ Future<bool> showAccountDeletionConfirmation(BuildContext context) async {
     message: l10n.accountDeletionConfirmMessage,
     actions: [
       AppPopupAction(label: l10n.cancel),
-      AppPopupAction(
+      AppPopupAction<bool>(
         label: l10n.accountDeletionConfirmAction,
         isPrimary: true,
         isDestructive: true,
-        closesPopup: false,
-        onPressed: () => navigator.pop(true),
+        result: true,
       ),
     ],
   );

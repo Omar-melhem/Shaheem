@@ -30,8 +30,8 @@ server-validated session and loaded eligible profile. The approved
 Terms & Conditions has no route: it reuses `LegalPageLauncher` /
 `LegalLinks` exactly like Login (in-app page, or the truthful "not available
 yet" popup while the URL is empty). There is **no** `/notifications` route
-(D-A72); a deep link to it is unknown and falls back to the guard's normal
-handling. The Home balance chip uses `context.go('/wallet')` (same branch, no
+(D-A72); a deep link to it is unknown: the guard applies first, then a
+signed-in captain sees the localized route-error surface (§2.1). The Home balance chip uses `context.go('/wallet')` (same branch, no
 duplicate page). `StatefulShellRoute.indexedStack` remains the shell;
 `AppNavBar` owns routing while `MainNavigationBar` is presentation only. No
 `NavBarCubit`.
@@ -58,6 +58,26 @@ GoRouter/route-level UI performs navigation.
 - **No loops:** no rule redirects to the current location.
 - **No bypass:** deep links, manual navigation and back navigation can't
   skip the policy.
+
+### 2.1 Unknown and failed locations (R01, 2026-11-22)
+
+`createAppRouter` passes `errorBuilder: RouteErrorScreen.fromState`. go_router
+runs the redirect before building any page, so:
+
+| Session | Unknown path (e.g. `/notifications`, `/x?token=…`) |
+|---|---|
+| `SessionAuthenticated` | `RouteErrorScreen`: «الصفحة غير موجودة» + one action «العودة إلى الرئيسية» (`context.go('/home')`, still subject to the guard) |
+| `SessionUnauthenticated` | Redirected to `/login` (the error surface is never built) |
+| `SessionUnknown` | The startup screen of the current Splash state |
+
+- An unmatched location (`GoException` "no routes for location") is
+  "not found"; **any other routing failure** shows «تعذّر فتح الصفحة» instead
+  of being called "not found".
+- Never shown: go_router's English page, the location (it may carry private
+  query values), the exception text or a stack trace.
+- No automatic redirect to Home for unknown paths (it would hide real
+  errors), no side effects in `build`, no shell bar on the surface.
+- Tests: `main_navigation_test.dart` group "route errors".
 
 ## 3. Startup sequence
 
@@ -180,9 +200,10 @@ LoginForm ──submit──► LoginCubit ──► Validators (D-A65: normaliz
 ## 7. Main navigation and Current Order (D-A70, D-A73)
 
 ```text
-Authenticated scope (CurrentOrderCubit + recovery, PendingOffersCubit,
-                     DeclinedOffersCubit; closed on sign-out)
- ├─ StatefulShellRoute.indexedStack → NewOfferSheetHost → AppNavBar
+App level: CurrentOrderCubit + recovery (reset on sign-out)
+Shell scope (closed on sign-out): PendingOffersCubit, DeclinedOffersCubit,
+                                  WalletCubit (R02: Home chip + Wallet)
+ ├─ StatefulShellRoute.indexedStack → session listener → NewOfferSheetHost → AppNavBar
  │   ├─ branch 0 /home           HomeScreen
  │   ├─ branch 1 /order-history  OrderHistoryScreen («طلباتي»)
  │   ├─ branch 2 /wallet         WalletScreen
@@ -266,6 +287,24 @@ resume reads again only while Home is visible (the bridge caches the last
 such Home page exists yet. Nothing is polled and no TTL is applied; the
 server still decides whether an offer is actionable.
 
+**Load triggers per feature (current, 2026-11-22).** Each feature keeps its
+own policy and its own small lifecycle code (the mechanics were compared in
+R03; a shared helper would add indirection for ~15 lines while the policies
+differ, so none was extracted):
+
+| Feature (owner) | First show | Re-shown after another tab | App resume while visible | Resume while hidden | Other |
+|---|---|---|---|---|---|
+| Home availability + offers (`HomeLifecycleBridge`) | 1 | 1 | 1 | 0 | — |
+| Home balance chip (shell `WalletCubit`) | 0 (the shell read it on creation) | 0 | 0 | 0 | Shell creation: 1 balance read, never statistics |
+| My Orders (`OrderHistoryScreen`) | 1 if unread | 1 | 1 | 0 | A confirmed decline refreshes it |
+| Wallet (`WalletScreen`, shell `WalletCubit`) | reads only what is unread (normally the statistics) | 1 balance + 1 statistics | **0 — open owner decision D-P42** | 0 | Retry; statistics Retry |
+| Profile rating (`ProfileScreen`, R03) | 1 if unread | 1 (last value stays visible) | 1 | 0 | Retry |
+| Current Order (app-level `CurrentOrderCubit`) | — | — | 1 recovery read (coalesced) | 1 | Confirmed acceptance; startup |
+
+A trigger that arrives while the same read runs is ignored by its Cubit;
+sign-out closes the shell scope and drops late answers; an account change
+without sign-out clears the wallet before any read (R02).
+
 ### 7.1 Current Order and merchant pickup
 
 Opening the center destination fetches the server's single current active
@@ -336,7 +375,9 @@ matching tests. The real authentication flow doesn't change.
   debug preview rule and switch.
 - `test/main_navigation_test.dart`: branches, direct route entry, stack
   preservation, system back, shell visibility, keyboard, safe area and
-  widths, all through the real `MainApp` and router.
+  widths, all through the real `MainApp` and router; "route errors" (R01).
+- `test/wallet_test.dart` "shared source (R02)" and the R02 real-app cases;
+  `test/profile_settings_test.dart` "refresh" (R03).
 - `test/current_order_test.dart`: the active-order use cases, the Cubit and
   the whole Current Order flow with test-only fakes.
 - `test/login_screen_test.dart`: the preview button, including a simulated

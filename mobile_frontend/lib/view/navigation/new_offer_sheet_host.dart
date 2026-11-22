@@ -4,11 +4,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
 import 'package:mobile_frontend/helper/translation/generated/app_localizations.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
-import 'package:mobile_frontend/util/routes/routes_string.dart';
+import 'package:mobile_frontend/view/navigation/current_order_navigation.dart';
 import 'package:mobile_frontend/view/navigation/new_order_offer_sheet.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
@@ -326,16 +325,6 @@ class _NewOfferSheetHostState extends State<NewOfferSheetHost> {
     ],
     child: widget.child,
   );
-}
-
-/// Opens the Current Order page above the current authenticated page, or
-/// does nothing when it is already the visible page (no duplicate page and
-/// no route loop).
-void openCurrentOrderPage(BuildContext context) {
-  final router = GoRouter.of(context);
-  // The top route (a pushed page does not change the URI below it).
-  if (router.state.matchedLocation == RoutesString.currentOrder) return;
-  unawaited(router.push(RoutesString.currentOrder));
 }
 
 /// The sheet's content, kept in step with the shell's `PendingOffersCubit`:

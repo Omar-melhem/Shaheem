@@ -66,12 +66,12 @@ listed in the captain UI).
 
 **How the Task 38 behaviour is wired:**
 
-- Home balance: `lib/demo/widget/demo_home_wallet.dart` passes
-  `DemoState.wallet.summary.balanceFils` (null when signed out) into the real
-  `HomeScreen(walletBalanceFils:)` through the router's demo Home hook (marked
-  regions `router-param` / `router-home` in `go_router.dart`, `main-params`
-  / `main-fields` / `main-router` in `main.dart`). No repository call, no
-  second wallet store.
+- Home balance (since R02, 2026-11-22): no demo hook. The app's own
+  shell-scoped `WalletCubit` feeds both Home's chip and the Wallet tab and
+  reads `DemoWalletRepository` here, exactly like the production placeholder
+  in a normal run. The former demo Home connector, its router/main hooks
+  and the `router-home` region were removed as redundant; removing the demo
+  therefore leaves the shared source with truthful "not configured" data.
 - History after a decline: the app's own (permanent, non-demo) path —
   `PendingOffersCubit.onDeclineConfirmed` → shell-scoped
   `DeclinedOffersCubit.refresh()` once the demo repository has answered.
@@ -87,7 +87,7 @@ text) driven by pointer events injected through the Dart VM service — see
 
 | Kind | Path |
 |---|---|
-| Demo code | `lib/demo/` (`demo_mode.dart`, `demo_app.dart`, `demo_state.dart`, `model/demo_fixtures.dart`, `repo/demo_auth_repository.dart`, `repo/demo_repositories.dart`, `widget/demo_strip.dart`, `widget/demo_shell_bridge.dart`, `widget/demo_home_wallet.dart`) |
+| Demo code | `lib/demo/` (`demo_mode.dart`, `demo_app.dart`, `demo_state.dart`, `model/demo_fixtures.dart`, `repo/demo_auth_repository.dart`, `repo/demo_repositories.dart`, `widget/demo_strip.dart`, `widget/demo_shell_bridge.dart`) |
 | Fixtures (owner-supplied pack; updated for the 2026-11-20 client revision: no `notifications.json`, one balance of 4,000 fils without hold fields, an older completed delivery) | `assets/demo/fixtures/*.json` (7 files) |
 | Tests | `test/demo_mode_test.dart` |
 | Tooling | `tool/demo/` (this file, `install_manifest.json`, `remove_demo.sh`, `remove_demo.dart`) |
@@ -107,3 +107,10 @@ reference would remain elsewhere. `--apply` backs up every touched file to a
 temporary folder first and restores it if `flutter gen-l10n`, `flutter
 analyze` or `flutter test` fails. It never runs git. Afterwards
 `remove_demo.sh` and `remove_demo.dart` remain and report "demo absent".
+
+**Historical audit documents (R00, 2026-11-22).** Audit reports quote demo
+identifiers as evidence. The leftover scan skips only the three baseline
+reports in `docs/` while their SHA-256 still matches, and Markdown under
+`docs/archive/audits/`; every other file is scanned as before, and a
+`docs/` asset registration or a Dart reference to those documents stops the
+run. See `docs/quality/AUDIT_METHOD.md` §6.

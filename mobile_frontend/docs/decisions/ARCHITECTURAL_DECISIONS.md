@@ -165,6 +165,19 @@ keep their historical text with a **Superseded** prefix.
 | D-P40 | Real legal URLs (Terms, Privacy Policy) and legal text | Truthful "not available yet"; release blocker |
 | D-P41 | Where (if anywhere) the old -1,000-fils floor and other non-hold wallet eligibility conditions apply now that holds are removed | Unresolved; no charge on acceptance and no invented threshold |
 
+### 1.3 Audit remediation scope (owner-approved, 2026-11-22, source R00–R11 package)
+
+| ID | Area | Approved rule | Supersedes | Status |
+|---|---|---|---|---|
+| D-A80 | Audit remediation authority | The owner's remediation package (R00–R11, 2026-11-22) authorizes, for the findings of the 2026-11-22 audit of `cefad0a` only: the localized route-error surface; one shell-scoped wallet source for Home and Wallet (lifting the existing `WalletCubit`, removing the then-redundant demo Home-wallet bypass); Profile rating refresh on visibility/resume; explicit timeout classification; removal of verified-dead code (`splash_screen/bloc/`, orphan `AppTools` members and their exclusive tests, orphan loading widgets, `WalletBalanceChip` sizing helpers, `CustomePadding` once orphaned) and of the then-unneeded direct `bloc` dependency; extraction of the Current Order navigation helper; a typed popup-action result and migration of its two callers; `AppButton` reuse on two Retry surfaces; localized composite phrases; the visible app name «شهم» and the Android `INTERNET` permission; removal of dependencies proven unneeded after a cross-platform audit; the historical-audit classification in the demo-removal scanner; and the quality documentation (`docs/quality/`). Approval is per item: it does not cover a router relocation, a new top-level folder, a generic surface card, conversion away from `StatefulWidget`, a new state library, a typography migration, new packages, bundle/package identifiers, legal URLs or any backend contract. Each change is tracked in `docs/quality/REMEDIATION_STATUS.md` | — (adds to D-A79 for this package only) | Approved |
+
+**Open owner questions recorded by this package (not bugs; do not settle silently):**
+
+| ID | Question | Current handling |
+|---|---|---|
+| D-P42 | Should the Wallet tab re-read its balance/debits on app foreground return while it is visible (STATE-02)? Proposal: yes, visible-only and coalesced, like Home; tradeoff: one more read per resume vs a balance that can lag until the tab is re-shown | Unchanged: Wallet reads on first show, on re-show after another tab and on Retry; no resume read. Home and Wallet now share one source, so a Wallet re-read also refreshes the Home chip |
+| D-P43 | Text-widget family (`AppTextWidget`, `Headline1`–`6`, …): keep, replace with `Text` + theme, or reduce? (zero production consumers, recorded since Task 23) | Kept unchanged with its tests; no forced migration of built-in `Text` |
+
 ---
 
 ## 2. Rejected
@@ -204,9 +217,9 @@ never means "not approved".
 | D-P09 | **Approved:** username/password constraints and Admin reset (D-A65 and its supplement) | Flutter Login validation implemented (Task 03); backend rules, Admin reset and weak-password policy pending |
 | D-P10 | **Approved business contract** (D-A59, D-A61, D-A67) with nearest-fils rounding and after-pickup Admin settlement. *Hold clauses superseded 2026-11-20 by D-A74; ceiling D-A75* | Detailed API/ledger schema and independent unprovided web contract still need verification; do **not** claim that external file was reviewed |
 | D-P11 | **Approved:** Ink `#242424` default including Headline4 (D-A63) | Styles migration pending |
-| D-P12 | **Approved cleanup process:** cross-platform full dependency audit before removing unused packages (D-A64) | Audit not performed; keep required maps/location/navigation packages |
-| D-P13 | **Approved:** remove orphan SplashBloc after usage audit, retain SplashCubit (D-A64) | Code task pending |
-| D-P14 | **Approved:** move AndroidLoading/IosLoading to `view/widget/loading/` (D-A64) | Code task pending |
+| D-P12 | **Approved cleanup process:** cross-platform full dependency audit before removing unused packages (D-A64) | **Done 2026-11-22 (R09):** removed `bloc` (direct), `dropdown_search`, `flutter_localization`, `geocoding`, `toasty_box`; kept Maps/location/permission/`url_launcher`/`http`/`google_api_headers` with reasons (`ARCHITECTURE.md` §6) |
+| D-P13 | **Approved:** remove orphan SplashBloc after usage audit, retain SplashCubit (D-A64) | **Done 2026-11-22 (R05):** `splash_screen/bloc/` deleted; `SplashCubit` unchanged |
+| D-P14 | **Approved:** move AndroidLoading/IosLoading to `view/widget/loading/` (D-A64) | **Superseded 2026-11-22 (R05):** both had no consumer except the dead `AppTools.showLoading`, so they were deleted instead of moved |
 | D-P15 | Resolved by D-A30 | Already implemented per snapshot |
 | D-P16 | **Approved:** suspended account revoked immediately; return to Login; Admin handles active delivery (D-A53) | Ensure refresh and server session revocation; preserve generic wrong-password message |
 | D-P17 | **Approved:** Admin completes profile; incomplete captain profile cannot receive offers (D-A65) | Backend eligibility enforcement pending |
@@ -215,7 +228,7 @@ never means "not approved".
 | D-P20 | *Superseded 2026-11-20 by D-A70:* four tabs; Wallet tab 2 and Profile tab 3 | See D-A70 |
 | D-P21 | **Approved:** retain central comprehensive AppColor scales, remove duplicates after verification (D-A63) | Implementation pending; do not indiscriminately prune unused intentional colors |
 | D-P22 | **Approved:** trim username edges only; do not trim password (D-A65) | Implemented in Flutter Login (Task 03) |
-| D-P23 | **Approved:** «شهم» devices, `SHAHM \| شهم` web (D-A66) | Platform metadata pending |
+| D-P23 | **Approved:** «شهم» devices, `SHAHM \| شهم` web (D-A66) | **Device names set 2026-11-22 (R09)** in `AndroidManifest.xml` and `Info.plist`; not yet verified on a device build; identifiers remain owner input |
 | D-P24 | *Superseded 2026-11-20 by D-A72:* no unread count in the app | Historical |
 | D-P25 | **Approved active statuses/count** (D-A68); future commitments separate | Final current-order DTO/resource and scheduled-activation representation must be specified |
 | D-P26 | Resolved by D-A41 | Historical |

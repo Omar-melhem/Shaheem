@@ -83,6 +83,9 @@ class GetEligibleOffers {
       return const EligibleOffersNotConfigured();
     } on OrderOfferNetworkUnavailableException {
       return const EligibleOffersNoInternet();
+    } on TimeoutException {
+      // Read timeout (R04): retryable failure, never "offline" or "none".
+      return const EligibleOffersFailure();
     } on Object {
       return const EligibleOffersFailure();
     }
@@ -104,6 +107,11 @@ Future<OfferCommandResult> _command(
     return const OfferCommandNoLongerAvailable();
   } on OrderOfferRefusedException {
     return const OfferCommandRefused();
+  } on TimeoutException {
+    // Command timeout (R04): the server may have applied it. Unknown, so
+    // neither success nor rejection; the authoritative offer/active-order
+    // reads reconcile it.
+    return const OfferCommandUnconfirmed();
   } on Object {
     return const OfferCommandUnconfirmed();
   }

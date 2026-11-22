@@ -43,6 +43,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'يحتاج التطبيق إلى اتصال بالإنترنت. تحقّق من اتصالك ثم أعد المحاولة.';
 
   @override
+  String get routeNotFoundTitle => 'الصفحة غير موجودة';
+
+  @override
+  String get routeNotFoundMessage => 'الرابط الذي فتحته غير متاح في التطبيق.';
+
+  @override
+  String get routeErrorTitle => 'تعذّر فتح الصفحة';
+
+  @override
+  String get routeErrorMessage => 'حدث خطأ أثناء فتح هذه الصفحة.';
+
+  @override
+  String get routeErrorBackHome => 'العودة إلى الرئيسية';
+
+  @override
   String get offlineBanner => 'لا يوجد اتصال بالإنترنت';
 
   @override
@@ -78,13 +93,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileTitle => 'حسابي';
 
   @override
-  String get profileNameLabel => 'الاسم';
+  String profileNameSemantics(String name) {
+    return 'الاسم: $name';
+  }
 
   @override
   String get profileNameUnavailable => 'الاسم غير متوفر';
 
   @override
-  String get profilePhoneLabel => 'رقم الهاتف';
+  String profilePhoneSemantics(String phone) {
+    return 'رقم الهاتف: $phone';
+  }
 
   @override
   String get profilePhoneUnavailable => 'رقم الهاتف غير متوفر';
@@ -164,6 +183,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get accountDeletionFailed =>
       'تعذّر إرسال طلب الحذف، ولم يُحذف حسابك. حاول مرة أخرى.';
+
+  @override
+  String get accountDeletionUnconfirmed =>
+      'لم يصل ردّ من الخادم في الوقت المحدد، لذلك لا نعرف إن كان طلب الحذف قد استُلم. لا يُعدّ حسابك محذوفاً.';
 
   @override
   String get accountDeletionReauthRequired =>
@@ -530,13 +553,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get offerDecline => 'رفض';
 
   @override
-  String get offerPickupLabel => 'موقع المطعم';
+  String offerPickupLine(String pickup) {
+    return 'موقع المطعم: $pickup';
+  }
 
   @override
   String get offerPickupUnknown => 'غير متوفر';
 
   @override
-  String get offerDeliveryAreaLabel => 'منطقة التسليم';
+  String offerDeliveryAreaLine(String area) {
+    return 'منطقة التسليم: $area';
+  }
 
   @override
   String get offerDeliveryFeeLabel => 'أجرة التوصيل';
@@ -607,13 +634,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletMetricsLoadFailed => 'تعذّر تحميل الإحصائيات.';
 
   @override
-  String get walletMerchantLabel => 'المطعم';
+  String walletDebitMerchantLine(String merchant) {
+    return 'المطعم: $merchant';
+  }
 
   @override
-  String get walletDebitDateLabel => 'تاريخ الخصم';
+  String walletDebitDateLine(String date) {
+    return 'تاريخ الخصم: $date';
+  }
 
   @override
-  String get walletCommissionDebitLabel => 'قيمة الخصم (العمولة)';
+  String walletDebitAmountLine(String amount, String currency) {
+    return 'قيمة الخصم (العمولة): $amount $currency';
+  }
 
   @override
   String get walletFieldUnavailable => 'غير متوفر';
@@ -658,7 +691,43 @@ class AppLocalizationsAr extends AppLocalizations {
   String get offerKindScheduled => 'مؤجل';
 
   @override
-  String get offerScheduledPickupLabel => 'موعد الاستلام';
+  String offerScheduledPickupLine(String time) {
+    return 'موعد الاستلام: $time';
+  }
+
+  @override
+  String walletBalanceCardSemantics(String value) {
+    return 'الرصيد: $value';
+  }
+
+  @override
+  String walletMetricSemantics(String metric, String value) {
+    return '$metric. $value';
+  }
+
+  @override
+  String walletMetricSemanticsWithNote(
+    String metric,
+    String value,
+    String note,
+  ) {
+    return '$metric. $value. $note';
+  }
+
+  @override
+  String profileRatingSemantics(String value) {
+    return 'التقييم. $value';
+  }
+
+  @override
+  String profileRatingSemanticsWithCount(String value, String count) {
+    return 'التقييم. $value. $count';
+  }
+
+  @override
+  String declinedOfferOutcomeWithKind(String kind) {
+    return 'رفضتَ هذا العرض · $kind';
+  }
 
   @override
   String get offerValueUnavailable => 'غير متوفر';

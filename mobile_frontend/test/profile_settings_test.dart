@@ -167,6 +167,84 @@ void main() {
     });
 
     group('rating', () {
+      // R03 (STATE-01): refresh on re-show and on resume while visible.
+      group('refresh', () {
+        void resume(WidgetTester tester) {
+          for (final s in const [
+            AppLifecycleState.inactive,
+            AppLifecycleState.hidden,
+            AppLifecycleState.paused,
+            AppLifecycleState.hidden,
+            AppLifecycleState.inactive,
+            AppLifecycleState.resumed,
+          ]) {
+            tester.binding.handleAppLifecycleStateChanged(s);
+          }
+        }
+
+        Finder tab(MainNavDestination d) =>
+            find.byKey(MainNavigationBar.itemKey(d));
+
+        setUp(() {
+          account.rating = const CaptainRating(
+            ratingsCount: 4,
+            average: 4.5,
+            scaleMax: 5,
+          );
+        });
+
+        testWidgets('first show reads once; rebuilds read nothing', (
+          tester,
+        ) async {
+          await launchProfile(tester);
+          expect(account.ratingCalls, 1);
+          tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          await tester.pumpAndSettle();
+          expect(account.ratingCalls, 1);
+        });
+
+        testWidgets('another tab → Profile reads once more and keeps the '
+            'confirmed value on screen meanwhile', (tester) async {
+          await launchProfile(tester);
+          await tester.tap(tab(MainNavDestination.home));
+          await tester.pumpAndSettle();
+          expect(account.ratingCalls, 1);
+          await tester.tap(tab(MainNavDestination.profile));
+          await tester.pump();
+          expect(find.text(l10n.profileRatingLoading), findsNothing);
+          await tester.pumpAndSettle();
+          expect(account.ratingCalls, 2);
+          expect(find.text(l10n.profileRatingCount(4)), findsOneWidget);
+        });
+
+        testWidgets('resume while visible reads once; while hidden reads '
+            'nothing', (tester) async {
+          await launchProfile(tester);
+          resume(tester);
+          await tester.pumpAndSettle();
+          expect(account.ratingCalls, 2);
+
+          await tester.tap(tab(MainNavDestination.wallet));
+          await tester.pumpAndSettle();
+          resume(tester);
+          await tester.pumpAndSettle();
+          expect(account.ratingCalls, 2);
+        });
+
+        testWidgets('sign-out: no read after the tab is gone', (tester) async {
+          await launchProfile(tester);
+          await BlocProvider.of<AppSessionCubit>(
+            tester.element(find.byType(ProfileScreen)),
+          ).endSession();
+          await tester.pumpAndSettle();
+          resume(tester);
+          await tester.pumpAndSettle();
+          expect(find.byType(ProfileScreen), findsNothing);
+          expect(account.ratingCalls, 1);
+        });
+      });
+
       testWidgets('not configured: «التقييم غير متوفر», no Retry, no value', (
         tester,
       ) async {

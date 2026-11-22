@@ -22,17 +22,41 @@ chip opens Wallet.
 > Decline. Sections below are updated as each change is implemented; see
 > `../project/PROJECT_STATUS.md` §0 for actual status.
 
+> **Audit remediation 2026-11-22 (R05–R08, D-A80) — current state; it
+> supersedes the historical sections it names:**
+> - **Removed (verified dead, no production caller):** `AppTools` /
+>   `appTools` and the whole `lib/util/tools/` folder (`tools.dart`,
+>   `android_loading.dart`, `ios_loading.dart`), `CustomePadding`
+>   (`lib/view/widget/padding/`), `WalletBalanceChip.naturalWidth` and its
+>   private width helper, and their exclusive tests. The one production use,
+>   Login's tap-outside unfocus, now calls `FocusScope.of(context)` directly
+>   with the same `hasPrimaryFocus` check. The approved D-P14 move of the
+>   loading widgets is therefore moot: they had no consumer left to move.
+>   §3.3, §3.4, §7.1 and §7.3 below are **historical**.
+> - **Changed API:** `AppPopupAction<T>` gained `result` (§3.10).
+> - **Reuse:** No Internet and Splash Retry use `AppButton` (§3.8).
+> - **New shared navigation helper:** `openCurrentOrderPage(context)` in
+>   `lib/view/navigation/current_order_navigation.dart` (moved unchanged
+>   from the offer-sheet host; used by the host and Home's active-order
+>   card).
+> - **New screen:** `RouteErrorScreen` (`lib/view/screens/route_error_screen/`),
+>   the router's localized error surface built from `AppStatusMessage`.
+> - **Kept unchanged:** the text-widget family and its tests (zero
+>   production consumers; owner decision D-P43). No generic surface card
+>   was added for SW-01 (see `CUSTOM_WIDGET_CONTRACT_STANDARD.md`).
+> - Details and evidence: `../quality/REMEDIATION_STATUS.md`,
+>   `../quality/ENGINEERING_LESSONS.md`.
+
 ## 1. Purpose and scope
 
 Covers:
 
 - Typography: `TextThemeStyle` and `AppFonts`.
 - Eleven shared text widgets plus their base class `AppTextWidget`.
-- `AppTools` (`tools.dart`): loading, dialogs, toasts, bottom sheet, keyboard
-  unfocus, and two small formatting helpers.
-- Loading widgets: `AndroidLoading` and `IosLoading`.
+- *(Historical, removed in R05:)* `AppTools` (`tools.dart`) and the loading
+  widgets `AndroidLoading` / `IosLoading`.
 - Shared pure field validators (`util/validators/`), which replace the
-  validators that used to live in `tools.dart`.
+  validators that used to live in the former `tools.dart`.
 - The widget extracted from the Splash screen, and the rule for future screens.
 - **Custom components (added 2026-11-11, D-A32):** `AppTextFormField`,
   `AppButton`, `AppTextButton`, `AppPopup`/`showAppPopup`,
@@ -71,10 +95,10 @@ All paths are relative to `mobile_frontend/`.
 | `lib/view/widget/text/body_text1.dart`, `body_text2.dart` | `BodyText1`, `BodyText2` | Shared |
 | `lib/view/widget/text/subtitle1.dart`, `subtitle2.dart` | `Subtitle1`, `Subtitle2` | Shared |
 | `lib/view/widget/text/caption.dart` | `Caption` | Shared |
-| `lib/view/widget/padding/padding.dart` | `CustomePadding`, used by `AndroidLoading` (not modified) | Shared |
-| `lib/util/tools/tools.dart` | `AppTools` UI helpers and the global `appTools` | Shared |
-| `lib/util/tools/android_loading.dart` | `AndroidLoading` | Shared |
-| `lib/util/tools/ios_loading.dart` | `IosLoading` | Shared |
+| ~~`lib/view/widget/padding/padding.dart`~~ | `CustomePadding` — **deleted R05** (its only consumer was the dead `AndroidLoading`) | — |
+| ~~`lib/util/tools/`~~ | `AppTools`, `AndroidLoading`, `IosLoading` — **deleted R05** (no production caller except one unfocus call, now inlined) | — |
+| `lib/view/navigation/current_order_navigation.dart` | `openCurrentOrderPage` (R05) | Shared navigation helper |
+| `lib/view/screens/route_error_screen/view/route_error_screen.dart` | `RouteErrorScreen` (R01) | Router error surface |
 | `lib/util/validators/validators.dart` | `Validators`: pure field validators | Shared (new) |
 | `lib/util/validators/validation_error.dart` | `ValidationError` enum of error codes | Shared (new) |
 | `lib/util/validators/validation_messages.dart` | `validationMessage(l10n, error)`: error code → localized text | Shared |
@@ -193,7 +217,7 @@ real font:
 `test/shared_widgets_test.dart` and `test/brand_theme_test.dart` cover them
 too.
 
-### 3.3 `AppTools` (`lib/util/tools/tools.dart`)
+### 3.3 `AppTools` (`lib/util/tools/tools.dart`) — historical, deleted in R05 (2026-11-22)
 
 There's a global `final AppTools appTools = AppTools();`, and
 `AppTools.loadingRouteName == 'loading'`.
@@ -217,7 +241,7 @@ The method signatures are unchanged from before, so existing callers keep
 working. The visuals changed from Cupertino dialogs and `toasty_box`
 toasts to the shared components.
 
-### 3.4 Loading widgets (historical `lib/util/tools/`; approved target `lib/view/widget/loading/`)
+### 3.4 Loading widgets — historical, deleted in R05 (no consumer remained, so the D-P14 move was not needed)
 
 - `const AndroidLoading({Key? key})`: a `CircularProgressIndicator` in
   `AppColor.primary`, with the localized caption (`l10n.loading`,
@@ -452,7 +476,13 @@ const AppButton({
   semantic label, or remove `child` (breaking).
 - **Callers:** Login submit (`login_form.dart`), debug preview
   (`debug_preview_button.dart`), primary `AppPopup` actions,
-  `AppStatusMessage` action.
+  `AppStatusMessage` action, and since R07 (2026-11-22, SW-03) the Retry
+  of `NoInternetScreen` (`isLoading` while a check runs: spinner, loading
+  semantics, taps ignored) and of `SplashStartupStatus`. Both previously
+  hand-built a `FilledButton` with their own spinner; the shared button
+  also raises their minimum height from Material's 40 px to 48 px.
+  **Rule:** a primary action with busy/disabled behavior uses `AppButton`;
+  don't rebuild its loading/semantics locally.
 - **Tests:** `custom_widgets_test.dart` group `AppButton` (29, incl.
   "rendered contract": defaults, every override, precedence, asserts,
   disabled/loading semantics, RTL/LTR icon positions, 320/375/450 px ×
@@ -538,14 +568,30 @@ Future<T?> showAppPopup<T>(BuildContext context, {String? title,
   List<AppPopupAction> actions = const [], bool showCloseButton = false,
   bool barrierDismissible = true});
 
-AppPopupAction({required label, onPressed, isPrimary = false,
-  isDestructive = false, closesPopup = true});
+AppPopupAction<T>({required label, onPressed, isPrimary = false,
+  isDestructive = false, closesPopup = true, T? result});
 ```
 
 `AppPopup({title, message, content, icon, actions = const [],
 showCloseButton = false, maxWidth = 480})` is the widget `showAppPopup`
 builds. **No public API change in Task 17** (2026-11-15); only debug
 asserts were added (below).
+
+**Typed action result (R06, 2026-11-22, SW-02).** `showAppPopup<T>` was
+already generic; the action now carries the value: an action that closes
+the popup pops **the navigator hosting the dialog** with its `result`, then
+runs `onPressed` once. Cancel, the barrier, the close button and system
+Back complete with `null`. A second tap during the exit animation is
+ignored (the route is no longer current), so the route below is never
+popped and the callback never runs twice. `closesPopup: false` keeps the
+popup open and cannot carry a `result` (assert). Callers migrated: Profile
+sign-out confirmation and `showAccountDeletionConfirmation`, which now
+`await showAppPopup<bool>(…, actions: [AppPopupAction(label: cancel),
+AppPopupAction<bool>(label: confirm, result: true)])` instead of popping a
+root navigator from the screen. Tests: `custom_widgets_test.dart` group
+"AppPopup typed result" (confirm, cancel, barrier, back, double tap,
+nested navigator, callback opening a second dialog). This was a
+component-contract improvement; no production crash had been reproduced.
 
 - **Structure:** icon, title (a semantic header), then a body. The body is
   either `message` (centered text) or `content`. Content-only popups are
@@ -554,8 +600,8 @@ asserts were added (below).
   - Primary actions render as `AppButton`; others as `AppTextButton`;
     `isDestructive` uses `colorScheme.error` (unchanged; no approved
     semantic error token yet).
-  - An action closes the popup and then runs its callback, unless
-    `closesPopup` is false. Actions close with a `null` result.
+  - An action closes the popup (with its `result`, `null` by default) and
+    then runs its callback, unless `closesPopup` is false.
 - **Asserts (debug, Task 17):** `message` xor `content`; at least one of
   `title`/`message`/`content`; an action with `closesPopup: false` needs
   `onPressed` (otherwise it does nothing); `showAppPopup` with
@@ -583,7 +629,8 @@ asserts were added (below).
 - **Tests:** `custom_widgets_test.dart` groups `AppPopup` (incl. contract
   asserts) and "AppPopup layout with the keyboard open" (320 px at scale
   1/2/3, long title/message, scrolling content, landscape, long labels at
-  320/1024 px, RTL/LTR close position, `AppTools` wrappers);
+  320/1024 px, RTL/LTR close position; the former `AppTools` wrapper cases
+  were removed with `AppTools` in R05);
   `login_screen_test.dart` "popups with the keyboard open" (Forgot Password,
   Create Account).
 
@@ -1043,7 +1090,7 @@ Don't duplicate an existing size or weight combination.
 
 ## 7. Tools, validators, and loading components
 
-### 7.1 What `tools.dart` provides now
+### 7.1 What `tools.dart` provided (historical; deleted in R05)
 
 It contains UI helpers only (§3.3).
 
@@ -1130,7 +1177,7 @@ in Task 03, see below), `Validators.optionalPhone`, and
   for offers until Admin completes it (backend, not implemented).
 - Other future fields require an explicit feature contract.
 
-### 7.3 Loading: platform behavior
+### 7.3 Loading: platform behavior (historical; deleted in R05)
 
 `showLoading` decides by `Theme.of(context).platform`:
 
@@ -1280,7 +1327,7 @@ components:
   - Extend `AppTextWidget` and forward the `super.` parameters.
   - Keep constructor parameters stable, or update every caller and this
     document.
-- **`tools.dart`:** UI helpers only. No validation or business rules.
+- **No `tools.dart` grab-bag (R05):** add a UI helper only with a real consumer, in the folder of its responsibility; never validation or business rules.
 - **Validators:** pure and synchronous, with unit tests, and confirmed
   SHAHM rules only.
 - **Updates:** update this reference whenever a public API here changes.

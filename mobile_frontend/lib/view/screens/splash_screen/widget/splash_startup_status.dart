@@ -7,6 +7,7 @@ import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
 import 'package:mobile_frontend/helper/translation/generated/app_localizations.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/cubit/splash_cubit.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 
 /// Startup progress shown under the Splash logo.
 ///
@@ -63,10 +64,12 @@ class SplashStartupStatus extends StatelessWidget {
             ).textTheme.bodyLarge?.copyWith(color: AppColor.textPrimary),
           ),
           const SizedBox(height: 16),
-          FilledButton(
-            // The cubit ignores retry while a check is running.
+          // The shared AppButton (R07, SW-03). The message (and so this
+          // button) is only shown once a check has ended; the Cubit ignores
+          // a retry while a check is running.
+          AppButton(
+            label: context.l10n.retry,
             onPressed: () => context.read<SplashCubit>().retry(),
-            child: Text(context.l10n.retry),
           ),
         ],
       ),

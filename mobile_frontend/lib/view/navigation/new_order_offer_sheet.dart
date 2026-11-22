@@ -132,22 +132,22 @@ class NewOrderOfferSheet extends StatelessWidget {
           const SizedBox(height: 14),
           _InfoLine(
             icon: Icons.location_on_outlined,
-            text: '${l10n.offerPickupLabel}: $pickup',
+            text: l10n.offerPickupLine(pickup),
           ),
           const SizedBox(height: 14),
           _InfoLine(
             icon: Icons.flag_outlined,
-            text:
-                '${l10n.offerDeliveryAreaLabel}: '
-                '${offer.deliveryAreaName}',
+            text: l10n.offerDeliveryAreaLine(offer.deliveryAreaName),
           ),
           if (scheduled) ...[
             const SizedBox(height: 14),
             _InfoLine(
               icon: Icons.calendar_month_outlined,
-              text:
-                  '${l10n.offerScheduledPickupLabel}: '
-                  '${pickupAt == null ? unavailable : ltrIsolate(formatLocalDateTime(pickupAt))}',
+              text: l10n.offerScheduledPickupLine(
+                pickupAt == null
+                    ? unavailable
+                    : ltrIsolate(formatLocalDateTime(pickupAt)),
+              ),
             ),
           ],
           const SizedBox(height: 20),

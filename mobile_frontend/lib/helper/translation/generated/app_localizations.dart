@@ -160,6 +160,36 @@ abstract class AppLocalizations {
   /// **'يحتاج التطبيق إلى اتصال بالإنترنت. تحقّق من اتصالك ثم أعد المحاولة.'**
   String get noInternetMessage;
 
+  /// Route error surface (R01): an opened link or path matches no page of the app (e.g. the removed notifications path). Never shows the path itself.
+  ///
+  /// In ar, this message translates to:
+  /// **'الصفحة غير موجودة'**
+  String get routeNotFoundTitle;
+
+  /// Route error surface (R01): explanation for an unknown path.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرابط الذي فتحته غير متاح في التطبيق.'**
+  String get routeNotFoundMessage;
+
+  /// Route error surface (R01): navigation failed for a reason other than an unknown path. No technical details are shown.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر فتح الصفحة'**
+  String get routeErrorTitle;
+
+  /// Route error surface (R01): explanation for a navigation failure other than an unknown path.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ أثناء فتح هذه الصفحة.'**
+  String get routeErrorMessage;
+
+  /// Route error surface (R01): the only action; goes to Home, where the normal routing policy applies.
+  ///
+  /// In ar, this message translates to:
+  /// **'العودة إلى الرئيسية'**
+  String get routeErrorBackHome;
+
   /// Global offline banner shown on any screen after startup.
   ///
   /// In ar, this message translates to:
@@ -220,11 +250,11 @@ abstract class AppLocalizations {
   /// **'حسابي'**
   String get profileTitle;
 
-  /// Profile (D-A77): accessible label of the captain name.
+  /// Profile (D-A77, R08): screen-reader sentence for the captain name (or its honest fallback).
   ///
   /// In ar, this message translates to:
-  /// **'الاسم'**
-  String get profileNameLabel;
+  /// **'الاسم: {name}'**
+  String profileNameSemantics(String name);
 
   /// Profile (D-A77): the session has no name; nothing is invented.
   ///
@@ -232,11 +262,11 @@ abstract class AppLocalizations {
   /// **'الاسم غير متوفر'**
   String get profileNameUnavailable;
 
-  /// Profile (D-A77): accessible label of the captain phone.
+  /// Profile (D-A77, R08): screen-reader sentence for the captain phone (or its honest fallback).
   ///
   /// In ar, this message translates to:
-  /// **'رقم الهاتف'**
-  String get profilePhoneLabel;
+  /// **'رقم الهاتف: {phone}'**
+  String profilePhoneSemantics(String phone);
 
   /// Profile (D-A77): the session has no phone; nothing is invented.
   ///
@@ -357,6 +387,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تعذّر إرسال طلب الحذف، ولم يُحذف حسابك. حاول مرة أخرى.'**
   String get accountDeletionFailed;
+
+  /// Settings (R04): the confirmed request timed out; whether the server received it is unknown. Claims neither deletion nor 'not sent'; no automatic resend.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يصل ردّ من الخادم في الوقت المحدد، لذلك لا نعرف إن كان طلب الحذف قد استُلم. لا يُعدّ حسابك محذوفاً.'**
+  String get accountDeletionUnconfirmed;
 
   /// Settings (D-A78): the server requires a fresh sign-in.
   ///
@@ -988,11 +1024,11 @@ abstract class AppLocalizations {
   /// **'رفض'**
   String get offerDecline;
 
-  /// Label of the merchant pickup information on an offer card (Task 26).
+  /// Offer card and new-offer sheet (Task 26, R08): the merchant pickup line; {pickup} is server data or the unavailable text.
   ///
   /// In ar, this message translates to:
-  /// **'موقع المطعم'**
-  String get offerPickupLabel;
+  /// **'موقع المطعم: {pickup}'**
+  String offerPickupLine(String pickup);
 
   /// Neutral value when the server gave no verified pickup information (Task 26).
   ///
@@ -1000,11 +1036,11 @@ abstract class AppLocalizations {
   /// **'غير متوفر'**
   String get offerPickupUnknown;
 
-  /// Label of the customer delivery area (an area, never a coordinate) on an offer card (Task 26).
+  /// Offer card, new-offer sheet and debit card (R08): the customer delivery area line (an area, never a coordinate).
   ///
   /// In ar, this message translates to:
-  /// **'منطقة التسليم'**
-  String get offerDeliveryAreaLabel;
+  /// **'منطقة التسليم: {area}'**
+  String offerDeliveryAreaLine(String area);
 
   /// Label of the delivery fee snapshot (not the captain's profit or commission) (Task 26).
   ///
@@ -1125,23 +1161,23 @@ abstract class AppLocalizations {
   /// **'تعذّر تحميل الإحصائيات.'**
   String get walletMetricsLoadFailed;
 
-  /// Debit card: label of the order's merchant (Task 34).
+  /// Debit card (Task 34, R08): the order merchant line.
   ///
   /// In ar, this message translates to:
-  /// **'المطعم'**
-  String get walletMerchantLabel;
+  /// **'المطعم: {merchant}'**
+  String walletDebitMerchantLine(String merchant);
 
-  /// Debit card: label of the debit's date and time (Task 34).
+  /// Debit card (Task 34, R08): the debit date line; {date} is the LTR-isolated local date and time.
   ///
   /// In ar, this message translates to:
-  /// **'تاريخ الخصم'**
-  String get walletDebitDateLabel;
+  /// **'تاريخ الخصم: {date}'**
+  String walletDebitDateLine(String date);
 
-  /// Debit card: label of the commission debited (never the delivery fee) (Task 34).
+  /// Debit card (Task 34, R08): the commission debited (never the delivery fee); {amount} is LTR-isolated fils formatted as JOD, {currency} the currency symbol.
   ///
   /// In ar, this message translates to:
-  /// **'قيمة الخصم (العمولة)'**
-  String get walletCommissionDebitLabel;
+  /// **'قيمة الخصم (العمولة): {amount} {currency}'**
+  String walletDebitAmountLine(String amount, String currency);
 
   /// A value the server did not provide (e.g. merchant or area of a debit); never invented (Task 34).
   ///
@@ -1214,11 +1250,51 @@ abstract class AppLocalizations {
   /// **'مؤجل'**
   String get offerKindScheduled;
 
-  /// Label of the authoritative scheduled pickup date and local time (Task 36).
+  /// New-offer sheet (Task 36, R08): the authoritative scheduled pickup line; {time} is the LTR-isolated local date/time or the unavailable text.
   ///
   /// In ar, this message translates to:
-  /// **'موعد الاستلام'**
-  String get offerScheduledPickupLabel;
+  /// **'موعد الاستلام: {time}'**
+  String offerScheduledPickupLine(String time);
+
+  /// Wallet balance card (R08): screen-reader sentence; {value} is the spoken amount with currency or the unknown text.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد: {value}'**
+  String walletBalanceCardSemantics(String value);
+
+  /// Wallet metric card (R08): screen-reader sentence of a lifetime metric without a note.
+  ///
+  /// In ar, this message translates to:
+  /// **'{metric}. {value}'**
+  String walletMetricSemantics(String metric, String value);
+
+  /// Wallet metric card (R08): screen-reader sentence of a lifetime metric with its period/unavailability note.
+  ///
+  /// In ar, this message translates to:
+  /// **'{metric}. {value}. {note}'**
+  String walletMetricSemanticsWithNote(
+    String metric,
+    String value,
+    String note,
+  );
+
+  /// Profile rating card (R08): screen-reader sentence without a count.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقييم. {value}'**
+  String profileRatingSemantics(String value);
+
+  /// Profile rating card (R08): screen-reader sentence with the localized ratings count.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقييم. {value}. {count}'**
+  String profileRatingSemanticsWithCount(String value, String count);
+
+  /// My Orders declined record (R08): outcome with the offer kind; {kind} is the localized instant/scheduled label.
+  ///
+  /// In ar, this message translates to:
+  /// **'رفضتَ هذا العرض · {kind}'**
+  String declinedOfferOutcomeWithKind(String kind);
 
   /// Neutral value when the server did not send a value needed by the offer sheet (Task 36).
   ///

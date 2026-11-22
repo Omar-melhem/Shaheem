@@ -308,12 +308,15 @@ void main() {
       expect(find.text(l10n.offerKindInstant), findsOneWidget);
       expect(find.text(l10n.offerKindScheduled), findsNothing);
       expect(find.text('مطعم a'), findsOneWidget);
-      expect(find.text('${l10n.offerPickupLabel}: الشميساني'), findsOneWidget);
+      expect(find.text(l10n.offerPickupLine('الشميساني')), findsOneWidget);
       expect(
-        find.text('${l10n.offerDeliveryAreaLabel}: تلاع العلي'),
+        find.text(l10n.offerDeliveryAreaLine('تلاع العلي')),
         findsOneWidget,
       );
-      expect(find.textContaining(l10n.offerScheduledPickupLabel), findsNothing);
+      expect(
+        find.textContaining(l10n.offerScheduledPickupLine('').trim()),
+        findsNothing,
+      );
       // 2.500 with a 0.500 commission snapshot: the fee is shown as-is,
       // with no commission, rate or net 2.000.
       expectOnlyFullFee(tester, 2500);
@@ -364,8 +367,7 @@ void main() {
       expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
       expect(
         find.text(
-          '${l10n.offerScheduledPickupLabel}: '
-          '${ltrIsolate(formatLocalDateTime(at))}',
+          l10n.offerScheduledPickupLine(ltrIsolate(formatLocalDateTime(at))),
         ),
         findsOneWidget,
       );
@@ -375,9 +377,7 @@ void main() {
       expect(find.textContaining('%'), findsNothing);
       await pumpSheet(tester, offer('s', kind: OrderOfferKind.scheduled));
       expect(
-        find.text(
-          '${l10n.offerScheduledPickupLabel}: ${l10n.offerValueUnavailable}',
-        ),
+        find.text(l10n.offerScheduledPickupLine(l10n.offerValueUnavailable)),
         findsOneWidget,
       );
     });
@@ -707,7 +707,7 @@ void main() {
       );
       expect(find.text('مطعم a'), findsOneWidget);
       expect(
-        find.text('${l10n.declinedOfferOutcome} · ${l10n.offerKindInstant}'),
+        find.text(l10n.declinedOfferOutcomeWithKind(l10n.offerKindInstant)),
         findsOneWidget,
       );
       expect(find.text(ltrIsolate(formatLocalDateTime(at))), findsOneWidget);

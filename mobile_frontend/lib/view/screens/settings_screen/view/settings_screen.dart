@@ -47,6 +47,7 @@ class SettingsScreen extends StatelessWidget {
       AccountDeletionFlow.notConfigured => l10n.accountDeletionNotConfigured,
       AccountDeletionFlow.noInternet => l10n.accountDeletionNoInternet,
       AccountDeletionFlow.failure => l10n.accountDeletionFailed,
+      AccountDeletionFlow.unconfirmed => l10n.accountDeletionUnconfirmed,
       AccountDeletionFlow.reauthenticationRequired =>
         l10n.accountDeletionReauthRequired,
       AccountDeletionFlow.pending => l10n.accountDeletionPending,

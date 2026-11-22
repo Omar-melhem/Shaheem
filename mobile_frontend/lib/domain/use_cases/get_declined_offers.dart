@@ -64,6 +64,9 @@ class GetDeclinedOffers {
       return const DeclinedOffersNotConfigured();
     } on OrderHistoryNetworkUnavailableException {
       return const DeclinedOffersNoInternet();
+    } on TimeoutException {
+      // Read timeout (R04): retryable failure, never "offline" or "empty".
+      return const DeclinedOffersFailure();
     } on Object {
       return const DeclinedOffersFailure();
     }

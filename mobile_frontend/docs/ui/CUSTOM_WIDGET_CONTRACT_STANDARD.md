@@ -63,6 +63,16 @@ Material widget already solves it.
   or is used elsewhere. Don't create a file per two-line helper.
 - No `Manager`, `Factory`, `BaseWidget`, `Utils`, `Service` or inheritance
   layer created only "for organization".
+- **Visual similarity is not a contract (SW-01 decision, 2026-11-22).** The
+  2026-11-22 audit proposed an `AppSurfaceCard` because about ten widgets
+  draw a white, divider-bordered, 16-radius `DecoratedBox`. They share no
+  behavior, semantics or state: each has its own content, semantics
+  container and padding, the active-order prompt is deliberately red and
+  the balance chip deliberately 20-radius. So the built-in composition
+  stays. Extract a shared surface only when repeated **behavior** (tap
+  target, semantics, loading/error slots) or an approved visual contract
+  must change in one place; the surface itself comes from `ThemeData`
+  (`colorScheme.surface`, `AppColor.divider`).
 
 ## 3. Constructors and `required`
 

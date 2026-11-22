@@ -179,8 +179,10 @@ Details: `docs/architecture/GLOBAL_SERVICES.md`.
     `view/widget/<category>/`.
   - Don't split trivial wrappers into files.
 - **Reuse** shared widgets (`AppTextFormField`, `AppButton`,
-  `AppTextButton`, `showAppPopup`, `showAppToast`, text widgets), tools and
-  validators. Never put validators or business rules in `tools.dart`.
+  `AppTextButton`, `showAppPopup` with typed `AppPopupAction<T>.result`,
+  `showAppToast`, text widgets) and validators. There is no `tools.dart`
+  grab-bag (deleted R05); a helper needs a real consumer and a folder that
+  matches its responsibility.
 - **Custom widgets:** prefer built-in composition and `ThemeData`; make
   only essential inputs `required`; no speculative API, style classes or
   Cubits, and no duplicate preview implementation. Read
@@ -265,6 +267,14 @@ flutter test
 | New or changed shared widget | `docs/ui/CUSTOM_WIDGET_CONTRACT_STANDARD.md`, `docs/ui/SHARED_UI_COMPONENTS_REFERENCE.md` |
 | Any release-related task (store builds, signing, permissions, GPS, push, privacy/legal links, metadata) | `docs/release/STORE_SUBMISSION_COMPLIANCE.md` (consult **before** starting; re-verify store policies against the official sources it lists) |
 | History of requirements | `docs/archive/` |
+| Audits, fixes of audit findings, regressions | `docs/quality/REMEDIATION_STATUS.md`, `docs/quality/ENGINEERING_LESSONS.md`, `docs/quality/AUDIT_METHOD.md` |
+
+**Quick checks learned from the 2026-11-22 audit** (details in the lessons
+file): one owner per cross-screen read model (L-02); command timeout =
+unconfirmed, never success/failure (L-05); unknown routes use the localized
+error surface (L-01); label + value is one ARB key (L-10); recompute counts,
+never copy them (L-03); in docs, describe demo symbols in words so the
+removal scanner stays green (L-14).
 
 Full index: `docs/README.md`.
 <!-- SHAHM_DEMO_START claude-removal -->

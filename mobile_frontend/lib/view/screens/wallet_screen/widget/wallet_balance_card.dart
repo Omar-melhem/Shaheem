@@ -32,7 +32,7 @@ class WalletBalanceCard extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: '${l10n.walletTotalBalance}: $spoken',
+      label: l10n.walletBalanceCardSemantics(spoken),
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(

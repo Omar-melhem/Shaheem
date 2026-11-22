@@ -20,9 +20,13 @@ enum AccountDeletionFlow {
   /// Offline; nothing was sent. Retry is allowed.
   noInternet,
 
-  /// The server failed or the answer is unknown; nothing is assumed
-  /// deleted. Retry is allowed.
+  /// The server failed; nothing is assumed deleted. Retry is allowed.
   failure,
+
+  /// No answer in time (R04): the request may have reached the server.
+  /// Not deleted, not "not sent"; no further submission from this screen
+  /// (a new visit to Settings starts a new flow).
+  unconfirmed,
 
   /// The server asks for a fresh sign-in first.
   reauthenticationRequired,
@@ -87,6 +91,8 @@ class AccountDeletionCubit extends Cubit<AccountDeletionFlow> {
         emit(AccountDeletionFlow.noInternet);
       case AccountDeletionFailure():
         emit(AccountDeletionFlow.failure);
+      case AccountDeletionUnconfirmed():
+        emit(AccountDeletionFlow.unconfirmed);
       case AccountDeletionReauthenticationRequired():
         emit(AccountDeletionFlow.reauthenticationRequired);
     }

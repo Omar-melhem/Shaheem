@@ -28,10 +28,12 @@ import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 /// recharges are arranged outside the app and credited by Admin; credits
 /// stay in the server's immutable ledger.
 ///
-/// [WalletCubit] (provided by the route) owns the data. Loads once when
-/// created and again each time the tab becomes visible after another tab
-/// (GoRouter's indexed stack turns `TickerMode` off for hidden branches),
-/// never by polling.
+/// [WalletCubit] (shell-scoped since R02, shared with Home's balance chip)
+/// owns the data. The first show reads whatever is still unread
+/// ([WalletCubit.ensureLoaded]); each time the tab becomes visible again
+/// after another tab (GoRouter's indexed stack turns `TickerMode` off for
+/// hidden branches) both reads run again, never by polling. There is no
+/// foreground-resume read (open owner decision D-P42).
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
 
@@ -46,8 +48,9 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    final cubit = context.read<WalletCubit>();
-    if (cubit.state.status == WalletStatus.initial) unawaited(cubit.load());
+    // The shell already reads the balance (R02); the first show reads only
+    // what is still unread, normally just the lifetime statistics.
+    unawaited(context.read<WalletCubit>().ensureLoaded());
   }
 
   @override

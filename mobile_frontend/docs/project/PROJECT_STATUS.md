@@ -38,6 +38,32 @@ statistics; rating read model; account-deletion command and session
 revocation; availability command; push token registration and order-event
 schema; Terms and Privacy Policy URLs.
 
+### 0.1 Audit remediation (2026-11-22, D-A80) — current
+
+Uncommitted working tree on `cefad0a`. Tracker:
+`../quality/REMEDIATION_STATUS.md`; revised reports:
+`../quality/reports/2026-11-22-post-fix/`.
+
+| Area | Now implemented | Still open |
+|---|---|---|
+| Routing | Localized route-error surface (`RouteErrorScreen`); guard unchanged | — |
+| Wallet source | One shell-scoped `WalletCubit` for Home chip and Wallet; session-owner tagging; demo Home hook removed | Real wallet API (B-05); Wallet resume read D-P42 |
+| Refresh | Profile rating on re-show / visible resume | — |
+| Timeouts | Explicit per-operation policy; deletion timeout = unconfirmed | — |
+| Cleanup | `AppTools`, loading widgets, `CustomePadding`, `SplashBloc`, chip helpers deleted; Current Order navigation helper extracted | Text-widget family D-P43 |
+| Shared UI | Typed `AppPopupAction<T>.result`; `AppButton` on both Retry surfaces | — |
+| Localization | ICU line/sentence keys for composed text | 3 unused generic dialog keys (recommendation) |
+| Platform | «شهم» names, `INTERNET` in the main manifest, 5 unneeded packages removed | Bundle/package IDs, location purpose strings and disclosures, merged-manifest/device verification, version source (package approval) |
+| Demo tooling | Narrow historical-audit classification; manifest updated; rehearsal on a copy | Live demo still installed (owner removes it when wanted) |
+| Data | Atomic dictionary (125 IDs) and backlog B-01…B-10 | All contracts; D-P25, D-P35–D-P41 |
+
+**Counts (final source):** 11 Cubits, 0 Blocs, 16 `StatefulWidget` (10
+production, 3 demo, 3 preview), 2 `ChangeNotifier`; 344 paths; screens:
+10 logical (2 partial UI/workflow: My Orders, Current Order; 8 complete UI
+awaiting integration, content or device verification), 1 approved missing
+capability (future commitments, not a screen). These numbers belong to this
+snapshot; recompute them per `../quality/AUDIT_METHOD.md`.
+
 ## 1. Implemented
 
 | Area | What exists | Key paths |
@@ -206,6 +232,12 @@ All commands run in `mobile_frontend/`.
 
 | Date | Command | Result |
 |---|---|---|
+| 2026-11-22 (audit remediation) | `flutter gen-l10n`; `dart format --set-exit-if-changed` on changed/new Dart files | OK; 0 files changed |
+| 2026-11-22 | `flutter analyze` | **No issues** (baseline info from the dead `SplashBloc` gone) |
+| 2026-11-22 | `flutter test` | **1,034 passed, 0 failed** |
+| 2026-11-22 | `bash tool/demo/remove_demo.sh --dry-run` (live) | OK, nothing changed |
+| 2026-11-22 | `--apply` rehearsal on a full copy in the session scratchpad | Demo removed; tool's gen-l10n/analyze/test passed; 1,006 tests after removal; baseline reports byte-identical; scanner negative checks rejected (stray import, edited baseline, `docs/` asset, Dart reference) |
+| 2026-11-22 | `plutil -lint ios/Runner/Info.plist`; `xmllint` main Android manifest | OK. No device, simulator, release or merged-manifest build was run |
 | 2026-11-20 | `flutter gen-l10n`; `dart format lib test` | OK |
 | 2026-11-20 | `flutter analyze` | 1 issue: the existing `SplashBloc` info (baseline) |
 | 2026-11-20 | `flutter test` | **1,001 passed, 0 failed** (the notifications suite was deleted with the feature; new suites: active-order recovery, Profile/Settings) |

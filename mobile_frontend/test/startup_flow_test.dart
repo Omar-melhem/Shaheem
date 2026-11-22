@@ -2,6 +2,8 @@
 // services: startup destinations, the shared session, and the single global
 // offline banner across routes.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +20,7 @@ import 'package:mobile_frontend/view/screens/authentication/view/login_screen.da
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
 import 'package:mobile_frontend/view/screens/splash_screen/view/splash_screen.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 
 import 'fakes.dart';
 import 'test_app.dart';
@@ -135,6 +138,38 @@ void main() {
       await tester.tap(find.text(l10n.retry));
       await tester.pumpAndSettle();
       expect(find.byType(HomeScreen), findsOneWidget);
+    });
+
+    // R07 (SW-03): the shared AppButton; a busy Retry cannot start a second
+    // check, and large text still fits.
+    testWidgets('No Internet Retry is the shared AppButton; busy while '
+        'checking; repeated taps start one check', (tester) async {
+      internet.result = InternetReachability.disconnected;
+      await launch(tester);
+      final before = internet.checks;
+      internet.pending = Completer<InternetReachability>();
+      await tester.tap(find.widgetWithText(AppButton, l10n.retry));
+      await tester.pump();
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.isLoading, isTrue);
+      await tester.tap(find.byType(AppButton), warnIfMissed: false);
+      await tester.pump();
+      expect(internet.checks, before + 1);
+      internet.pending!.complete(InternetReachability.disconnected);
+      await tester.pumpAndSettle();
+      expect(tester.widget<AppButton>(find.byType(AppButton)).isLoading, false);
+    });
+
+    testWidgets('No Internet at text scale 2.0 on 320 px: no overflow', (
+      tester,
+    ) async {
+      setScreenSize(tester, 320, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      internet.result = InternetReachability.disconnected;
+      await launch(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.widgetWithText(AppButton, l10n.retry), findsOneWidget);
     });
 
     testWidgets('No Internet resumes startup when the monitor reconnects', (

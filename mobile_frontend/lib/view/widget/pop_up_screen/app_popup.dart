@@ -9,24 +9,37 @@ import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 
 /// One action button in an [AppPopup].
-class AppPopupAction {
+///
+/// [T] is the type of [result] (R06, SW-02): an action that closes the
+/// popup completes [showAppPopup]`<T>` with its [result], so a caller can
+/// await a typed answer (for example `AppPopupAction<bool>(result: true)`
+/// for a confirmation) instead of popping a navigator itself. Without a
+/// [result] the popup completes with null, as before; Cancel, the barrier,
+/// the close button and system back also complete with null.
+class AppPopupAction<T> {
   const AppPopupAction({
     required this.label,
     this.onPressed,
     this.isPrimary = false,
     this.isDestructive = false,
     this.closesPopup = true,
+    this.result,
   }) : assert(
          closesPopup || onPressed != null,
          'An action that does not close the popup needs onPressed; '
          'otherwise the button does nothing.',
+       ),
+       assert(
+         closesPopup || result == null,
+         'A result is delivered by closing the popup; an action that keeps '
+         'it open cannot return one.',
        );
 
   /// Visible text and accessible name of the button. Localized (ARB).
   final String label;
 
-  /// Runs after the popup closes (when [closesPopup] is true). Null with
-  /// [closesPopup] true: the button only closes the popup.
+  /// Runs after the popup closes (when [closesPopup] is true), at most
+  /// once. Null with [closesPopup] true: the button only closes the popup.
   final VoidCallback? onPressed;
 
   /// Primary actions render as [AppButton]; others as [AppTextButton].
@@ -36,8 +49,11 @@ class AppPopupAction {
   final bool isDestructive;
 
   /// Closes the popup before running [onPressed]. Set false when the
-  /// callback manages the popup itself.
+  /// callback manages the popup itself (it then stays open).
   final bool closesPopup;
+
+  /// The value the popup completes with when this action closes it.
+  final T? result;
 }
 
 /// The app's standard dialog: optional icon, title, a body ([message] or
@@ -105,7 +121,15 @@ class AppPopup extends StatelessWidget {
     final navigator = Navigator.of(context);
 
     void runAction(AppPopupAction action) {
-      if (action.closesPopup) navigator.pop();
+      if (action.closesPopup) {
+        // Pops the navigator that hosts this dialog (not a guessed root
+        // one) with the action's result. A second tap during the exit
+        // animation finds the route no longer current and does nothing, so
+        // the route below is never popped and the callback runs once.
+        final route = ModalRoute.of(context);
+        if (route != null && !route.isCurrent) return;
+        navigator.pop(action.result);
+      }
       action.onPressed?.call();
     }
 
@@ -214,7 +238,9 @@ class AppPopup extends StatelessWidget {
 ///
 /// [barrierDismissible] controls whether tapping outside closes it. A popup
 /// that cannot be dismissed must offer an action or the close button, or
-/// it could never be closed (assert). Actions close with a null result.
+/// it could never be closed (assert). An action that closes the popup
+/// completes it with its [AppPopupAction.result] (null when it has none);
+/// the barrier, the close button and system back complete with null.
 Future<T?> showAppPopup<T>(
   BuildContext context, {
   String? title,

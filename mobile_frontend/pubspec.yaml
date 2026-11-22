@@ -12,22 +12,17 @@ dependencies:
 
 #A
 #B
-  bloc: ^9.2.1
-  
 #C
 #D
-  dropdown_search: ^7.0.0
 #E
 #F
   flutter_bloc: ^9.1.1
-  # Official Flutter localization (gen_l10n). Not the same as the unused
-  # third-party `flutter_localization` below (see docs, D-P12).
+  # Official Flutter localization (gen_l10n). The unrelated third-party
+  # `flutter_localization` package was removed in R09 (never imported).
   flutter_localizations:
     sdk: flutter
-  flutter_localization: ^0.4.1
 #G
   google_api_headers: ^5.3.5
-  geocoding: ^5.0.1
   google_maps_flutter: ^2.18.1
   go_router: ^18.1.4
 #H
@@ -51,7 +46,6 @@ dependencies:
   responsive_framework: ^1.5.1
 #S
 #T
-  toasty_box: ^1.0.4
 #U
   url_launcher: ^6.3.3
   

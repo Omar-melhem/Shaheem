@@ -139,9 +139,34 @@ widgets. Do not share proprietary font files or promise runtime font changes.
 - **Composed text** uses ARB placeholders, never string concatenation. For
   example, a toast's screen-reader announcement is `toastAnnouncement
   ({status}: {message})`, so other languages can reorder it.
-- **Platform app names:** the historical source still has framework defaults,
-  but the approved target is Android/iOS **«شهم»** and web **«SHAHM | شهم»**
-  (D-A66). These are platform metadata, not ARB strings.
+  - **Applied in R08 (2026-11-22, LOC-02/03):** the "label: value" lines of
+    the offer card and new-offer sheet (`offerPickupLine`,
+    `offerDeliveryAreaLine`, `offerScheduledPickupLine`), the debit card
+    (`walletDebitMerchantLine`, `walletDebitDateLine`,
+    `walletDebitAmountLine`; the area line reuses `offerDeliveryAreaLine`,
+    same meaning), the balance/profile screen-reader sentences
+    (`walletBalanceCardSemantics`, `profileNameSemantics`,
+    `profilePhoneSemantics`), the metric/rating sentences formerly joined
+    with `'. '` in code (`walletMetricSemantics[WithNote]`,
+    `profileRatingSemantics[WithCount]`) and the declined-record outcome
+    with its kind (`declinedOfferOutcomeWithKind`). The former bare label
+    keys were removed after proving they had no other use.
+  - **Intentionally left as layout (not defects):** the decorative bullet
+    before each missing availability requirement (a list marker, not
+    wording); the space joining two complete sentences on the Current Order
+    location notice; the amount-plus-currency pair, which uses the shared
+    JOD formatter and the `walletCurrencySymbol` key everywhere.
+  - **Sink checklist for new text:** (1) any sentence that combines a label
+    and a value, two facts, or punctuation between parts is one ARB key with
+    named placeholders; (2) server data (merchant, area names) is a
+    placeholder value, never ARB text; (3) amounts, dates and phone numbers
+    stay LTR-isolated before insertion; (4) counts use ICU plurals; (5) a
+    screen-reader label is a sentence key too, not a `join`; (6) run
+    `flutter gen-l10n` and never edit generated files.
+- **Platform app names (D-A66):** Android/iOS **«شهم»** is set since R09
+  (2026-11-22): `android:label` in the main manifest, `CFBundleDisplayName`
+  and `CFBundleName` in `Info.plist`. Web **«SHAHM | شهم»** belongs to the
+  web portals. These are platform metadata, not ARB strings.
 
 ## 6. Assets
 

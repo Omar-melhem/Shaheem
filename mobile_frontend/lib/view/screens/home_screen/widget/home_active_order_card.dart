@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
-import 'package:mobile_frontend/view/navigation/new_offer_sheet_host.dart';
+import 'package:mobile_frontend/view/navigation/current_order_navigation.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';

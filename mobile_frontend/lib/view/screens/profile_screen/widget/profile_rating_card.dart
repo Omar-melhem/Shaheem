@@ -52,7 +52,11 @@ class ProfileRatingCard extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: [l10n.profileRatingTitle, value, ?detail].join('. '),
+      // One localized sentence (R08) instead of joining parts in code.
+      label: switch (detail) {
+        null => l10n.profileRatingSemantics(value),
+        final count => l10n.profileRatingSemanticsWithCount(value, count),
+      },
       excludeSemantics: !state.canRetry,
       child: DecoratedBox(
         decoration: BoxDecoration(
