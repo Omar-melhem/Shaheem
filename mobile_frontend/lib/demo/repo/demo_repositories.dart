@@ -8,12 +8,14 @@ import 'package:mobile_frontend/domain/entities/active_order.dart';
 import 'package:mobile_frontend/domain/entities/captain_availability.dart';
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/entities/wallet.dart';
 import 'package:mobile_frontend/domain/repositories/active_order_repository.dart';
 import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
 import 'package:mobile_frontend/domain/repositories/captain_availability_repository.dart';
 import 'package:mobile_frontend/domain/repositories/order_history_repository.dart';
 import 'package:mobile_frontend/domain/repositories/order_offer_repository.dart';
+import 'package:mobile_frontend/domain/repositories/order_workflow_repository.dart';
 import 'package:mobile_frontend/domain/repositories/wallet_repository.dart';
 
 /// Offers: list, simulated accept and decline (see [DemoState.accept] and
@@ -53,6 +55,43 @@ class DemoOrderHistoryRepository implements OrderHistoryRepository {
   @override
   Future<List<DeclinedOfferRecord>> getDeclinedOffers() async =>
       _state.declinedOffers;
+
+  /// Every demo completion in one page (the demo has no paging).
+  @override
+  Future<CompletedDeliveriesPage> getCompletedDeliveries({
+    String? cursor,
+  }) async => CompletedDeliveriesPage(items: _state.completedDeliveries);
+}
+
+/// The workflow commands against the demo "server" (PIN, start, complete,
+/// outcome). Production uses the real contract once it exists.
+class DemoOrderWorkflowRepository implements OrderWorkflowRepository {
+  const DemoOrderWorkflowRepository(this._state);
+
+  final DemoState _state;
+
+  @override
+  Future<ActiveOrder> confirmPickup(
+    OrderCommandTarget target,
+    PickupProof proof, {
+    required String operationKey,
+  }) async => _state.confirmPickup(target, proof);
+
+  @override
+  Future<ActiveOrder> startDelivery(
+    OrderCommandTarget target, {
+    required String operationKey,
+  }) async => _state.startDelivery(target);
+
+  @override
+  Future<DeliveryCompletionReceipt> completeDelivery(
+    OrderCommandTarget target, {
+    required String operationKey,
+  }) async => _state.completeDelivery(target, operationKey);
+
+  @override
+  Future<OrderOutcome> getOrderOutcome(String orderId) async =>
+      _state.outcome(orderId);
 }
 
 /// The fictional, read-only wallet and lifetime statistics. Every debit is

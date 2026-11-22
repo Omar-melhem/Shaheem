@@ -42,7 +42,11 @@ String? postSignInDestination(CurrentOrderState activeOrder) =>
       CurrentOrderActive() => RoutesString.currentOrder,
       CurrentOrderEmpty() ||
       CurrentOrderNotConfigured() ||
-      CurrentOrderFailure() => RoutesString.home,
+      CurrentOrderFailure() ||
+      // The order just ended (delivered, cancelled, reassigned): no active
+      // work, so the normal destination applies.
+      CurrentOrderDelivered() ||
+      CurrentOrderEnded() => RoutesString.home,
     };
 
 /// Whether [location] is a main-shell branch root or a route nested in one.

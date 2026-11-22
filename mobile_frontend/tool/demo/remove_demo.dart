@@ -76,10 +76,10 @@ List<String> _historicalReferenceProblems(Map<String, String> overrides) {
   if (RegExp(r'^\s*-\s*docs/', multiLine: true).hasMatch(pubspec)) {
     problems.add('pubspec.yaml registers docs/ as an asset.');
   }
-  final names = [
-    ..._historicalAuditFiles.keys.map((p) => p.split('/').last),
-    _historicalAuditDir,
-  ];
+  // The exact repository paths (not bare file names): a comment pointing
+  // at a revised report under docs/quality/ is documentation, not a use of
+  // the baseline files.
+  final names = [..._historicalAuditFiles.keys, _historicalAuditDir];
   for (final root in ['lib', 'test']) {
     final dir = Directory(root);
     if (!dir.existsSync()) continue;

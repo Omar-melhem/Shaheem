@@ -307,7 +307,21 @@ without sign-out clears the wallet before any read (R02).
 
 ### 7.1 Current Order and merchant pickup
 
-Opening the center destination fetches the server's single current active
+**Implemented workflow (D-A81, 2026-11-22).** The existing protected
+`/current-order` page renders the server-reported stage: pickup leg
+(`accepted`/`heading_to_pickup`) → map, «فتح في خرائط Google», «تم الاستلام»
+(PIN form); `picked_up` → delivery view without a map and «بدء التوصيل»;
+`on_the_way` → «تم تسليم الطلب» (after a confirmation popup); unknown
+status → explanation only. No route per stage and no new tab. On the
+transition to `CurrentOrderDelivered` the page shows one success toast and
+calls `context.go('/order-history')` once (the shell, mounted or created
+then, re-reads history and wallet). Startup and foreground recovery
+re-read the stage (including `on_the_way`); returning from Google Maps is
+an ordinary foreground recovery, and `openCurrentOrderPage` / the recovery
+push never duplicate the page. `resolveRedirect` treats delivered/ended as
+"no active work" (Home); it gained no other order rule.
+
+Opening Current Order fetches the server's single current active
 order, or explicitly reports none/unavailable/not configured; never guess
 from push or offline state. The response needs id, authoritative status,
 merchant name, merchant pickup coordinates and instructions. The detailed
@@ -330,10 +344,12 @@ specification work.
   Backend, maximum three errors then Admin. The captain must separately tap
   **Start Delivery** after `picked_up` to move to `on_the_way`.
 
-**Production boundary:** `ActiveOrderRepository` is still a placeholder
-("not configured"), so production startup/resume recovery cannot find a real
-order; the routes are demonstrated with test repositories and the debug
-demo. No live map/service exists.
+**Production boundary:** `ActiveOrderRepository`, `OrderWorkflowRepository`
+and `PickupRouteRepository` are placeholders ("not configured"), so
+production finds no real order, sends no command and computes no route;
+the workflow is demonstrated with test repositories and the debug demo.
+The Google map is built only with `--dart-define=SHAHM_GOOGLE_MAPS=true`
+plus provisioned native keys; no live map, route or backend was exercised.
 
 ## 8. Temporary debug-only preview (D-A40)
 

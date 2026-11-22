@@ -8,8 +8,10 @@ import 'package:mobile_frontend/domain/entities/app_user.dart';
 import 'package:mobile_frontend/domain/entities/captain_availability.dart';
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/entities/wallet.dart';
 import 'package:mobile_frontend/domain/errors/order_offer_exceptions.dart';
+import 'package:mobile_frontend/domain/errors/order_workflow_exceptions.dart';
 
 /// Which active order the demo server reports.
 enum DemoOrderScenario {
@@ -29,12 +31,23 @@ class DemoSession {
   final String accessToken;
 }
 
-/// One offer the demo server lists, with its resolved expiry.
+/// One offer the demo server lists, with its resolved expiry and the
+/// fixture seed it came from (fictional pickup point and phone).
 class _LiveOffer {
-  _LiveOffer(this.offer, this.expiresAt);
+  _LiveOffer(this.offer, this.expiresAt, this.seed);
 
   final CaptainOrderOffer offer;
   final DateTime? expiresAt;
+  final DemoOfferSeed seed;
+}
+
+/// The money facts of the demo active order, kept by the demo server only
+/// (the app never receives or computes them for the debit).
+class _ActiveMoney {
+  const _ActiveMoney({required this.feeFils, required this.commissionFils});
+
+  final int feeFils;
+  final int commissionFils;
 }
 
 /// Everything the demo repositories read and change, in memory only.
@@ -58,12 +71,29 @@ class DemoState extends ChangeNotifier {
   /// At most this many demo-injected offers can wait for an answer.
   static const maxInjectedOffers = 3;
 
+  /// Wrong PIN attempts before Admin intervention (D-A67).
+  static const maxPinAttempts = 3;
+
   DemoSession? _session;
   late List<_LiveOffer> _offers;
   late List<DeclinedOfferRecord> _declined;
   late WalletOverview _wallet;
   late CaptainAvailability _availability;
   ActiveOrder? _activeOrder;
+  _ActiveMoney? _activeMoney;
+
+  /// PIN attempts the demo server still allows for the active order.
+  int _pinAttemptsLeft = maxPinAttempts;
+
+  /// Completed deliveries, as the demo server records them.
+  late List<CompletedDelivery> _completed;
+
+  /// Receipts by operation key, so a repeated completion with the same key
+  /// returns the same result and creates no second debit (D-A56).
+  final Map<String, DeliveryCompletionReceipt> _completionsByKey = {};
+
+  /// Completed orders, for the outcome lookup.
+  final Map<String, DeliveryCompletionReceipt> _completedOrders = {};
   DemoOrderScenario _scenario = DemoOrderScenario.none;
   int _sequence = 0;
   int _resetCount = 0;
@@ -130,6 +160,20 @@ class DemoState extends ChangeNotifier {
     _sequence = 0;
     _scenario = DemoOrderScenario.none;
     _activeOrder = null;
+    _activeMoney = null;
+    _pinAttemptsLeft = maxPinAttempts;
+    _completionsByKey.clear();
+    _completedOrders.clear();
+    _completed = [
+      for (final c in fixtures.completed)
+        CompletedDelivery(
+          orderId: c.orderId,
+          deliveredAt: ago(c.minutesAgo).toUtc(),
+          merchantName: c.merchantName,
+          deliveryAreaName: c.deliveryArea,
+          deliveryFeeFils: c.deliveryFeeFils,
+        ),
+    ];
     _availability = fixtures.initiallyAvailable
         ? CaptainAvailability.available
         : CaptainAvailability.unavailable;
@@ -184,6 +228,7 @@ class DemoState extends ChangeNotifier {
         ),
       ),
       expires == null ? null : start.add(Duration(seconds: expires)),
+      seed,
     );
   }
 
@@ -250,13 +295,26 @@ class DemoState extends ChangeNotifier {
   void _applyScenario(DemoOrderScenario scenario) {
     _scenario = scenario;
     final seed = fixtures.assignedScenario;
-    _activeOrder = switch (scenario) {
-      DemoOrderScenario.none => null,
-      DemoOrderScenario.assigned => ActiveOrder(
-        orderId: seed.id,
-        restaurantName: seed.merchantName,
-      ),
-    };
+    _pinAttemptsLeft = maxPinAttempts;
+    switch (scenario) {
+      case DemoOrderScenario.none:
+        _activeOrder = null;
+        _activeMoney = null;
+      case DemoOrderScenario.assigned:
+        _activeOrder = ActiveOrder(
+          orderId: seed.id,
+          restaurantName: seed.merchantName,
+          status: ActiveOrderStatus.accepted,
+          assignmentRef: 'demo-assignment-${seed.id}',
+          pickupLocation: seed.pickup,
+          deliveryAreaName: seed.deliveryArea,
+          customerPhone: seed.customerPhone,
+        );
+        _activeMoney = _ActiveMoney(
+          feeFils: seed.deliveryFeeFils,
+          commissionFils: seed.commissionFils,
+        );
+    }
   }
 
   _LiveOffer _eligible(String offerId) {
@@ -280,7 +338,17 @@ class DemoState extends ChangeNotifier {
     _activeOrder = ActiveOrder(
       orderId: offer.orderId!,
       restaurantName: offer.merchantName,
+      status: ActiveOrderStatus.accepted,
+      assignmentRef: 'demo-assignment-${offer.orderId}',
+      pickupLocation: live.seed.pickup,
+      deliveryAreaName: offer.deliveryAreaName,
+      customerPhone: live.seed.customerPhone,
     );
+    _activeMoney = _ActiveMoney(
+      feeFils: offer.deliveryFeeFils,
+      commissionFils: live.seed.commissionFils,
+    );
+    _pinAttemptsLeft = maxPinAttempts;
     _scenario = DemoOrderScenario.none;
     notifyListeners();
   }
@@ -304,17 +372,146 @@ class DemoState extends ChangeNotifier {
 
   ActiveOrder? get activeOrder => _activeOrder;
 
+  /// The active order targeted by a command, or a state conflict (another
+  /// order, another assignment, or none) — as a real server would refuse.
+  ActiveOrder _target(OrderCommandTarget target) {
+    final order = _activeOrder;
+    if (order == null ||
+        order.orderId != target.orderId ||
+        order.assignmentRef != target.assignmentRef) {
+      throw const OrderStateConflictException();
+    }
+    return order;
+  }
+
+  ActiveOrder _withStatus(ActiveOrder order, ActiveOrderStatus status) =>
+      ActiveOrder(
+        orderId: order.orderId,
+        restaurantName: order.restaurantName,
+        status: status,
+        assignmentRef: order.assignmentRef,
+        pickupLocation: order.pickupLocation,
+        pickupInstructions: order.pickupInstructions,
+        deliveryAreaName: order.deliveryAreaName,
+        customerPhone: order.customerPhone,
+      );
+
+  /// Simulated PIN check (demo server only): the fixture's demo PIN, three
+  /// wrong attempts then "locked" until a reset.
+  ActiveOrder confirmPickup(OrderCommandTarget target, PickupProof proof) {
+    final order = _target(target);
+    if (order.leg != ActiveOrderLeg.pickup) {
+      throw const OrderStateConflictException();
+    }
+    if (_pinAttemptsLeft <= 0) throw const PickupCodeLockedException();
+    final pin = switch (proof) {
+      PickupPinProof(:final digits) => digits,
+    };
+    if (pin != fixtures.pickupPin) {
+      _pinAttemptsLeft--;
+      notifyListeners();
+      if (_pinAttemptsLeft <= 0) throw const PickupCodeLockedException();
+      throw PickupCodeIncorrectException(remainingAttempts: _pinAttemptsLeft);
+    }
+    final next = _withStatus(order, ActiveOrderStatus.pickedUp);
+    _activeOrder = next;
+    notifyListeners();
+    return next;
+  }
+
+  /// Simulated Start Delivery: only from `picked_up`.
+  ActiveOrder startDelivery(OrderCommandTarget target) {
+    final order = _target(target);
+    if (order.status != ActiveOrderStatus.pickedUp) {
+      throw const OrderStateConflictException();
+    }
+    final next = _withStatus(order, ActiveOrderStatus.onTheWay);
+    _activeOrder = next;
+    notifyListeners();
+    return next;
+  }
+
+  /// Simulated completion in one step: the order is recorded as delivered,
+  /// exactly one commission debit is appended and the balance updated. A
+  /// repeat with the same [operationKey] returns the same receipt and
+  /// changes nothing (demo of the D-A56 idempotency the server must have).
+  DeliveryCompletionReceipt completeDelivery(
+    OrderCommandTarget target,
+    String operationKey,
+  ) {
+    final repeated = _completionsByKey[operationKey];
+    if (repeated != null) return repeated;
+    final order = _target(target);
+    if (order.status != ActiveOrderStatus.onTheWay) {
+      throw const OrderStateConflictException();
+    }
+    final money = _activeMoney!;
+    final at = now.toUtc();
+    final receipt = DeliveryCompletionReceipt(
+      orderId: order.orderId,
+      deliveredAt: at,
+      receiptRef: 'demo-receipt-${order.orderId}',
+    );
+    _completed.add(
+      CompletedDelivery(
+        orderId: order.orderId,
+        deliveredAt: at,
+        merchantName: order.restaurantName,
+        deliveryAreaName: order.deliveryAreaName,
+        deliveryFeeFils: money.feeFils,
+      ),
+    );
+    _wallet = WalletOverview(
+      summary: WalletSummary(
+        balanceFils: _wallet.summary.balanceFils - money.commissionFils,
+      ),
+      debits: [
+        ..._wallet.debits,
+        WalletCommissionDebit(
+          id: 'demo-debit-${order.orderId}',
+          debitedAt: at,
+          commissionFils: money.commissionFils,
+          merchantName: order.restaurantName,
+          deliveryAreaName: order.deliveryAreaName,
+          orderId: order.orderId,
+        ),
+      ],
+    );
+    _completionsByKey[operationKey] = receipt;
+    _completedOrders[order.orderId] = receipt;
+    _activeOrder = null;
+    _activeMoney = null;
+    notifyListeners();
+    return receipt;
+  }
+
+  /// What happened to [orderId], for reconciling an unknown outcome.
+  OrderOutcome outcome(String orderId) {
+    final delivered = _completedOrders[orderId];
+    if (delivered != null) return OrderOutcomeDelivered(delivered);
+    final order = _activeOrder;
+    if (order != null && order.orderId == orderId) {
+      return OrderOutcomeActive(order);
+    }
+    return const OrderOutcomeUnresolved();
+  }
+
+  /// Completed deliveries, newest first (the demo server's sort).
+  List<CompletedDelivery> get completedDeliveries => List.unmodifiable(
+    [..._completed]..sort((a, b) => b.deliveredAt.compareTo(a.deliveredAt)),
+  );
+
   List<DeclinedOfferRecord> get declinedOffers => List.unmodifiable(_declined);
 
-  /// Read-only fictional wallet (never changed by accept/decline: there is
-  /// no hold, and no completion flow exists in the app to debit).
+  /// The fictional wallet: never changed by accept/decline (no hold);
+  /// a simulated completion appends one commission debit (D-A74).
   WalletOverview get wallet => _wallet;
 
   /// Lifetime delivered count as this fictional "server" records it: every
   /// completed delivery in the fixtures, including ones older than the
   /// 7-day debit window. Earnings stay null (formula pending, D-P36).
   CaptainDeliveryStatistics get deliveryStatistics =>
-      CaptainDeliveryStatistics(deliveredCount: fixtures.completedCount);
+      CaptainDeliveryStatistics(deliveredCount: _completed.length);
 
   CaptainAvailability get availability => _availability;
 

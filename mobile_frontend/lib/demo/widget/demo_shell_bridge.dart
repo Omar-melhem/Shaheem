@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_frontend/demo/demo_state.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
+import 'package:mobile_frontend/view/screens/order_history_screen/cubit/completed_deliveries_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/declined_offers_cubit.dart';
 
 /// Mounted inside the main shell (under its providers) only in the demo.
@@ -59,6 +60,7 @@ class _DemoShellBridgeState extends State<DemoShellBridge> {
     if (resets != _seenResets) {
       _seenResets = resets;
       unawaited(context.read<DeclinedOffersCubit>().refresh());
+      unawaited(context.read<CompletedDeliveriesCubit>().refresh());
     }
   }
 

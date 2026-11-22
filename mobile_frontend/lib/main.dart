@@ -37,6 +37,14 @@ import 'package:mobile_frontend/domain/use_cases/sign_in.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
 import 'package:mobile_frontend/helper/network/internet_connection_service.dart';
 import 'package:mobile_frontend/helper/translation/generated/app_localizations.dart';
+import 'package:mobile_frontend/data/repositories/order_workflow_repository_placeholder.dart';
+import 'package:mobile_frontend/data/repositories/pickup_route_repository_placeholder.dart';
+import 'package:mobile_frontend/domain/repositories/order_workflow_repository.dart';
+import 'package:mobile_frontend/domain/repositories/pickup_route_repository.dart';
+import 'package:mobile_frontend/domain/use_cases/get_completed_deliveries.dart';
+import 'package:mobile_frontend/domain/use_cases/get_pickup_route.dart';
+import 'package:mobile_frontend/domain/use_cases/order_workflow.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/google_pickup_map.dart';
 import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
 import 'package:mobile_frontend/util/routes/debug_shell_preview.dart';
@@ -74,6 +82,9 @@ void main() {
     MainApp(
       connectivityService: InternetConnectionCheckerPlusService(),
       authRepository: const AuthRepositoryPlaceholder(),
+      // The Google map only when the native keys were provisioned
+      // (`--dart-define=SHAHM_GOOGLE_MAPS=true`); otherwise "unavailable".
+      pickupMapBuilder: configuredPickupMapBuilder,
     ),
   );
 }
@@ -100,6 +111,8 @@ class MainApp extends StatefulWidget {
     this.walletRepository = const WalletRepositoryPlaceholder(),
     this.orderHistoryRepository = const OrderHistoryRepositoryPlaceholder(),
     this.captainAccountRepository = const CaptainAccountRepositoryPlaceholder(),
+    this.orderWorkflowRepository = const OrderWorkflowRepositoryPlaceholder(),
+    this.pickupRouteRepository = const PickupRouteRepositoryPlaceholder(),
     // SHAHM_DEMO_START main-params
     this.demoAppOverlay,
     this.demoShellBuilder,
@@ -151,6 +164,15 @@ class MainApp extends StatefulWidget {
   /// configured": no rating is shown and no deletion is ever sent or
   /// claimed until the real API exists.
   final CaptainAccountRepository captainAccountRepository;
+
+  /// Pickup verification, Start Delivery, completion and the outcome
+  /// lookup (D-A81). Defaults to the placeholder, which reports "backend
+  /// not configured": no command is sent and no stage ever advances.
+  final OrderWorkflowRepository orderWorkflowRepository;
+
+  /// The captain → merchant driving route (Google Routes, D-A62). Defaults
+  /// to the placeholder ("not configured": no route, no straight line).
+  final PickupRouteRepository pickupRouteRepository;
   // SHAHM_DEMO_START main-fields
   /// Debug demo only (Task 37): wraps every screen (the demo strip).
   final TransitionBuilder? demoAppOverlay;
@@ -206,6 +228,11 @@ class _MainAppState extends State<MainApp> {
     _currentOrderCubit = CurrentOrderCubit(
       GetActiveOrder(widget.activeOrderRepository),
       GetCaptainLocation(widget.captainLocationRepository),
+      confirmPickup: ConfirmPickup(widget.orderWorkflowRepository),
+      startDelivery: StartDelivery(widget.orderWorkflowRepository),
+      completeDelivery: CompleteDelivery(widget.orderWorkflowRepository),
+      getOrderOutcome: GetOrderOutcome(widget.orderWorkflowRepository),
+      getPickupRoute: GetPickupRoute(widget.pickupRouteRepository),
     );
     // Startup / sign-in: resolve the active order before the post-sign-in
     // destination is chosen (the redirect waits for it). Sign-out: drop
@@ -235,6 +262,9 @@ class _MainAppState extends State<MainApp> {
       getWallet: GetWallet(widget.walletRepository),
       getDeliveryStatistics: GetDeliveryStatistics(widget.walletRepository),
       getDeclinedOffers: GetDeclinedOffers(widget.orderHistoryRepository),
+      getCompletedDeliveries: GetCompletedDeliveries(
+        widget.orderHistoryRepository,
+      ),
       getCaptainRating: GetCaptainRating(widget.captainAccountRepository),
       requestAccountDeletion: RequestAccountDeletion(
         widget.captainAccountRepository,

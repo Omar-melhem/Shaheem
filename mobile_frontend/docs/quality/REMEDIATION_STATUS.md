@@ -54,6 +54,19 @@ issues; `flutter test` 1,034 passed / 0 failed; demo dry run OK; isolated
 | DOC-01 | Audit reports in `docs/` made the demo-removal dry run fail | Defect (tooling interaction), reproduced | Medium | D-A80 | `quality/AUDIT_METHOD.md` §6, `tool/demo/README.md` | `tool/demo/remove_demo.dart` | Narrow sha-pinned classification + runtime-use guard | fixed-verified | live dry run OK; copy: apply OK, 4 negative checks rejected, archive snapshot allowed | — | L-14 |
 | LOC-06 (new) | `confirm`, `alert`, `proceedQuestion` unused in production after R05 | Recommendation | — | — | lessons (recommendations) | ARB, popup tests | keep as test sample copy; remove or reuse later | recommendation | key-usage scan | — | — |
 
+## Current Order workflow (D-A81, 2026-11-22)
+
+| ID | Problem and evidence | Classification | Status | Actual verification | Open input | Lesson |
+|---|---|---|---|---|---|---|
+| CO-01 | Docs implied a mandatory customer call before Start Delivery | Product wording defect | fixed-verified | D-A81, PRODUCT_OVERVIEW; phone-variant tests | — | L-15 |
+| CO-02 | Workflow commands need server authority, keys, no local stage advance | Design rule (applied) | fixed-verified | cubit workflow tests | API contract | L-16 |
+| CO-03 | An "absent" read during an in-flight completion could drop the confirmed result | Defect (source-confirmed race) | fixed-verified | deterministic cubit test | — | L-17 |
+| CO-04 | PIN submit unreachable at 320 px × text 2.0 when placed in the popup body | Defect (reproduced in test) | fixed-verified | large-text widget test | — | L-18 |
+| CO-05 | Scanner guard false positive on a doc comment naming the revised report | Defect (reproduced by dry run) | fixed-verified | live dry run OK | — | L-19 |
+| CO-06 | Map/route must never be faked | Design rule (applied) | fixed-unverified (no keyed build, no tiles) | launcher tests; iOS debug simulator build compiles | Maps keys/billing, Routes access design | L-20 |
+
+**V2 (2026-11-22, working tree on `cefad0a`):** see `../project/PROJECT_STATUS.md` §0.2.
+
 ## Backlog (contract- or owner-blocked work)
 
 B-01 auth/session · B-02 offers · B-03 active-order workflow and maps ·

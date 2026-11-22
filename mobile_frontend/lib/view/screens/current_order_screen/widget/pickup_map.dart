@@ -10,6 +10,7 @@ class PickupMapData {
     required this.restaurantName,
     required this.pickup,
     this.captainLocation,
+    this.routePath,
   });
 
   /// The order this map belongs to.
@@ -18,20 +19,25 @@ class PickupMapData {
   /// Title for the destination marker.
   final String restaurantName;
 
-  /// Destination: the RESTAURANT's well-formed coordinates. There is no
-  /// customer address in this type on purpose.
+  /// Destination: the MERCHANT's valid coordinates. There is no customer
+  /// address in this type on purpose (D-A62).
   final GeoPoint pickup;
 
   /// The captain's position; null when permission was denied or no
   /// position is available, in which case only the destination is shown.
   final GeoPoint? captainLocation;
+
+  /// The road route from the routing source (captain → merchant), or null.
+  /// Never a straight line drawn by the app.
+  final List<GeoPoint>? routePath;
 }
 
 /// Builds the in-app map for [PickupMapData].
 ///
-/// No maps provider is approved or configured yet (D-P05), so the app
-/// passes no builder and the screen shows a "map unavailable" state. When a
-/// provider is chosen, its widget is plugged in here; a route line or
-/// turn-by-turn guidance additionally needs a routing provider.
+/// The approved provider is Google Maps Flutter (D-A62). Its adapter is
+/// `googlePickupMapBuilder` (`google_pickup_map.dart`), enabled only when
+/// the native keys are provisioned (`--dart-define=SHAHM_GOOGLE_MAPS=true`);
+/// otherwise no builder is passed and the screen says the map is
+/// unavailable.
 typedef PickupMapBuilder =
     Widget Function(BuildContext context, PickupMapData data);

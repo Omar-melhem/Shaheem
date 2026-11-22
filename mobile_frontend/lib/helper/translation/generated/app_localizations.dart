@@ -442,12 +442,6 @@ abstract class AppLocalizations {
   /// **'التنقل الرئيسي'**
   String get mainNavigationLabel;
 
-  /// Order History note: completed-delivery history is not built yet (declined offers have their own section since Task 36).
-  ///
-  /// In ar, this message translates to:
-  /// **'سجل التوصيلات المكتملة قيد التطوير وسيتوفر قريباً.'**
-  String get orderHistoryPlaceholderMessage;
-
   /// Login screen heading.
   ///
   /// In ar, this message translates to:
@@ -633,6 +627,354 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'خدمة تحديد الموقع غير متاحة بعد.'**
   String get locationNotConfigured;
+
+  /// Current Order pickup leg (D-A81): opens the pickup-verification form. Typing or confirming alone never marks pickup.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الاستلام'**
+  String get pickupConfirmAction;
+
+  /// Current Order pickup leg: opens the Google Maps app with driving directions to the merchant only.
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح في خرائط Google'**
+  String get openInGoogleMaps;
+
+  /// The Google Maps app is not installed or cannot be opened; no other map app was chosen.
+  ///
+  /// In ar, this message translates to:
+  /// **'تطبيق خرائط Google غير متاح على هذا الجهاز، لذلك لم تُفتح الملاحة.'**
+  String get googleMapsAppUnavailable;
+
+  /// Launching the Google Maps app failed.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر فتح خرائط Google. حاول مرة أخرى.'**
+  String get googleMapsLaunchFailed;
+
+  /// The merchant coordinates are missing or invalid, so no navigation destination exists.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يمكن فتح الملاحة لأن موقع المطعم غير متوفر.'**
+  String get pickupNavigationUnavailable;
+
+  /// Pickup route (Google Routes DRIVE, no live traffic): road distance in km (LTR-isolated) and duration in minutes from the routing source.
+  ///
+  /// In ar, this message translates to:
+  /// **'المسافة {distance} كم · الوقت المتوقع {minutes, plural, =1{دقيقة واحدة} =2{دقيقتان} few{{minutes} دقائق} many{{minutes} دقيقة} other{{minutes} دقيقة}}'**
+  String routeDistanceAndTime(String distance, int minutes);
+
+  /// No routing source is configured; no straight line is drawn instead.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يتم إعداد حساب المسار بعد، لذلك لا يظهر مسار أو وقت متوقع.'**
+  String get routeNotConfigured;
+
+  /// The routing source returned no route.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر حساب المسار حالياً.'**
+  String get routeUnavailable;
+
+  /// A route needs the captain position, which is not available.
+  ///
+  /// In ar, this message translates to:
+  /// **'يظهر المسار بعد تحديد موقعك.'**
+  String get routeNeedsCaptainLocation;
+
+  /// Screen-reader label of the Google pickup map; {restaurant} is the merchant name (server data).
+  ///
+  /// In ar, this message translates to:
+  /// **'خريطة الاستلام من {restaurant}'**
+  String pickupMapSemantics(String restaurant);
+
+  /// Title of the captain's own marker on the pickup map.
+  ///
+  /// In ar, this message translates to:
+  /// **'موقعك'**
+  String get captainMarkerTitle;
+
+  /// Pickup-verification form title (D-A81).
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد استلام الطلب'**
+  String get pickupVerificationTitle;
+
+  /// Pickup-verification form: the merchant gives the order-specific four-digit PIN after handover (D-A67).
+  ///
+  /// In ar, this message translates to:
+  /// **'اطلب من المطعم رمز الاستلام المكوّن من 4 أرقام وأدخله هنا.'**
+  String get pickupVerificationMessage;
+
+  /// Pickup PIN field label.
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز الاستلام'**
+  String get pickupPinLabel;
+
+  /// Pickup PIN validation: empty.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل رمز الاستلام.'**
+  String get pickupPinRequired;
+
+  /// Pickup PIN validation: not exactly four digits (syntax only; correctness is checked by the server).
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز الاستلام يتكوّن من 4 أرقام.'**
+  String get pickupPinFormat;
+
+  /// Pickup-verification form submit action.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد الاستلام'**
+  String get pickupVerificationSubmit;
+
+  /// Pickup-verification form: the PIN was sent and the server answer is awaited.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ التحقق من الرمز…'**
+  String get pickupVerificationSending;
+
+  /// The server rejected the PIN and did not say how many attempts remain.
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز الاستلام غير صحيح.'**
+  String get pickupPinIncorrect;
+
+  /// The server rejected the PIN and supplied the remaining attempts (never counted on the phone).
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز الاستلام غير صحيح. {count, plural, =0{لم تتبقَّ محاولات} =1{تبقّت محاولة واحدة} =2{تبقّت محاولتان} few{تبقّت {count} محاولات} many{تبقّت {count} محاولة} other{تبقّت {count} محاولة}}.'**
+  String pickupPinIncorrectRemaining(int count);
+
+  /// No PIN attempts remain (server-enforced, three) — Admin intervention (D-A67).
+  ///
+  /// In ar, this message translates to:
+  /// **'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة لإكمال الاستلام.'**
+  String get pickupPinLocked;
+
+  /// Delivery view (D-A81): heading above the destination area (an area, never an address).
+  ///
+  /// In ar, this message translates to:
+  /// **'منطقة التسليم'**
+  String get deliveryDestinationHeading;
+
+  /// Delivery view: the server sent no destination area.
+  ///
+  /// In ar, this message translates to:
+  /// **'منطقة التسليم غير متوفرة'**
+  String get deliveryAreaUnavailable;
+
+  /// Delivery view: shown only when the merchant supplied a phone (optional, D-A81).
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم هاتف العميل'**
+  String get customerPhoneHeading;
+
+  /// Screen-reader sentence for the optional customer phone.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم هاتف العميل: {phone}'**
+  String customerPhoneSemantics(String phone);
+
+  /// Delivery view: where the order was collected; {merchant} is server data.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الاستلام من {merchant}'**
+  String pickedUpFromLine(String merchant);
+
+  /// Delivery view, status picked_up.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم استلام الطلب. اضغط «بدء التوصيل» عند انطلاقك.'**
+  String get deliveryStatusPickedUp;
+
+  /// Delivery view, status on_the_way.
+  ///
+  /// In ar, this message translates to:
+  /// **'أنت في الطريق إلى منطقة التسليم.'**
+  String get deliveryStatusOnTheWay;
+
+  /// Separate Start Delivery action (picked_up → on_the_way), explicitly retained (D-A81).
+  ///
+  /// In ar, this message translates to:
+  /// **'بدء التوصيل'**
+  String get startDeliveryAction;
+
+  /// Completion action, only after a confirmed start (on_the_way).
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تسليم الطلب'**
+  String get completeDeliveryAction;
+
+  /// Completion confirmation title.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد تسليم الطلب؟'**
+  String get completeDeliveryConfirmTitle;
+
+  /// Completion confirmation: the server records the delivery and debits the commission once (D-A74).
+  ///
+  /// In ar, this message translates to:
+  /// **'أكّد فقط بعد تسليم الطلب. سيُسجَّل التسليم وتُخصم عمولة الطلب من محفظتك مرة واحدة.'**
+  String get completeDeliveryConfirmMessage;
+
+  /// Completion confirmation: the only control that sends the command.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد التسليم'**
+  String get completeDeliveryConfirmAction;
+
+  /// A workflow command found no backend: nothing was sent.
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة الطلبات غير متصلة بالتطبيق بعد، لذلك لم يُرسل الإجراء ولم تتغيّر حالة الطلب.'**
+  String get orderCommandNotConfigured;
+
+  /// A workflow command was not sent because the device is offline.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت، ولم يُرسل الإجراء. حاول مرة أخرى.'**
+  String get orderCommandNoInternet;
+
+  /// A workflow command timed out or its answer was lost: the outcome is unknown (R04).
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يصل ردّ من الخادم في الوقت المحدد، لذلك لا نعرف إن تم تنفيذ الإجراء. تحقّق من حالة الطلب قبل المحاولة مجدداً.'**
+  String get orderCommandUnconfirmed;
+
+  /// The server refused the command because the order changed (already advanced, cancelled or reassigned).
+  ///
+  /// In ar, this message translates to:
+  /// **'تغيّرت حالة الطلب على الخادم، لذلك لم يُنفَّذ الإجراء. جارٍ تحديث بياناته.'**
+  String get orderCommandStateConflict;
+
+  /// Reads the authoritative order/outcome after an unconfirmed command; never resends with a new key.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحقّق من حالة الطلب'**
+  String get orderCommandCheckStatus;
+
+  /// The outcome lookup itself failed; the outcome stays unknown.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر التحقق من حالة الطلب الآن. حاول مرة أخرى.'**
+  String get orderCommandCheckFailed;
+
+  /// The outcome lookup says the operation is not resolved yet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يحسم الخادم نتيجة الإجراء بعد. تحقّق مرة أخرى بعد قليل.'**
+  String get orderCommandCheckPending;
+
+  /// The server reported a status this app version does not know; no action is offered.
+  ///
+  /// In ar, this message translates to:
+  /// **'حالة الطلب غير مدعومة في هذا الإصدار'**
+  String get orderStatusUnsupportedTitle;
+
+  /// Advice for an unsupported status.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدّث الصفحة، وإن استمرت المشكلة تواصل مع الإدارة.'**
+  String get orderStatusUnsupportedMessage;
+
+  /// Server-confirmed completion.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تسليم الطلب'**
+  String get deliveryCompletedTitle;
+
+  /// After a confirmed completion the history and wallet are re-read; they may lag briefly.
+  ///
+  /// In ar, this message translates to:
+  /// **'يتم الآن تحديث طلباتك ومحفظتك.'**
+  String get deliveryCompletedMessage;
+
+  /// Outcome lookup: the order was cancelled (no completion debit).
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إلغاء الطلب'**
+  String get orderCancelledTitle;
+
+  /// Outcome lookup: the order was reassigned.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُسند الطلب إلى كابتن آخر'**
+  String get orderReassignedTitle;
+
+  /// The order is no longer this captain's work.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يعد هذا الطلب ضمن مهامك.'**
+  String get orderEndedMessage;
+
+  /// Current Order: back to Home after the order ended.
+  ///
+  /// In ar, this message translates to:
+  /// **'العودة إلى الرئيسية'**
+  String get currentOrderBackHome;
+
+  /// My Orders (D-A81): completed deliveries section, as the server records them.
+  ///
+  /// In ar, this message translates to:
+  /// **'الطلبات المكتملة'**
+  String get completedDeliveriesHeading;
+
+  /// Completed deliveries: loading.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تحميل الطلبات المكتملة…'**
+  String get completedDeliveriesLoading;
+
+  /// Completed deliveries: the server confirmed none.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات مكتملة بعد.'**
+  String get completedDeliveriesEmpty;
+
+  /// Completed deliveries: no history backend; nothing was checked.
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمة سجل الطلبات غير متصلة بعد، لذلك لا يمكن عرض الطلبات المكتملة.'**
+  String get completedDeliveriesNotConfigured;
+
+  /// Completed deliveries: no session (debug preview).
+  ///
+  /// In ar, this message translates to:
+  /// **'سجّل الدخول لعرض طلباتك المكتملة.'**
+  String get completedDeliveriesNoSession;
+
+  /// Completed deliveries: offline.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تعذّر تحميل الطلبات المكتملة.'**
+  String get completedDeliveriesNoInternet;
+
+  /// Completed deliveries: failure or timeout.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل الطلبات المكتملة الآن.'**
+  String get completedDeliveriesLoadFailed;
+
+  /// Completed deliveries: reads the next page from the server's cursor.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض المزيد'**
+  String get completedDeliveriesLoadMore;
+
+  /// Completed delivery record outcome line.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم التسليم'**
+  String get completedDeliveryOutcome;
+
+  /// Completed delivery: the full delivery fee; {amount} LTR-isolated JOD, {currency} the symbol.
+  ///
+  /// In ar, this message translates to:
+  /// **'أجرة التوصيل: {amount} {currency}'**
+  String completedDeliveryFeeLine(String amount, String currency);
 
   /// Static text below the Login form, before the contact-administration action.
   ///

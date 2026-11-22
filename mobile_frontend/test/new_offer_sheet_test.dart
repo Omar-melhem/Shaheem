@@ -16,6 +16,7 @@ import 'package:mobile_frontend/data/repositories/order_history_repository_place
 import 'package:mobile_frontend/domain/entities/active_order.dart';
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/errors/order_history_exceptions.dart';
 import 'package:mobile_frontend/domain/errors/order_offer_exceptions.dart';
 import 'package:mobile_frontend/domain/repositories/order_history_repository.dart';
@@ -139,6 +140,11 @@ class _GatedHistory implements OrderHistoryRepository {
     _gates.add(gate);
     return gate.future;
   }
+
+  @override
+  Future<CompletedDeliveriesPage> getCompletedDeliveries({
+    String? cursor,
+  }) async => const CompletedDeliveriesPage(items: []);
 }
 
 /// History backend whose answer each test controls.
@@ -155,6 +161,11 @@ class FakeHistory implements OrderHistoryRepository {
     if (error != null) throw error!;
     return records;
   }
+
+  @override
+  Future<CompletedDeliveriesPage> getCompletedDeliveries({
+    String? cursor,
+  }) async => const CompletedDeliveriesPage(items: []);
 }
 
 Finder get sheet => find.byType(NewOrderOfferSheet);
@@ -892,6 +903,8 @@ void main() {
       await tapTab(tester, MainNavDestination.wallet);
       offers.commandPending = Completer();
       offers.onAccepted = (_) => orders.order = const ActiveOrder(
+        status: ActiveOrderStatus.accepted,
+
         orderId: 'order-n1',
         restaurantName: 'مطعم n1',
       );
@@ -943,6 +956,8 @@ void main() {
         ],
       );
       offers.onAccepted = (_) => orders.order = const ActiveOrder(
+        status: ActiveOrderStatus.accepted,
+
         orderId: 'order-h1',
         restaurantName: 'مطعم h1',
       );
@@ -962,13 +977,21 @@ void main() {
     for (final (name, active, orderId) in [
       (
         'a different active order',
-        const ActiveOrder(orderId: 'other', restaurantName: 'آخر'),
+        const ActiveOrder(
+          status: ActiveOrderStatus.accepted,
+          orderId: 'other',
+          restaurantName: 'آخر',
+        ),
         'order-n1',
       ),
       ('no active order', null, 'order-n1'),
       (
         'an offer without an order id',
-        const ActiveOrder(orderId: 'order-n1', restaurantName: 'م'),
+        const ActiveOrder(
+          status: ActiveOrderStatus.accepted,
+          orderId: 'order-n1',
+          restaurantName: 'م',
+        ),
         null,
       ),
     ]) {

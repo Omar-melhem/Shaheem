@@ -42,6 +42,33 @@ D-A13, D-A20, D-A38, D-A41, D-R06, D-R07, C-33.
 | Wallet delivery statistics (D-A76) | Same `WalletCubit`, independent read | Read only by Wallet (`ensureLoaded()` on first show, `load()` on re-show), never by Home | Lifetime delivered-order count and earnings from an explicit typed read model with their own loading / unavailable / not configured states; a statistics failure never clears the balance; unknown never reads as zero; earnings unavailable until D-P36 |
 | Profile rating (D-A77) | Feature (Profile branch) | Profile route builder; closed on sign-out | Typed rating read model (unknown vs no ratings vs value); name/phone are read from `AppSessionCubit`, never copied into a second store. Reloaded on re-show and visible resume since R03; a re-read keeps the confirmed value on screen; overlapping triggers send one request |
 
+- **Current Order workflow (D-A81, 2026-11-22).** The one app-level
+  `CurrentOrderCubit` also owns the stage commands: `confirmPickup(rawPin)`,
+  `startDelivery()`, `completeDelivery()` and `checkCommandStatus()`. Its
+  `CurrentOrderActive` carries the authoritative order (stage =
+  `order.status` as the server reported it), the pickup map inputs
+  (captain location, route — pickup leg only) and one
+  `OrderCommandFeedback` (sending, or the typed error of the last command
+  for this order). Rules: a command is offered only for its server stage;
+  one at a time; a malformed PIN sends nothing; the PIN is never stored in
+  state; each start/complete attempt keeps its operation key after an
+  **unconfirmed** outcome and the action stays blocked until
+  `checkCommandStatus()` reconciles (pickup/start: a fresh read;
+  completion: `GetOrderOutcome`, because a missing active order does not
+  prove delivery); a read of an absent order while a command is in flight
+  is not applied; answers for another order/assignment/session are
+  dropped. A re-read of a shown order keeps it on screen (no loading flash)
+  and keeps the feedback only while order, assignment and stage are
+  unchanged. Confirmed completion → `CurrentOrderDelivered(receipt)`; a
+  reconciled cancellation/reassignment → `CurrentOrderEnded`. No second
+  active-order cache and no Cubit per button.
+- **Completed deliveries (D-A81).** `CompletedDeliveriesCubit` is
+  shell-scoped like `DeclinedOffersCubit`: `load()` (first page), `loadMore()`
+  (server cursor), `refresh()` (coalesced; nothing before the first entry).
+  After `CurrentOrderDelivered` the shell's listener calls it and
+  `WalletCubit.invalidate()` (balance/debits, plus statistics only if Wallet
+  read them; a read in flight gets one follow-up). A refresh failure never
+  turns a confirmed delivery into a failure and never resends completion.
 - **One owner per cross-screen read model (R02, lesson L-02).** When two
   screens show the same server value (the balance on Home and Wallet), they
   select it from **one** Cubit at their least common scope. A second Cubit,

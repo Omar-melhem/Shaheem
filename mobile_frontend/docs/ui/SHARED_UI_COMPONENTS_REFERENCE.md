@@ -47,6 +47,20 @@ chip opens Wallet.
 > - Details and evidence: `../quality/REMEDIATION_STATUS.md`,
 >   `../quality/ENGINEERING_LESSONS.md`.
 
+> **Current Order workflow 2026-11-22 (D-A81):** no shared public API
+> changed. The feature reuses `AppButton` («تم الاستلام», «بدء التوصيل»,
+> «تم تسليم الطلب», the PIN submit as a pinned `AppPopupAction`),
+> `AppTextButton` («فتح في خرائط Google», «تحقّق من حالة الطلب»),
+> `AppTextFormField` (PIN, with input formatters for digits and length
+> 4), typed `showAppPopup` / `AppPopupAction<bool>` (completion
+> confirmation), `AppStatusMessage` and `showAppToast`. New widgets are
+> **feature-scoped** in `current_order_screen/widget/`
+> (`ActiveOrderDeliveryView`, `CustomerContactCard`, `PickupVerificationForm`,
+> `OrderCommandNotice`, `GooglePickupMap`) and `order_history_screen/widget/`
+> (`CompletedDeliveryTile`): none has a second consumer, so none moved to
+> `view/widget/`. Lesson learned: put a form's submit/cancel in the popup's
+> pinned actions, not in its scrolling body (large text hid a body button).
+
 ## 1. Purpose and scope
 
 Covers:

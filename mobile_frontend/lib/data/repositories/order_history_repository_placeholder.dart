@@ -1,6 +1,7 @@
 // Temporary OrderHistoryRepository used until the history backend exists.
 
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/errors/order_history_exceptions.dart';
 import 'package:mobile_frontend/domain/repositories/order_history_repository.dart';
 
@@ -13,6 +14,14 @@ class OrderHistoryRepositoryPlaceholder implements OrderHistoryRepository {
 
   @override
   Future<List<DeclinedOfferRecord>> getDeclinedOffers() async {
+    throw const OrderHistoryBackendNotConfiguredException();
+  }
+
+  /// Never "no deliveries": nothing was checked.
+  @override
+  Future<CompletedDeliveriesPage> getCompletedDeliveries({
+    String? cursor,
+  }) async {
     throw const OrderHistoryBackendNotConfiguredException();
   }
 }

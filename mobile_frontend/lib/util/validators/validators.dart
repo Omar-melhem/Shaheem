@@ -151,6 +151,33 @@ abstract final class Validators {
     return buffer.toString();
   }
 
+  /// Length of the merchant pickup PIN (D-A67).
+  static const int pickupPinDigits = 4;
+
+  /// The pickup PIN to validate and send (D-A81): edges trimmed and every
+  /// Latin, Arabic-Indic or Extended Arabic-Indic digit turned into its
+  /// Latin equivalent, **leading zeros kept** (it is a code, not a number).
+  /// Any other character is left as typed, so [pickupPin] rejects it
+  /// instead of silently dropping it.
+  static String normalizePickupPin(String raw) {
+    final buffer = StringBuffer();
+    for (final rune in raw.trim().runes) {
+      buffer.writeCharCode(_latinDigit(rune) ?? rune);
+    }
+    return buffer.toString();
+  }
+
+  /// Syntax only: exactly [pickupPinDigits] digits after
+  /// [normalizePickupPin]. Whether the code is correct is decided by the
+  /// server alone; the app never knows or compares the expected PIN.
+  static ValidationError? pickupPin(String? value) {
+    final pin = normalizePickupPin(value ?? '');
+    if (pin.isEmpty) return ValidationError.pickupPinRequired;
+    return RegExp(r'^\d{4}$').hasMatch(pin)
+        ? null
+        : ValidationError.pickupPinFormat;
+  }
+
   /// The Latin digit code unit (`0`-`9`) for a Latin, Arabic-Indic (٠-٩) or
   /// Extended Arabic-Indic (۰-۹) digit [rune], or null for anything else.
   static int? _latinDigit(int rune) {

@@ -44,6 +44,12 @@ import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_delivery_view.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/customer_contact_card.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_verification_form.dart';
+import 'package:mobile_frontend/view/screens/order_history_screen/widget/completed_delivery_tile.dart';
+
 import 'fakes.dart';
 import 'test_app.dart';
 
@@ -479,6 +485,72 @@ void main() {
       expect(http.attempts, 0);
     });
 
+    // D-A81 through the demo "server": every step is simulated in memory.
+    testWidgets('accept → wrong PIN → demo PIN → delivery view with the '
+        'optional phone → Start Delivery → completion → My Orders lists it '
+        'and Wallet shows one more commission debit', (tester) async {
+      setScreenSize(tester, 420, 2600);
+      await launch(tester);
+      await signIn(tester);
+      CurrentOrderCubit cubitOf() =>
+          tester.element(navBar).read<CurrentOrderCubit>();
+      await tester.tap(find.text(l10n.demoShowNewOffer));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.offerAcceptFull));
+      await tester.pumpAndSettle();
+      expect(find.byType(ActiveOrderPickupView), findsOneWidget);
+
+      Future<void> enterPin(String pin) async {
+        await tester.tap(find.text(l10n.pickupConfirmAction));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(PickupVerificationForm),
+            matching: find.byType(EditableText),
+          ),
+          pin,
+        );
+        await tester.tap(
+          find.widgetWithText(AppButton, l10n.pickupVerificationSubmit),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await enterPin('9999');
+      expect(find.text(l10n.pickupPinIncorrectRemaining(2)), findsOneWidget);
+      await tester.tap(find.text(l10n.cancel));
+      await tester.pumpAndSettle();
+      await enterPin('1234');
+      expect(find.byType(ActiveOrderDeliveryView), findsOneWidget);
+      expect(find.byType(CustomerContactCard), findsOneWidget);
+      await tester.tap(find.text(l10n.startDeliveryAction));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.completeDeliveryAction));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.completeDeliveryConfirmAction));
+      await tester.pumpAndSettle();
+
+      expect(cubitOf().state, isA<CurrentOrderDelivered>());
+      expect(branch(tester), MainNavDestination.orderHistory.index);
+      expect(
+        tester
+            .widgetList<CompletedDeliveryTile>(
+              find.byType(CompletedDeliveryTile),
+            )
+            .first
+            .delivery
+            .orderId,
+        'demo-new-order-1',
+      );
+      await tapTab(tester, MainNavDestination.wallet);
+      final wallet = tester.element(navBar).read<WalletCubit>().state;
+      expect(wallet.overview!.debits.first.orderId, 'demo-new-order-1');
+      // 4,000 − the template's 600-fils commission, read back from the demo
+      // server (never computed by the app).
+      expect(wallet.balanceFils, 3400);
+      expect(http.attempts, 0);
+    });
+
     List<String> historyMerchants(WidgetTester tester) => [
       for (final t in tester.widgetList<DeclinedOfferTile>(
         find.byType(DeclinedOfferTile),
@@ -491,6 +563,9 @@ void main() {
         'restores the fixture history in place; the wallet is unchanged', (
       tester,
     ) async {
+      // Tall viewport: My Orders now lists the completed deliveries above
+      // the declined offers (D-A81), and both sections are built lazily.
+      setScreenSize(tester, 420, 2600);
       await launch(tester);
       await signIn(tester);
       await tapTab(tester, MainNavDestination.orderHistory);
@@ -553,6 +628,9 @@ void main() {
     testWidgets('a decline from the Home card shows when My Orders is '
         'opened; the wallet shows the last 7 days of debits only and the '
         'lifetime count', (tester) async {
+      // Tall viewport: My Orders now lists the completed deliveries above
+      // the declined offers (D-A81), and both sections are built lazily.
+      setScreenSize(tester, 420, 2600);
       await launch(tester);
       await signIn(tester);
       final decline = find.widgetWithText(AppButton, l10n.offerDecline).first;

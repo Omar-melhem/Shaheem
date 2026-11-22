@@ -34,6 +34,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Google Maps SDK key (D-A62, D-A81). Supplied at build time from
+             the Gradle property SHAHM_GOOGLE_MAPS_API_KEY (never committed);
+             empty when absent, and the app then shows "map unavailable".
+             Restrict the key to this app and the Maps SDK for Android. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${googleMapsApiKey}" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -44,6 +51,12 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Lets the app check that Google Maps can open the merchant
+             navigation intent (PickupNavigationLauncher, D-A81). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="google.navigation"/>
         </intent>
     </queries>
 </manifest>

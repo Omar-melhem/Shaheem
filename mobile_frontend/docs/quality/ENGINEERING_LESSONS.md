@@ -227,6 +227,81 @@ remediation working tree, verified 2026-11-22 (results:
   identifiers; immutable snapshots go under `docs/archive/audits/`; never
   widen the exemption to all docs or all Markdown.
 
+## L-15 — Optional is not required: the customer phone (D-A81, CO-01)
+
+- **Scenario:** product wording said Start Delivery comes "after the captain
+  calls the customer", which read as a mandatory call even when the merchant
+  gave no phone.
+- **Fix:** D-A81 and PRODUCT_OVERVIEW §3.1 make the phone optional;
+  `ActiveOrder.contactPhone` treats null/empty/blank as absent; the
+  delivery view omits the contact card; nothing validates a phone.
+- **Verification:** `current_order_workflow_test.dart` (null, "", "   "
+  variants still start and complete).
+- **Rule:** model "optional" end to end — nullable in the read model, absent
+  section in the UI, no validator, no wording that implies it is required.
+
+## L-16 — The server decides the stage; the app only sends commands (CO-02)
+
+- **Rule (applied from the start, no defect shipped):** the PIN is checked
+  only by the server (never returned, compared, stored or logged); a stage
+  changes only from a confirmed answer — never on a tap, a timeout, opening
+  Maps, GPS proximity or elapsed time; unknown statuses get no action; each
+  attempt has an operation key; after an unconfirmed start/complete the
+  same key is kept and the action is blocked until reconciled.
+- **Verification:** cubit tests in `current_order_workflow_test.dart`
+  (malformed PIN sends nothing, wrong/locked PIN typed, timeout ≠ wrong
+  code, same key reused, rapid taps → one command).
+
+## L-17 — A missing active order is not proof of delivery (CO-03)
+
+- **Scenario (source analysis while wiring the demo):** the demo shell
+  bridge re-reads the active order on every demo change. During an
+  in-flight completion that read can return "none" before the command's
+  answer arrives, and would have replaced the order with "no active order",
+  dropping the confirmed completion.
+- **Confidence:** source-confirmed race; covered by a deterministic test.
+- **Fix:** while a command for the shown order is in flight, an "absent"
+  read is not applied; the command's answer — or `GetOrderOutcome` after an
+  unknown outcome — decides.
+- **Verification:** "an absent read during an in-flight completion is not
+  applied" test.
+- **Rule:** never infer delivered/cancelled/reassigned from absence; use a
+  receipt or the outcome lookup.
+
+## L-18 — Put a popup form's submit in the pinned actions (CO-04)
+
+- **Scenario (reproduced in a widget test):** at 320 × 640 and text scale
+  2.0 the PIN form's own submit button, placed in the popup body, ended up
+  below the visible area and could not be tapped.
+- **Fix:** «تأكيد الاستلام» and «إلغاء» are `AppPopupAction`s (pinned by the
+  AppPopup layout contract); the form exposes `submit()` through its state.
+- **Verification:** "320 px at text scale 2.0" workflow test.
+- **Rule:** in `AppPopup`, primary/cancel actions go in `actions`, never in
+  scrolling `content`; test large text at 320 px.
+
+## L-19 — Scanner guards must match paths, not file names (CO-05)
+
+- **Scenario (reproduced by the dry run):** the historical-document guard
+  matched the bare name `03_SYSTEM_DATA_REQUIREMENTS.md` inside a Dart doc
+  comment that points at the **revised** report and stopped the removal.
+- **Fix:** the guard matches the exact baseline paths (`docs/0X_…`) and the
+  archive folder only.
+- **Verification:** live dry run OK; the earlier negative checks (a Dart
+  reference to the baseline path) still stop.
+- **Rule:** make safety guards precise enough that ordinary documentation
+  cannot trigger them, and re-run the dry run after doc comments change.
+
+## L-20 — No fake route, no fake map (CO-06)
+
+- **Rule (applied):** the map is built only with provisioned keys
+  (`SHAHM_GOOGLE_MAPS`), the route only from a routing source; without one
+  the page says "map unavailable" / "route not configured" and never draws
+  a straight line or uses a sample coordinate in production. `(0, 0)` is
+  invalid. External navigation opens only the Google Maps app (non-browser
+  launch) and reports "app unavailable" otherwise.
+- **Verification:** launcher unit tests (URIs, lat/lng order, outcomes);
+  `GooglePickupMap` itself was not rendered with real tiles here.
+
 ---
 
 ## Recommendations recorded without code change

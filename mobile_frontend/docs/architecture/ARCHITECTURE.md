@@ -94,6 +94,22 @@ R05), not inside one feature's host widget.
 The former exception "`util/tools/` imports `view/widget/`" no longer
 exists: the folder was deleted in R05.
 
+### 2.2 Current Order workflow boundaries (D-A81, 2026-11-22)
+
+| Layer | Pieces |
+|---|---|
+| `domain/entities` | `ActiveOrder` (+ `status`, `assignmentRef`, `deliveryAreaName`, optional `customerPhone` / `contactPhone`), `order_workflow.dart` (`PickupProof` → `PickupPinProof`, `OrderCommandTarget`, `DeliveryCompletionReceipt`, `OrderOutcome*`, `CompletedDelivery`, `CompletedDeliveriesPage`), `pickup_route.dart` |
+| `domain/repositories` | `OrderWorkflowRepository` (confirm pickup, start, complete, outcome — contract TO SPECIFY), `OrderHistoryRepository.getCompletedDeliveries`, `PickupRouteRepository` (Routes access design TO SPECIFY) |
+| `domain/use_cases` | `order_workflow.dart` (`ConfirmPickup`, `StartDelivery`, `CompleteDelivery`, `GetOrderOutcome`, `secureOperationKey`), `get_completed_deliveries.dart`, `get_pickup_route.dart` |
+| `data/repositories` | `order_workflow_repository_placeholder.dart`, `pickup_route_repository_placeholder.dart` ("not configured") |
+| `helper/navigation` | `PickupNavigationLauncher` (Google Maps app only, merchant point only; independent of the in-app legal launcher) |
+| `view/screens/current_order_screen` | Cubit (one owner), page, `ActiveOrderPickupView`, `ActiveOrderDeliveryView`, `CustomerContactCard`, `PickupVerificationForm`, `OrderCommandNotice`, `GooglePickupMap` (adapter behind `PickupMapBuilder`) |
+| `view/screens/order_history_screen` | `CompletedDeliveriesCubit`, `CompletedDeliveryTile` |
+
+The pickup verification method is replaceable at `PickupProof` +
+`ConfirmPickup` + the repository; widgets never check a PIN. PIN syntax
+lives in `Validators.pickupPin` (input path), not in the domain or widgets.
+
 ### 2.1 Client revision responsibilities (2026-11-20)
 
 No directory migration. Targeted changes only (D-A70–D-A79):
@@ -210,7 +226,8 @@ parallel old/new implementations behind.
 | `url_launcher` 6.3.3 (Android 6.3.33, iOS 6.4.2 resolved) | **Used since Task 13:** `lib/helper/legal/legal_page_launcher.dart`, in `LaunchMode.inAppWebView` only (legal pages, never external). Still approved for the planned external Google Maps navigation (D-A57, D-A62) | Used. Re-verify the in-app-only behavior after any upgrade |
 | ~~`bloc`~~ (direct) | Only imported by the unused legacy `SplashBloc` | **Direct declaration removed R09** after `SplashBloc` was deleted (R05, D-P13); `bloc` and `meta` remain **transitive** through `flutter_bloc` |
 | ~~`dropdown_search`~~, ~~`flutter_localization`~~ (third-party, unrelated to the SDK `flutter_localizations`), ~~`geocoding`~~ | No import in `lib/`, `test/`, `tool/`; no Android/iOS configuration; no approved feature needs them (addresses come from the server; maps D-A62 need Maps + Routes, not geocoding) | **Removed R09 (2026-11-22)** with `flutter pub remove`; their now-orphaned transitives (e.g. `shared_preferences*`, `universal_io`) left the lockfile |
-| `google_maps_flutter`, `location`, `permission_handler` | No import yet | **Kept: approved** for the map / GPS / permission feature tasks (D-A57, D-A62) |
+| `google_maps_flutter` | **Used since D-A81 (2026-11-22):** `google_pickup_map.dart`, built only when `SHAHM_GOOGLE_MAPS=true` | Approved (D-A62); native keys via the `SHAHM_GOOGLE_MAPS_API_KEY` Gradle property / Xcode build setting |
+| `location`, `permission_handler` | No import yet | **Kept: approved** for the GPS / permission feature tasks (D-A57) |
 | `http` | No import yet | **Kept:** the planned REST client and the Routes API call need an HTTP client; the generated-client choice (D-A54) decides later whether it stays |
 | `google_api_headers` | No import yet | **Kept for the maps task:** supplies the Android/iOS app-restriction headers a mobile Google Routes API call needs; drop it in that task if the call is made server-side instead |
 

@@ -5,7 +5,7 @@
   "created_files": [
     {
       "path": "lib/demo/demo_app.dart",
-      "sha256": "9cae9133051845c7da9174ec7fa73fe0c309ad65044c53176486c31c9b991cf9"
+      "sha256": "41b4b8e86963b1c406f0300bb416a78d211164be9185108b246c3139584f09b9"
     },
     {
       "path": "lib/demo/demo_mode.dart",
@@ -13,11 +13,11 @@
     },
     {
       "path": "lib/demo/demo_state.dart",
-      "sha256": "b2b8cd585c445c6b42610d96acf2db8ce05330a8556e3e00481b828c3ca1aa5a"
+      "sha256": "c51016f54c68f65f857e90b766256f4dbda368e449ee9920a420b82c448a43d1"
     },
     {
       "path": "lib/demo/model/demo_fixtures.dart",
-      "sha256": "5984e66e27f811a32ddb4f115a4400d306cabbd73432e51d5ff4104c30b7a82e"
+      "sha256": "305cf5503278db0a377d3571fa1880c68e5914bd1281b7867c156cc1fd49cf24"
     },
     {
       "path": "lib/demo/repo/demo_auth_repository.dart",
@@ -25,11 +25,11 @@
     },
     {
       "path": "lib/demo/repo/demo_repositories.dart",
-      "sha256": "9523b3086e7bc69a30870f2bb757dbc2e0b86ed94028e83b5a76e71c6b536dde"
+      "sha256": "c107b0f9ee3166229667ebf94d070430e80d530309b30e4025f57418333aa5f4"
     },
     {
       "path": "lib/demo/widget/demo_shell_bridge.dart",
-      "sha256": "b0e88bf7f5b33fb586c2da0fdbe0b48e2581e418ef2afe9fb8ca5f8b62d20d37"
+      "sha256": "f205c022f58acfeb5a0fcf9dcdd8089e684c7d5b7c0fdd6a57eaf25edfba2be5"
     },
     {
       "path": "lib/demo/widget/demo_strip.dart",
@@ -37,11 +37,11 @@
     },
     {
       "path": "test/demo_mode_test.dart",
-      "sha256": "b6b9eae12ca31a4448dff6d080ad00bd7be4cb19e83dca08d2a306d9360a1673"
+      "sha256": "b681df1ab9c44ad5eec97cee3ba6076128c2e6889c83a7e019b5d6619008662b"
     },
     {
       "path": "tool/demo/README.md",
-      "sha256": "ad11985b8144745516a7b84f0d7ab62d29b858ab31230e430fd3e11206db592c"
+      "sha256": "fb492cb195d40e80be5876dd65e8e71fb60e51af61e90c4690267bbeced782b5"
     },
     {
       "path": "tool/demo/install_manifest.json",
@@ -69,8 +69,8 @@
     },
     {
       "path": "assets/demo/fixtures/current_order.json",
-      "sha256": "44737d008e83367d06adbc83a4842cf09fb312fa610223ef8c0b4dfb33447d4c",
-      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted"
+      "sha256": "572aa2683c36e54bf50b0cde829428800b0c403677c5395febd5e0524c93bed9",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-22 for D-A81 (fictional pickup points, optional fictional phones)."
     },
     {
       "path": "assets/demo/fixtures/home.json",
@@ -79,8 +79,8 @@
     },
     {
       "path": "assets/demo/fixtures/offers.json",
-      "sha256": "fbef2ee7e6636c49215b93b9c1bb6e750bd6f483646dd773fcc5af59085af5e4",
-      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted"
+      "sha256": "c3cb4a923e7472e00628d041a1fc35f25f074e6085042b57198028d36bd77980",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-22 for D-A81 (fictional pickup points, optional fictional phones)."
     },
     {
       "path": "assets/demo/fixtures/order_history.json",
@@ -237,6 +237,11 @@
       "task": "R00-R11",
       "date": "2026-11-22",
       "summary": "Audit remediation (D-A80). R02 made the real shell-scoped WalletCubit the single Home/Wallet balance source, so the demo Home-wallet connector became redundant: deleted lib/demo/widget/demo_home_wallet.dart, removed its router/main hooks and the router-home region (Home is no longer a demo region; nothing is restored there). Re-hashed only: regions main-params, main-fields, main-router (lib/main.dart), router-import, router-param, router-shell (lib/util/routes/go_router.dart; router-shell re-indented under the shell's session BlocListener, so its restore text now carries the new indentation); files lib/demo/demo_app.dart and tool/demo/README.md. R00 added the narrow sha-pinned historical-audit classification to remove_demo.dart (retained file, unhashed). Every other recorded hash still matched (verified by --dry-run). Baseline (pre-install) hashes unchanged; installed_sha256 is the historical install record and was not rewritten."
+    },
+    {
+      "task": "Current Order (D-A81)",
+      "date": "2026-11-22",
+      "summary": "Added DemoOrderWorkflowRepository and the demo server's PIN/start/complete/outcome simulation (one completion = one completed delivery + one commission debit, same key = same receipt), completed-delivery history from order_history.json, fictional pickup points and optional fictional 070 phones in offers.json/current_order.json. Re-hashed only: lib/demo/demo_app.dart, lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, lib/demo/widget/demo_shell_bridge.dart, test/demo_mode_test.dart, tool/demo/README.md, assets/demo/fixtures/current_order.json, assets/demo/fixtures/offers.json. No marked region changed (main/router regions untouched). Baseline hashes and restore texts unchanged; removal leaves the real stage UI/ports with production not-configured behavior."
     }
   ]
 }

@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_frontend/domain/entities/captain_account.dart';
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/entities/wallet.dart';
 import 'package:mobile_frontend/domain/errors/captain_account_exceptions.dart';
 import 'package:mobile_frontend/domain/errors/order_history_exceptions.dart';
@@ -93,6 +94,10 @@ class _Repo
 
   @override
   Future<List<DeclinedOfferRecord>> getDeclinedOffers() => _run(() => []);
+
+  @override
+  Future<CompletedDeliveriesPage> getCompletedDeliveries({String? cursor}) =>
+      _run(() => const CompletedDeliveriesPage(items: []));
 
   @override
   Future<CaptainRating> getRating() =>

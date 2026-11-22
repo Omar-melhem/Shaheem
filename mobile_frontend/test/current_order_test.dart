@@ -42,12 +42,12 @@ void main() {
   });
 
   group('GeoPoint.isValid', () {
-    test('well-formed means finite and within the geographic ranges', () {
+    test('valid means finite, within the geographic ranges and not (0, 0)', () {
       expect(testPickup.isValid, isTrue);
-      // (0, 0) is a well-formed coordinate. Whether it is acceptable for a
-      // restaurant is a service-area rule that is not defined yet (D-P31),
-      // so the client does not reject it.
-      expect(const GeoPoint(latitude: 0, longitude: 0).isValid, isTrue);
+      // (0, 0) is approved as invalid for SHAHM service (D-A62/D-P31,
+      // applied 2026-11-22 with D-A81). The service-area check itself stays
+      // on the server.
+      expect(const GeoPoint(latitude: 0, longitude: 0).isValid, isFalse);
       expect(const GeoPoint(latitude: -90, longitude: 180).isValid, isTrue);
       for (final bad in const [
         GeoPoint(latitude: 91, longitude: 35),
@@ -182,6 +182,8 @@ void main() {
         GeoPoint(latitude: double.nan, longitude: 35),
       ]) {
         orders.order = ActiveOrder(
+          status: ActiveOrderStatus.accepted,
+
           orderId: 'o',
           restaurantName: 'r',
           pickupLocation: pickup,
@@ -557,6 +559,8 @@ void main() {
     ) async {
       await launch(tester);
       orders.order = const ActiveOrder(
+        status: ActiveOrderStatus.accepted,
+
         orderId: 'order-7',
         restaurantName: 'مطعم بلا موقع',
         pickupInstructions: 'اتصل عند الوصول',
@@ -599,6 +603,8 @@ void main() {
     ) async {
       await launch(tester);
       orders.order = const ActiveOrder(
+        status: ActiveOrderStatus.accepted,
+
         orderId: 'order-8',
         restaurantName: 'مطعم',
         pickupLocation: GeoPoint(latitude: 200, longitude: 35),

@@ -14,7 +14,10 @@
       "commission_fils": 750,
       "captain_net_fils": 3000,
       "pickup_pin": "1234",
-      "demo_pin_only": true
+      "demo_pin_only": true,
+      "demo_pickup_latitude": 31.947,
+      "demo_pickup_longitude": 35.88,
+      "customer_phone": null
     },
     "on_the_way": {
       "id": "demo-order-active-2",
@@ -28,5 +31,5 @@
       "captain_net_fils": 2200
     }
   },
-  "demo_only_warning": "No real GPS, customer details, backend PIN verification or live settlement."
+  "demo_only_warning": "No real GPS, customer details, backend PIN verification or live settlement. The demo PIN (pickup_pin) is checked only by the in-memory demo server, for every demo order; the assigned scenario has no customer phone on purpose."
 }

@@ -160,10 +160,12 @@ void main() {
       tester,
     ) async {
       await launch(tester);
-      // Order History shows its declined-offers section (Task 36): with no
-      // backend it says the service is not connected, never "none".
+      // My Orders shows its completed (D-A81) and declined (Task 36)
+      // sections: with no backend each says the service is not connected,
+      // never "none".
       await tapTab(tester, MainNavDestination.orderHistory);
-      expect(find.text(l10n.orderHistoryPlaceholderMessage), findsOneWidget);
+      expect(find.text(l10n.completedDeliveriesNotConfigured), findsOneWidget);
+      expect(find.text(l10n.completedDeliveriesEmpty), findsNothing);
       expect(find.text(l10n.declinedOffersNotConfigured), findsOneWidget);
       expect(find.text(l10n.declinedOffersEmpty), findsNothing);
       // Profile is the fourth tab (D-A70).

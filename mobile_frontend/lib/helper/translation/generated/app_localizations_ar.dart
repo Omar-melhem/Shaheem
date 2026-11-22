@@ -216,10 +216,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mainNavigationLabel => 'التنقل الرئيسي';
 
   @override
-  String get orderHistoryPlaceholderMessage =>
-      'سجل التوصيلات المكتملة قيد التطوير وسيتوفر قريباً.';
-
-  @override
   String get loginTitle => 'تسجيل الدخول';
 
   @override
@@ -324,6 +320,230 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get locationNotConfigured => 'خدمة تحديد الموقع غير متاحة بعد.';
+
+  @override
+  String get pickupConfirmAction => 'تم الاستلام';
+
+  @override
+  String get openInGoogleMaps => 'فتح في خرائط Google';
+
+  @override
+  String get googleMapsAppUnavailable =>
+      'تطبيق خرائط Google غير متاح على هذا الجهاز، لذلك لم تُفتح الملاحة.';
+
+  @override
+  String get googleMapsLaunchFailed => 'تعذّر فتح خرائط Google. حاول مرة أخرى.';
+
+  @override
+  String get pickupNavigationUnavailable =>
+      'لا يمكن فتح الملاحة لأن موقع المطعم غير متوفر.';
+
+  @override
+  String routeDistanceAndTime(String distance, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes دقيقة',
+      many: '$minutes دقيقة',
+      few: '$minutes دقائق',
+      two: 'دقيقتان',
+      one: 'دقيقة واحدة',
+    );
+    return 'المسافة $distance كم · الوقت المتوقع $_temp0';
+  }
+
+  @override
+  String get routeNotConfigured =>
+      'لم يتم إعداد حساب المسار بعد، لذلك لا يظهر مسار أو وقت متوقع.';
+
+  @override
+  String get routeUnavailable => 'تعذّر حساب المسار حالياً.';
+
+  @override
+  String get routeNeedsCaptainLocation => 'يظهر المسار بعد تحديد موقعك.';
+
+  @override
+  String pickupMapSemantics(String restaurant) {
+    return 'خريطة الاستلام من $restaurant';
+  }
+
+  @override
+  String get captainMarkerTitle => 'موقعك';
+
+  @override
+  String get pickupVerificationTitle => 'تأكيد استلام الطلب';
+
+  @override
+  String get pickupVerificationMessage =>
+      'اطلب من المطعم رمز الاستلام المكوّن من 4 أرقام وأدخله هنا.';
+
+  @override
+  String get pickupPinLabel => 'رمز الاستلام';
+
+  @override
+  String get pickupPinRequired => 'أدخل رمز الاستلام.';
+
+  @override
+  String get pickupPinFormat => 'رمز الاستلام يتكوّن من 4 أرقام.';
+
+  @override
+  String get pickupVerificationSubmit => 'تأكيد الاستلام';
+
+  @override
+  String get pickupVerificationSending => 'جارٍ التحقق من الرمز…';
+
+  @override
+  String get pickupPinIncorrect => 'رمز الاستلام غير صحيح.';
+
+  @override
+  String pickupPinIncorrectRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تبقّت $count محاولة',
+      many: 'تبقّت $count محاولة',
+      few: 'تبقّت $count محاولات',
+      two: 'تبقّت محاولتان',
+      one: 'تبقّت محاولة واحدة',
+      zero: 'لم تتبقَّ محاولات',
+    );
+    return 'رمز الاستلام غير صحيح. $_temp0.';
+  }
+
+  @override
+  String get pickupPinLocked =>
+      'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة لإكمال الاستلام.';
+
+  @override
+  String get deliveryDestinationHeading => 'منطقة التسليم';
+
+  @override
+  String get deliveryAreaUnavailable => 'منطقة التسليم غير متوفرة';
+
+  @override
+  String get customerPhoneHeading => 'رقم هاتف العميل';
+
+  @override
+  String customerPhoneSemantics(String phone) {
+    return 'رقم هاتف العميل: $phone';
+  }
+
+  @override
+  String pickedUpFromLine(String merchant) {
+    return 'تم الاستلام من $merchant';
+  }
+
+  @override
+  String get deliveryStatusPickedUp =>
+      'تم استلام الطلب. اضغط «بدء التوصيل» عند انطلاقك.';
+
+  @override
+  String get deliveryStatusOnTheWay => 'أنت في الطريق إلى منطقة التسليم.';
+
+  @override
+  String get startDeliveryAction => 'بدء التوصيل';
+
+  @override
+  String get completeDeliveryAction => 'تم تسليم الطلب';
+
+  @override
+  String get completeDeliveryConfirmTitle => 'تأكيد تسليم الطلب؟';
+
+  @override
+  String get completeDeliveryConfirmMessage =>
+      'أكّد فقط بعد تسليم الطلب. سيُسجَّل التسليم وتُخصم عمولة الطلب من محفظتك مرة واحدة.';
+
+  @override
+  String get completeDeliveryConfirmAction => 'تأكيد التسليم';
+
+  @override
+  String get orderCommandNotConfigured =>
+      'خدمة الطلبات غير متصلة بالتطبيق بعد، لذلك لم يُرسل الإجراء ولم تتغيّر حالة الطلب.';
+
+  @override
+  String get orderCommandNoInternet =>
+      'لا يوجد اتصال بالإنترنت، ولم يُرسل الإجراء. حاول مرة أخرى.';
+
+  @override
+  String get orderCommandUnconfirmed =>
+      'لم يصل ردّ من الخادم في الوقت المحدد، لذلك لا نعرف إن تم تنفيذ الإجراء. تحقّق من حالة الطلب قبل المحاولة مجدداً.';
+
+  @override
+  String get orderCommandStateConflict =>
+      'تغيّرت حالة الطلب على الخادم، لذلك لم يُنفَّذ الإجراء. جارٍ تحديث بياناته.';
+
+  @override
+  String get orderCommandCheckStatus => 'تحقّق من حالة الطلب';
+
+  @override
+  String get orderCommandCheckFailed =>
+      'تعذّر التحقق من حالة الطلب الآن. حاول مرة أخرى.';
+
+  @override
+  String get orderCommandCheckPending =>
+      'لم يحسم الخادم نتيجة الإجراء بعد. تحقّق مرة أخرى بعد قليل.';
+
+  @override
+  String get orderStatusUnsupportedTitle =>
+      'حالة الطلب غير مدعومة في هذا الإصدار';
+
+  @override
+  String get orderStatusUnsupportedMessage =>
+      'حدّث الصفحة، وإن استمرت المشكلة تواصل مع الإدارة.';
+
+  @override
+  String get deliveryCompletedTitle => 'تم تسليم الطلب';
+
+  @override
+  String get deliveryCompletedMessage => 'يتم الآن تحديث طلباتك ومحفظتك.';
+
+  @override
+  String get orderCancelledTitle => 'تم إلغاء الطلب';
+
+  @override
+  String get orderReassignedTitle => 'أُسند الطلب إلى كابتن آخر';
+
+  @override
+  String get orderEndedMessage => 'لم يعد هذا الطلب ضمن مهامك.';
+
+  @override
+  String get currentOrderBackHome => 'العودة إلى الرئيسية';
+
+  @override
+  String get completedDeliveriesHeading => 'الطلبات المكتملة';
+
+  @override
+  String get completedDeliveriesLoading => 'جارٍ تحميل الطلبات المكتملة…';
+
+  @override
+  String get completedDeliveriesEmpty => 'لا توجد طلبات مكتملة بعد.';
+
+  @override
+  String get completedDeliveriesNotConfigured =>
+      'خدمة سجل الطلبات غير متصلة بعد، لذلك لا يمكن عرض الطلبات المكتملة.';
+
+  @override
+  String get completedDeliveriesNoSession =>
+      'سجّل الدخول لعرض طلباتك المكتملة.';
+
+  @override
+  String get completedDeliveriesNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تعذّر تحميل الطلبات المكتملة.';
+
+  @override
+  String get completedDeliveriesLoadFailed =>
+      'تعذّر تحميل الطلبات المكتملة الآن.';
+
+  @override
+  String get completedDeliveriesLoadMore => 'عرض المزيد';
+
+  @override
+  String get completedDeliveryOutcome => 'تم التسليم';
+
+  @override
+  String completedDeliveryFeeLine(String amount, String currency) {
+    return 'أجرة التوصيل: $amount $currency';
+  }
 
   @override
   String get noAccountPrompt => 'ليس لديك حساب؟';

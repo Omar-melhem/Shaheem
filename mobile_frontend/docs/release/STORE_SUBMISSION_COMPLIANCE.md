@@ -23,6 +23,27 @@ Google Play. Created by Task 14 (documentation only).
 
 ---
 
+> **Update 2026-11-22 (D-A81, Current Order workflow) — source changes,
+> not store verification:**
+> - Google Maps SDK keys: Android `com.google.android.geo.API_KEY` =
+>   `${googleMapsApiKey}` (Gradle property `SHAHM_GOOGLE_MAPS_API_KEY`,
+>   empty by default); iOS `GMSApiKey` = `$(SHAHM_GOOGLE_MAPS_API_KEY)`,
+>   provided by `AppDelegate` only when non-empty. **No key is committed**;
+>   restrict real keys by app (package/bundle + signing cert) and to the Maps
+>   SDKs. The Dart map is built only with `--dart-define=SHAHM_GOOGLE_MAPS=true`.
+> - Routes API: **no access design yet** (backend proxy vs app-restricted
+>   key); nothing calls it; no unrestricted server key may ship in the app.
+> - External navigation: Android `<queries>` for the `google.navigation`
+>   scheme; iOS `LSApplicationQueriesSchemes` = `comgooglemaps`. Only the
+>   Google Maps app is opened (non-browser mode); no other map app.
+> - Map attribution: the app draws nothing over the Google map, so the logo
+>   and attribution remain visible; verify on a real keyed build.
+> - Customer phone: shown only on the delivery leg when supplied; never in
+>   offers/push; include it in the data-safety declarations (P-02).
+> - Verified: `flutter build ios --simulator --debug` succeeded 2026-11-22
+>   (compiles the `GoogleMaps` import and plist keys). No keyed build, no
+>   tile/route rendering, no device run, no release build.
+
 ## 1. How to use this file
 
 1. Before any release-related task (store builds, signing, permissions, GPS,

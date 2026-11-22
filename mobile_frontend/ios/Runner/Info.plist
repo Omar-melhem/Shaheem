@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>comgooglemaps</string>
+	</array>
+	<key>GMSApiKey</key>
+	<string>$(SHAHM_GOOGLE_MAPS_API_KEY)</string>
 </dict>
 </plist>

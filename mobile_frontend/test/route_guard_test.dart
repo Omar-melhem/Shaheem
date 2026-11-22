@@ -135,7 +135,11 @@ void main() {
           activeOrder: order,
         );
     const active = CurrentOrderActive(
-      order: ActiveOrder(orderId: 'o-1', restaurantName: 'R'),
+      order: ActiveOrder(
+        status: ActiveOrderStatus.accepted,
+        orderId: 'o-1',
+        restaurantName: 'R',
+      ),
     );
 
     test('while the lookup runs, the public screen stays', () {

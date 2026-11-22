@@ -28,4 +28,10 @@ enum ValidationError {
 
   /// A phone number is not exactly 10 digits after normalization.
   invalidPhone,
+
+  /// Pickup PIN left empty (D-A81).
+  pickupPinRequired,
+
+  /// Pickup PIN is not exactly four digits (D-A81).
+  pickupPinFormat,
 }

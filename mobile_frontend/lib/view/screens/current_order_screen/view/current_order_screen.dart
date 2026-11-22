@@ -1,43 +1,64 @@
-// Current Order screen: the captain's active order and its pickup map.
+// Current Order screen: the captain's active order through pickup, delivery
+// and completion (D-A73, D-A81).
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_frontend/domain/entities/active_order.dart';
+import 'package:mobile_frontend/helper/navigation/pickup_navigation_launcher.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_delivery_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_verification_form.dart';
+import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 import 'package:mobile_frontend/view/widget/status/app_status_message.dart';
+import 'package:mobile_frontend/view/widget/toast/app_toast.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 /// The protected standalone Current Order page (D-A73), above the shell.
 ///
-/// Shows the order the captain is currently working on and where to
-/// collect it (the restaurant). It is NOT an order-creation screen and has
-/// no form or submit action.
+/// Renders the app-level [CurrentOrderCubit]'s state: loading, no active
+/// order, backend not connected (no Retry), a failure with Retry, and for
+/// an active order the view of its **server-reported** stage (D-A81):
+/// - pickup leg → [ActiveOrderPickupView] (map, Google Maps, «تم الاستلام»);
+/// - delivery leg → [ActiveOrderDeliveryView] (no map; «بدء التوصيل» then
+///   «تم تسليم الطلب»);
+/// - unknown status → an explanation and no action.
 ///
-/// Expects the app-level [CurrentOrderCubit] above it and renders one state
-/// at a time: loading, no active order (a confirmed absence, e.g. the order
-/// was completed or reassigned elsewhere), backend not connected (no Retry:
-/// it is not a temporary outage), a network or service failure with Retry,
-/// or the active order's pickup view (which itself says so when the
-/// restaurant location or the map is unavailable).
+/// One page for every stage (no route per stage, no new tab). The page
+/// owns only presentation effects: the PIN form, the completion
+/// confirmation, the Google Maps launch outcome and — once per confirmed
+/// completion — a success toast and the switch to «طلباتي». History and
+/// wallet are re-read by their own owners in the shell.
 ///
-/// **Back:** when the page was pushed above a tab (acceptance, recovery),
-/// Back returns there; when it is the first page (startup recovery), Back
-/// goes to Home. There is no navigation bar and no selected tab here.
+/// **Back:** pops to the page below, or goes Home when this is the first
+/// page (startup recovery).
 class CurrentOrderScreen extends StatefulWidget {
-  const CurrentOrderScreen({super.key, this.pickupMapBuilder});
+  const CurrentOrderScreen({
+    super.key,
+    this.pickupMapBuilder,
+    this.navigationLauncher = const PickupNavigationLauncher(),
+  });
 
   /// The map implementation; null while none is configured.
   final PickupMapBuilder? pickupMapBuilder;
+
+  /// Opens Google Maps navigation to the merchant (tests pass a fake).
+  final PickupNavigationLauncher navigationLauncher;
 
   @override
   State<CurrentOrderScreen> createState() => _CurrentOrderScreenState();
 }
 
 class _CurrentOrderScreenState extends State<CurrentOrderScreen> {
+  /// Ignores a second Maps tap while the first launch is running.
+  bool _launching = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +75,60 @@ class _CurrentOrderScreenState extends State<CurrentOrderScreen> {
     } else {
       context.go(RoutesString.home);
     }
+  }
+
+  Future<void> _openNavigation(GeoPoint? merchant) async {
+    if (_launching) return;
+    _launching = true;
+    try {
+      final outcome = await widget.navigationLauncher.open(merchant);
+      if (!mounted) return;
+      final l10n = context.l10n;
+      final message = switch (outcome) {
+        PickupNavigationOutcome.launched => null,
+        PickupNavigationOutcome.appUnavailable => l10n.googleMapsAppUnavailable,
+        PickupNavigationOutcome.invalidDestination =>
+          l10n.pickupNavigationUnavailable,
+        PickupNavigationOutcome.failed => l10n.googleMapsLaunchFailed,
+      };
+      if (message != null) {
+        showAppToast(context, message: message, type: AppToastType.warning);
+      }
+    } finally {
+      _launching = false;
+    }
+  }
+
+  /// Completion is financial (one commission debit), so it needs an
+  /// explicit confirmation; Cancel, the barrier and Back send nothing.
+  Future<void> _confirmCompletion() async {
+    final l10n = context.l10n;
+    final cubit = context.read<CurrentOrderCubit>();
+    final confirmed = await showAppPopup<bool>(
+      context,
+      title: l10n.completeDeliveryConfirmTitle,
+      message: l10n.completeDeliveryConfirmMessage,
+      actions: [
+        AppPopupAction(label: l10n.cancel),
+        AppPopupAction<bool>(
+          label: l10n.completeDeliveryConfirmAction,
+          isPrimary: true,
+          result: true,
+        ),
+      ],
+    );
+    if (confirmed == true) unawaited(cubit.completeDelivery());
+  }
+
+  /// One success message and one switch to «طلباتي» per confirmed
+  /// completion (the listener fires only on the transition).
+  void _onDelivered(BuildContext context, CurrentOrderState state) {
+    showAppToast(
+      context,
+      message: context.l10n.deliveryCompletedTitle,
+      type: AppToastType.success,
+    );
+    context.go(RoutesString.orderHistory);
   }
 
   @override
@@ -82,7 +157,11 @@ class _CurrentOrderScreenState extends State<CurrentOrderScreen> {
             ),
           ],
         ),
-        body: BlocBuilder<CurrentOrderCubit, CurrentOrderState>(
+        body: BlocConsumer<CurrentOrderCubit, CurrentOrderState>(
+          listenWhen: (previous, current) =>
+              previous is! CurrentOrderDelivered &&
+              current is CurrentOrderDelivered,
+          listener: _onDelivered,
           builder: (context, state) => switch (state) {
             CurrentOrderInitial() || CurrentOrderLoading() => AppStatusMessage(
               icon: PhosphorIconsRegular.mapPin,
@@ -116,12 +195,48 @@ class _CurrentOrderScreenState extends State<CurrentOrderScreen> {
               actionLabel: l10n.retry,
               onAction: cubit.load,
             ),
-            CurrentOrderActive() => ActiveOrderPickupView(
-              state: state,
-              onRetryLocation: cubit.retryLocation,
-              onRefresh: cubit.load,
-              mapBuilder: widget.pickupMapBuilder,
+            CurrentOrderDelivered() => AppStatusMessage(
+              icon: PhosphorIconsRegular.checkCircle,
+              title: l10n.deliveryCompletedTitle,
+              message: l10n.deliveryCompletedMessage,
             ),
+            CurrentOrderEnded(:final reason) => AppStatusMessage(
+              icon: PhosphorIconsRegular.info,
+              title: switch (reason) {
+                CurrentOrderEndReason.cancelled => l10n.orderCancelledTitle,
+                CurrentOrderEndReason.reassigned => l10n.orderReassignedTitle,
+              },
+              message: l10n.orderEndedMessage,
+              actionLabel: l10n.currentOrderBackHome,
+              onAction: () => context.go(RoutesString.home),
+            ),
+            CurrentOrderActive(:final order) => switch (order.leg) {
+              ActiveOrderLeg.pickup => ActiveOrderPickupView(
+                state: state,
+                onRetryLocation: cubit.retryLocation,
+                onRefresh: cubit.load,
+                onConfirmPickup: () => unawaited(
+                  showPickupVerificationForm(context, orderId: order.orderId),
+                ),
+                onOpenNavigation: () =>
+                    unawaited(_openNavigation(state.pickup)),
+                onCheckStatus: () => unawaited(cubit.checkCommandStatus()),
+                mapBuilder: widget.pickupMapBuilder,
+              ),
+              ActiveOrderLeg.delivery => ActiveOrderDeliveryView(
+                state: state,
+                onStartDelivery: () => unawaited(cubit.startDelivery()),
+                onCompleteDelivery: () => unawaited(_confirmCompletion()),
+                onCheckStatus: () => unawaited(cubit.checkCommandStatus()),
+              ),
+              ActiveOrderLeg.unknown => AppStatusMessage(
+                icon: PhosphorIconsRegular.question,
+                title: l10n.orderStatusUnsupportedTitle,
+                message: l10n.orderStatusUnsupportedMessage,
+                actionLabel: l10n.refresh,
+                onAction: cubit.load,
+              ),
+            },
           },
         ),
       ),

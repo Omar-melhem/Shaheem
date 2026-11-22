@@ -64,6 +64,34 @@ awaiting integration, content or device verification), 1 approved missing
 capability (future commitments, not a screen). These numbers belong to this
 snapshot; recompute them per `../quality/AUDIT_METHOD.md`.
 
+### 0.2 Current Order workflow (D-A81, 2026-11-22) — current
+
+| Part | Client implementation | Demonstrated with | Live / configured |
+|---|---|---|---|
+| Stage page | One `/current-order` page: pickup leg, delivery leg (no map), unknown status | widget tests; debug demo | No backend: production reports "not configured" |
+| Pickup PIN | Form in `AppPopup` with pinned actions; syntax-only validation; typed wrong/locked/conflict/unknown outcomes; replaceable `ConfirmPickup` boundary | tests; demo server PIN | Server verification contract missing |
+| Start Delivery | Separate command, only from `picked_up` | tests; demo | Contract missing |
+| Completion | Confirmation popup; one command; receipt; unknown outcome → outcome lookup; same key on retry | tests; demo (one completed delivery + one debit) | Contract, idempotency and the atomic debit are **server** work |
+| Optional phone | Shown only when supplied; never blocks | tests; demo (with and without phone) | — |
+| History / wallet refresh | `CompletedDeliveriesCubit` (paging by cursor), `WalletCubit.invalidate()`, one switch to «طلباتي» | tests; demo | Completed-delivery and wallet contracts missing |
+| Google map | `GooglePickupMap` adapter (merchant + captain markers, route polyline when supplied, bounded camera) | **not rendered** (no keys) | Needs keys + `SHAHM_GOOGLE_MAPS=true`; iOS debug simulator build compiles the native setup |
+| Route | `PickupRouteRepository` port; placeholder "not configured" | tests (no route → honest line) | Routes access design (backend proxy vs app-restricted key) missing |
+| External Google Maps | `PickupNavigationLauncher` (Android `google.navigation`, iOS `comgooglemaps`, non-browser) | unit tests (URIs, outcomes) | Not launched on a device |
+
+**Exact remaining gates:** OpenAPI for the active-order read (stage,
+assignment, area, optional phone), confirm-pickup (errors, attempts),
+start, complete (idempotency, receipt), outcome lookup, completed-delivery
+list (paging) and wallet/statistics reads; FCM/SignalR stage-change hints;
+Google Maps keys (restricted) and billing; the Routes access design;
+location provider integration (D-A57); a device walkthrough.
+
+**Verification (2026-11-22, working tree on `cefad0a`):** `flutter analyze`
+no issues; `flutter test` **1,056 passed**; demo dry run OK; `--apply`
+rehearsal on a full copy: removed, 1,027 tests passed afterwards, workflow
+UI/ports and placeholders intact; `flutter build ios --simulator --debug`
+succeeded. **No simulator/device walkthrough was performed**, no keyed map,
+no live backend or database.
+
 ## 1. Implemented
 
 | Area | What exists | Key paths |

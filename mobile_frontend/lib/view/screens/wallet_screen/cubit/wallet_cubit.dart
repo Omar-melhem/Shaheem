@@ -61,6 +61,11 @@ class WalletCubit extends Cubit<WalletState> {
   Object? _dataOwner;
 
   int _walletGeneration = 0;
+
+  /// Set when [invalidate] arrives during a read of the same kind: the
+  /// running answer may predate the change, so one more read follows it.
+  bool _walletFollowUp = false;
+  bool _statisticsFollowUp = false;
   int _statisticsGeneration = 0;
 
   /// Reads the wallet and the statistics in parallel. Each read is ignored
@@ -97,6 +102,28 @@ class WalletCubit extends Cubit<WalletState> {
   /// listener): when the owner differs from the one the values were read
   /// for, every value is cleared and, if someone is signed in, the balance
   /// is read again for the new owner. Same owner: nothing happens.
+  /// The server's wallet changed (a confirmed delivery completion appended
+  /// one commission debit and advanced the lifetime statistics, D-A74):
+  /// re-read the balance and debits, and the statistics only if Wallet has
+  /// read them before (Home still never causes a statistics read). A read
+  /// already running gets exactly one follow-up read instead of a parallel
+  /// one. Never computes a value locally.
+  Future<void> invalidate() async {
+    if (!_requireSession()) return;
+    final reads = <Future<void>>[];
+    if (state.status == WalletStatus.loading) {
+      _walletFollowUp = true;
+    } else {
+      reads.add(_loadWallet());
+    }
+    if (state.statisticsStatus == WalletStatus.loading) {
+      _statisticsFollowUp = true;
+    } else if (state.statisticsStatus != WalletStatus.initial) {
+      reads.add(_loadStatistics());
+    }
+    await Future.wait(reads);
+  }
+
   Future<void> syncSession() async {
     if (isClosed) return;
     final owner = _sessionOwner();
@@ -136,6 +163,10 @@ class WalletCubit extends Cubit<WalletState> {
         overview: () => null,
       ),
     });
+    if (_walletFollowUp) {
+      _walletFollowUp = false;
+      await _loadWallet();
+    }
   }
 
   Future<void> _loadStatistics() async {
@@ -165,6 +196,10 @@ class WalletCubit extends Cubit<WalletState> {
         statistics: () => null,
       ),
     });
+    if (_statisticsFollowUp) {
+      _statisticsFollowUp = false;
+      await _loadStatistics();
+    }
   }
 
   /// Emits the no-session state (clearing all data) when nobody is signed
@@ -191,6 +226,8 @@ class WalletCubit extends Cubit<WalletState> {
   /// Drops every value and running read, and tags the state with [owner].
   void _resetFor(Object owner) {
     _dataOwner = owner;
+    _walletFollowUp = false;
+    _statisticsFollowUp = false;
     _walletGeneration++;
     _statisticsGeneration++;
     emit(const WalletState());

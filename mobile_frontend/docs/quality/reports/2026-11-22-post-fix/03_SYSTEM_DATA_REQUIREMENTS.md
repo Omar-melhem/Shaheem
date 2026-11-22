@@ -177,6 +177,19 @@ Every ID appears exactly once here and once in Table B (§3).
 | DATA-PUSH-01 | Push token | proposed `pushToken` | out | opaque FCM/APNs token | — | approved target, contract missing |
 | DATA-PUSH-02 | Platform | proposed `platform` | out | enum android / ios | — | same |
 | DATA-PUSH-03 | Device session | proposed `deviceSessionRef` | server | → DATA-AUTH-05 | — | only if the contract ties tokens to sessions |
+| DATA-ORD-21 | Assignment reference | `ActiveOrder.assignmentRef`, `OrderCommandTarget.assignmentRef` | in → out | opaque string | nullable (until the contract defines it) | required for stale-command protection (D-A81) |
+| DATA-CMD-05 | Pickup proof: entered PIN | `PickupPinProof.digits` | out | exactly 4 ASCII digits after Arabic-digit normalization, leading zeros kept | required to send | required; **never returned, stored or logged** |
+| DATA-CMD-06 | PIN attempts remaining | `PickupCodeIncorrectException.remainingAttempts` | in | int 0..2 | nullable (shown only when supplied) | server-counted (3, D-A67) |
+| DATA-CMD-07 | Start Delivery input | `startDelivery(OrderCommandTarget)` | out | → DATA-ORD-01 + DATA-ORD-21 | required | — |
+| DATA-CMD-08 | Complete Delivery input | `completeDelivery(OrderCommandTarget)` | out | → DATA-ORD-01 + DATA-ORD-21 | required | — |
+| DATA-CMD-09 | Completion receipt reference | `DeliveryCompletionReceipt.receiptRef` | in | opaque string | nullable | proposed (stable result for retries) |
+| DATA-CMD-10 | Authoritative delivered-at | `DeliveryCompletionReceipt.deliveredAt` | in | UTC timestamp | nullable in the receipt | required on the order (= DATA-DELIV-02) |
+| DATA-CMD-11 | Workflow command outcome | `OrderCommandResult` subtypes | in | succeeded / rejected (incorrect PIN, locked, state conflict) / not configured / no internet / unconfirmed | — | — |
+| DATA-CMD-12 | Order outcome lookup | `OrderOutcome` subtypes | in | active / delivered (+ receipt) / cancelled / reassigned / unresolved | — | required to reconcile an unconfirmed completion |
+| DATA-ROUTE-01 | Route polyline | `PickupRoute.path` | in | ordered list of points (captain → merchant) | — | from Google Routes DRIVE only; access design open |
+| DATA-ROUTE-02 | Route distance | `PickupRoute.distanceMeters` | in | int metres | — | same |
+| DATA-ROUTE-03 | Route duration | `PickupRoute.durationSeconds` | in | int seconds (no live traffic) | — | same |
+| DATA-DELIV-06 | Next-page cursor | `CompletedDeliveriesPage.nextCursor` | in | opaque string | nullable (no more pages) | contract decides paging |
 | DATA-LOCAL-01 | Selected tab | go_router branch index | local | int 0..3 | — | not persisted |
 | DATA-LOCAL-02 | Sheet / dialog visibility | route stack (`NewOfferSheetHost`, popups) | local | — | — | not persisted |
 | DATA-LOCAL-03 | Login field text | `LoginForm` controllers | local | String (password never stored) | — | not persisted |
@@ -307,6 +320,19 @@ Every ID appears exactly once here and once in Table B (§3).
 | DATA-PUSH-01 | — | Device | none | P | approved-unimplemented | token per device/session | system | device identifier; deleted on sign-out / deletion |
 | DATA-PUSH-02 | — | Device | none | P | approved-unimplemented | column | — | — |
 | DATA-PUSH-03 | — | Server | none | P | unresolved | FK if supported | — | — |
+| DATA-ORD-21 | Opaque; compared, never parsed | Server | `CurrentOrderCubit` stale-answer guard | P | domain-only | assignment id (FK of the active assignment) | assigned captain | — |
+| DATA-CMD-05 | Syntax only on the phone (`Validators.pickupPin`) | Captain (from the merchant) | PIN form → `CurrentOrderCubit.confirmPickup` | — (local controller only, cleared/disposed) | domain-only | compared with the hashed DATA-ORD-13 server-side | captain submits | secret; never in state, logs or analytics |
+| DATA-CMD-06 | Never computed on the phone | Server | PIN form message | E | domain-only | derived from DATA-ORD-14 | — | — |
+| DATA-CMD-07 | One at a time; same key on retry after unknown outcome | Server | delivery view | E | domain-only | status transition + event | assigned captain | audited |
+| DATA-CMD-08 | Confirmation popup first; one at a time; same key on retry | Server | delivery view | E | domain-only | **one transaction**: delivered + one commission debit (DATA-LEDG-02 unique) | assigned captain | audited, financial |
+| DATA-CMD-09 | — | Server | `CurrentOrderDelivered` | P | proposed | stored with the idempotency record (DATA-CMD-04) | system | — |
+| DATA-CMD-10 | — | Server clock | history, wallet | P | domain-only | order delivered-at column | — | — |
+| DATA-CMD-11 | Timeout = unconfirmed (R04) | Server | `OrderCommandNotice` | E | domain-only | — | — | — |
+| DATA-CMD-12 | Absence of an active order is never proof | Server | `checkCommandStatus` | A | domain-only (contract missing) | query over order + operation records | captain (own orders) | — |
+| DATA-ROUTE-01 | ≥ 2 points, else "unavailable"; never a straight line | Google Routes | `GooglePickupMap` polyline | E (not stored) | domain-only, not configured | none | — | contains the captain position: not persisted |
+| DATA-ROUTE-02 | — | Google Routes | pickup route line | E | domain-only | none | — | — |
+| DATA-ROUTE-03 | — | Google Routes | pickup route line | E | domain-only | none | — | — |
+| DATA-DELIV-06 | Opaque; null ends paging | Server | «عرض المزيد» | E | domain-only | cursor over (captain, delivered_at, order) index | captain | — |
 | DATA-LOCAL-01 | — | go_router | shell | L | local | none | — | — |
 | DATA-LOCAL-02 | — | Navigator | sheet host, popups | L | local | none | — | — |
 | DATA-LOCAL-03 | — | Form | Login | L | local | none | — | password never persisted |
@@ -466,14 +492,36 @@ the derived net fee (`CaptainOrderOffer.netEarningsFils`, never shown).
 | Push registration | DATA-PUSH-* |
 | Future commitments | gap (D-P25) |
 
+## 9a. D-A81 amendments (Current Order workflow, 2026-11-22)
+
+Status changes of existing fields (the rows above keep their original
+wording; this table is current):
+
+| ID | Now |
+|---|---|
+| DATA-ORD-03/04 | `GeoPoint.isValid` also rejects `(0, 0)` (D-A62/D-P31); service-area validation stays server-side |
+| DATA-ORD-06 | **domain-only**: `ActiveOrder.status` (`ActiveOrderStatus`, unknown values → `unknown`, no action) |
+| DATA-ORD-08 | **domain-only**: `ActiveOrder.deliveryAreaName` (business-required; nullable in Dart only to show absence honestly) |
+| DATA-ORD-12 | **domain-only, optional** (D-A81): `ActiveOrder.customerPhone`; blank → absent (`contactPhone`); never blocks start/completion; delivery leg only |
+| DATA-ORD-09/10/11 | still server-side only: the app sends no amount; the debit is read back through the wallet |
+| DATA-DELIV-01..05 | **domain-only**: `CompletedDelivery`, `GetCompletedDeliveries`, `CompletedDeliveriesCubit`; contract still missing |
+| DATA-CMD-04 | implemented client-side as `OperationKeyFactory` (128-bit random hex); a new key per new attempt, the same key for start/complete retries after an unconfirmed outcome; **ownership and lifetime still need the API contract** |
+
+Missing wire contracts for this feature: active-order read with stage,
+assignment, area and optional phone; confirm-pickup command with its error
+codes and attempts; start and complete commands with idempotency;
+completion receipt; outcome lookup; completed-delivery list with paging;
+the Routes access design; FCM/SignalR invalidation events for stage
+changes.
+
 ## 9. Integration backlog (bounded tasks)
 
 | ID | Task | Inputs needed | Current boundary | Proposed files | Acceptance | Blocked by |
 |---|---|---|---|---|---|---|
 | B-01 | Auth/session adapter | OpenAPI auth contract, refresh/revocation rules, direct account replacement | `AuthRepositoryPlaceholder` | `data/` DTO + repository, secure storage, `get_it` registrations at the composition root (D-A64) | sign-in/refresh/revocation tests against a contract mock; no session invented; timeouts per §3.4 of `GLOBAL_SERVICES.md` | contract (D-P02, D-P03) |
 | B-02 | Offers adapter | list + accept/decline endpoints, error codes, request-key ownership, expiry visibility | `OrderOfferRepositoryPlaceholder` | `data/` DTO + repository | first-accept-wins and unconfirmed mapping tests; active-order reconciliation after accept | contract |
-| B-03 | Active order workflow | read model with status/stage, PIN verify, start, complete commands, customer-contact access, maps provider config | `ActiveOrderRepositoryPlaceholder`, `PickupMapBuilder` null | domain entities/use cases, Current Order widgets | stage tests; no customer pin; no invented coordinates | contract, D-P25, maps keys (D-A62) |
-| B-04 | My Orders completed deliveries | DATA-DELIV read model, paging/sort | not built | new read model, list widget | lifetime list; declined ≠ cancelled/completed | contract |
+| B-03 | Active order workflow — **client done 2026-11-22 (D-A81)** | the wire contract (§9a), Maps keys, Routes access design | client UI/state/ports done; placeholders: `ActiveOrderRepository`, `OrderWorkflowRepository`, `PickupRouteRepository` | `data/` DTOs + repositories, route adapter | contract tests: stage mapping, PIN errors/attempts, idempotent completion, outcome lookup | contract, maps keys/billing, Routes access (D-A62) |
+| B-04 | My Orders completed deliveries — **client done 2026-11-22** | DATA-DELIV read model, paging/sort | `CompletedDeliveriesCubit` over the placeholder | new read model, list widget | lifetime list; declined ≠ cancelled/completed | contract |
 | B-05 | Wallet / statistics adapter | balance + debits + statistics endpoints | `WalletRepositoryPlaceholder` (shared source already correct) | `data/` DTO + repository | Home and Wallet agree; unknown ≠ zero; no clamp | contract, D-P36 for earnings |
 | B-06 | Rating adapter | scale, producer, aggregate | `CaptainAccountRepositoryPlaceholder` | DTO + mapping | no five-star assumption | D-P37 |
 | B-07 | Availability, GPS, push | permission gateway, native setup and disclosures, report endpoint, push registration | placeholders | platform gateway, location/push services | prompts only on Available; 30 s / 90 s policy | contracts, legal copy, credentials |

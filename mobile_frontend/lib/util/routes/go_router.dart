@@ -1,5 +1,7 @@
 // Route table and router construction for the app.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 // SHAHM_DEMO_START router-import
 import 'package:flutter/widgets.dart' show Builder, TransitionBuilder;
@@ -10,6 +12,7 @@ import 'package:mobile_frontend/domain/repositories/availability_permission_gate
 import 'package:mobile_frontend/domain/use_cases/captain_account.dart';
 import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
 import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
+import 'package:mobile_frontend/domain/use_cases/get_completed_deliveries.dart';
 import 'package:mobile_frontend/domain/use_cases/get_declined_offers.dart';
 import 'package:mobile_frontend/domain/use_cases/get_wallet.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_in.dart';
@@ -24,6 +27,7 @@ import 'package:mobile_frontend/view/screens/home_screen/cubit/home_availability
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
+import 'package:mobile_frontend/view/screens/order_history_screen/cubit/completed_deliveries_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/declined_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/screens/about_screen/view/about_screen.dart';
@@ -64,6 +68,8 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 /// sheet, Task 36). [getWallet] and [getDeliveryStatistics] build the
 /// shell-scoped `WalletCubit` shared by Home's balance chip and the Wallet
 /// tab (balance and lifetime statistics, D-A71, D-A76, R02);
+/// [getCompletedDeliveries] the shell-scoped `CompletedDeliveriesCubit`
+/// (My Orders, refreshed after a confirmed completion, D-A81);
 /// [getDeclinedOffers] the shell-scoped `DeclinedOffersCubit` (read by
 /// My Orders, refreshed after a confirmed decline, Task 38).
 /// [getCaptainRating] builds the Profile-scoped `ProfileRatingCubit`;
@@ -89,6 +95,7 @@ GoRouter createAppRouter({
   required GetWallet getWallet,
   required GetDeliveryStatistics getDeliveryStatistics,
   required GetDeclinedOffers getDeclinedOffers,
+  required GetCompletedDeliveries getCompletedDeliveries,
   required GetCaptainRating getCaptainRating,
   required RequestAccountDeletion requestAccountDeletion,
   PickupMapBuilder? pickupMapBuilder,
@@ -193,6 +200,14 @@ GoRouter createAppRouter({
         // open. It reads nothing before My Orders first opens.
         builder: (context, state, navigationShell) => MultiBlocProvider(
           providers: [
+            // Completed deliveries (D-A81): shell-scoped like the declined
+            // offers; read when My Orders opens, refreshed on completion.
+            BlocProvider(
+              create: (_) => CompletedDeliveriesCubit(
+                getCompletedDeliveries,
+                () => sessionCubit.state is SessionAuthenticated,
+              ),
+            ),
             BlocProvider(
               create: (_) => DeclinedOffersCubit(
                 getDeclinedOffers,
@@ -225,11 +240,31 @@ GoRouter createAppRouter({
               ),
             ),
           ],
-          // An account replacement without sign-out must not show the
-          // previous captain's wallet: the listener applies the new owner.
-          child: BlocListener<AppSessionCubit, AppSessionState>(
-            bloc: sessionCubit,
-            listener: (context, _) => context.read<WalletCubit>().syncSession(),
+          child: MultiBlocListener(
+            listeners: [
+              // An account replacement without sign-out must not show the
+              // previous captain's wallet: the listener applies the owner.
+              BlocListener<AppSessionCubit, AppSessionState>(
+                bloc: sessionCubit,
+                listener: (context, _) =>
+                    context.read<WalletCubit>().syncSession(),
+              ),
+              // A server-confirmed completion (D-A81) appended one
+              // commission debit and one completed delivery on the server:
+              // their owners re-read once (no row or amount is made up
+              // here). When the shell is not mounted (Current Order opened
+              // at startup) the next shell reads fresh data anyway.
+              BlocListener<CurrentOrderCubit, CurrentOrderState>(
+                bloc: currentOrderCubit,
+                listenWhen: (previous, current) =>
+                    previous is! CurrentOrderDelivered &&
+                    current is CurrentOrderDelivered,
+                listener: (context, _) {
+                  unawaited(context.read<WalletCubit>().invalidate());
+                  unawaited(context.read<CompletedDeliveriesCubit>().refresh());
+                },
+              ),
+            ],
             child: NewOfferSheetHost(
               hasSession: () => sessionCubit.state is SessionAuthenticated,
               // SHAHM_DEMO_START router-shell

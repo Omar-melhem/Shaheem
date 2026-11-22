@@ -69,8 +69,13 @@ Exact delivery state values:
 
 - Valid active-delivery sequence: `accepted` → `heading_to_pickup` →
   `picked_up` (merchant gives the **order-specific four-digit pickup PIN** to
-  the captain) → `on_the_way` (**separate Start Delivery action**, after the
-  captain calls the customer outside SHAHM) → `delivered`.
+  the captain; the server verifies it) → `on_the_way` (**separate Start
+  Delivery action**, explicitly retained, D-A81) → `delivered` (explicit
+  captain completion command). The customer phone is **optional**: when the
+  merchant supplies one the captain may call it outside SHAHM, but no call is
+  required and a missing phone never blocks Start Delivery or completion
+  (D-A81, 2026-11-22; supersedes the earlier "after the captain calls the
+  customer" wording).
 - Backend alone verifies permissions, guards, and state transitions. Task-based
   POST commands are used for accept, pickup PIN, start delivery, completion,
   cancellation and reassignment; PATCH applies only to ordinary editable data.
@@ -84,8 +89,8 @@ Exact delivery state values:
 - Only the captain currently responsible can mark an order delivered. There
   is no customer OTP, photo or signature for delivery.
 - Customer is not a registered SHAHM user and has **no** app, account, name,
-  GPS point, precise address or customer-facing route. Only the customer phone
-  and destination **area** are entered by the merchant.
+  GPS point, precise address or customer-facing route. The merchant enters the
+  destination **area** (required) and, optionally, a customer phone.
 
 ### 3.2 Captain eligibility (owner-approved)
 
@@ -314,9 +319,16 @@ Admin can explicitly close a WhatsApp request.
   Admin intervention; PIN is single-use, invalid when cancelled/expired, and
   regenerated on reassignment before pickup.
 - A separate **Start Delivery** action advances `picked_up` → `on_the_way`.
-  No call recording is required. Captain alone marks delivered when permitted.
+  No call is required or recorded. Captain alone marks delivered when permitted.
 - Google Maps and Routes API DRIVE route **only to merchant**; separate
   native Google Maps navigation action is available on pickup leg.
+- **Screen sequence (D-A81):** pickup leg (merchant, map, Open in Google
+  Maps, «تم الاستلام» → PIN form) → after confirmed pickup the delivery view
+  **without a map** (destination area; customer phone only if supplied) with
+  «بدء التوصيل» → after confirmed start «تم تسليم الطلب» → after confirmed
+  completion the history and wallet are re-read and «طلباتي» opens. The stage
+  shown always comes from the server; the app never advances it on a tap, a
+  timeout, opening Maps, GPS proximity or elapsed time.
 
 ### 3.10 Deliberately excluded (Product Owner decisions, web)
 

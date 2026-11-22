@@ -58,11 +58,25 @@ wallet change: there are no holds), availability. Nothing is sent over the netwo
 disk or kept after a restart. The token `DEMO_ONLY_NOT_A_JWT_DO_NOT_SEND`
 lives in memory only and is never used.
 
-**Not shown (no screen exists):** the completed-delivery list (only its
-lifetime count reaches the Wallet card), future scheduled commitments,
-pickup PIN / delivery steps, an `on_the_way` status (the active order has no
-status field), recharge credits (ledger evidence in `wallet.json`, not
-listed in the captain UI).
+**Current Order workflow (D-A81, 2026-11-22).** `DemoOrderWorkflowRepository`
+lets the real Current Order page run its whole flow against the in-memory
+demo server: accept an offer → pickup leg (the map stays "unavailable"
+unless Google Maps keys are provisioned; «فتح في خرائط Google» uses the
+fictional merchant point) → «تم الاستلام» with the fixture's demo PIN
+(`current_order.json` → `pickup_pin`, checked **only** by `DemoState`;
+three wrong attempts lock it until a reset) → delivery view → «بدء التوصيل»
+→ «تم تسليم الطلب». Completion appends one completed delivery and exactly
+one commission debit (the offer's fixture commission) and lowers the
+balance; a repeat with the same operation key returns the same receipt.
+Offers `demo-offer-101` and the injected template carry a fictional,
+non-assignable `070…` customer phone; `demo-offer-102` and the
+pre-assigned scenario have none, to show the optional-phone path. Removing
+the demo leaves the real stage UI and ports with production "not
+configured" behavior.
+
+**Not shown (no screen exists):** future scheduled commitments, recharge
+credits (ledger evidence in `wallet.json`, not listed in the captain UI).
+The demo has no real GPS, routing, backend PIN check or settlement.
 
 **How the Task 38 behaviour is wired:**
 

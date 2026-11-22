@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:mobile_frontend/domain/entities/active_order.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
 
 /// Where the fixtures live (declared as an asset only while the demo is
@@ -64,6 +65,18 @@ class _Reader {
         throw DemoFixtureException(file, '"$key" must hold objects'),
   ];
 
+  /// The optional fictional pickup point (`demo_pickup_latitude` /
+  /// `demo_pickup_longitude`), both or neither.
+  GeoPoint? point() {
+    final lat = opt<num>('demo_pickup_latitude');
+    final lng = opt<num>('demo_pickup_longitude');
+    if (lat == null && lng == null) return null;
+    if (lat == null || lng == null) {
+      throw DemoFixtureException(file, 'pickup point needs lat and lng');
+    }
+    return GeoPoint(latitude: lat.toDouble(), longitude: lng.toDouble());
+  }
+
   int fils(String key) {
     final value = req<int>(key);
     if (value < 0) throw DemoFixtureException(file, '"$key" is negative');
@@ -85,6 +98,8 @@ class DemoOfferSeed {
     required this.commissionFils,
     required this.expiresInSeconds,
     required this.scheduledInMinutes,
+    this.pickup,
+    this.customerPhone,
   });
 
   /// For the template these are the `{sequence}` patterns.
@@ -99,6 +114,12 @@ class DemoOfferSeed {
   final int commissionFils;
   final int? expiresInSeconds;
   final int? scheduledInMinutes;
+
+  /// Fictional merchant point for the demo pickup map / Google Maps action.
+  final GeoPoint? pickup;
+
+  /// Fictional customer phone; absent on purpose for some orders (D-A81).
+  final String? customerPhone;
 
   static DemoOfferSeed _parse(_Reader r, {bool template = false}) {
     final fee = r.fils('delivery_fee_fils');
@@ -128,6 +149,8 @@ class DemoOfferSeed {
       commissionFils: commission,
       expiresInSeconds: r.opt<int>('expires_in_seconds'),
       scheduledInMinutes: r.opt<int>('scheduled_in_minutes'),
+      pickup: r.point(),
+      customerPhone: r.opt<String>('demo_customer_phone'),
     );
     if (!seed.id.startsWith('demo-') || !seed.orderId.startsWith('demo-')) {
       throw DemoFixtureException(r.file, 'ids must start with "demo-"');
@@ -141,10 +164,40 @@ class DemoOfferSeed {
 
 /// One fictional active-order scenario.
 class DemoOrderSeed {
-  const DemoOrderSeed({required this.id, required this.merchantName});
+  const DemoOrderSeed({
+    required this.id,
+    required this.merchantName,
+    required this.deliveryArea,
+    required this.deliveryFeeFils,
+    required this.commissionFils,
+    this.pickup,
+    this.customerPhone,
+  });
 
   final String id;
   final String merchantName;
+  final String deliveryArea;
+  final int deliveryFeeFils;
+  final int commissionFils;
+  final GeoPoint? pickup;
+  final String? customerPhone;
+}
+
+/// One fictional completed delivery (history and lifetime statistics).
+class DemoCompletedSeed {
+  const DemoCompletedSeed({
+    required this.orderId,
+    required this.merchantName,
+    required this.deliveryArea,
+    required this.deliveryFeeFils,
+    required this.minutesAgo,
+  });
+
+  final String orderId;
+  final String merchantName;
+  final String deliveryArea;
+  final int deliveryFeeFils;
+  final int minutesAgo;
 }
 
 /// One fictional declined offer.
@@ -196,7 +249,8 @@ class DemoFixtures {
     required this.incomingTemplate,
     required this.assignedScenario,
     required this.declined,
-    required this.completedCount,
+    required this.completed,
+    required this.pickupPin,
     required this.futureCount,
     required this.walletBalanceFils,
     required this.debits,
@@ -217,9 +271,15 @@ class DemoFixtures {
   final DemoOrderSeed assignedScenario;
   final List<DemoDeclinedSeed> declined;
 
-  /// Completed deliveries in the fixtures: the demo "server"'s lifetime
-  /// delivered count (D-A76).
-  final int completedCount;
+  /// Completed deliveries in the fixtures: the demo "server"'s history and
+  /// lifetime delivered count (D-A76).
+  final List<DemoCompletedSeed> completed;
+
+  /// The fictional pickup PIN every demo order accepts (checked only by
+  /// the in-memory demo server; production never compares a PIN).
+  final String pickupPin;
+
+  int get completedCount => completed.length;
 
   /// Parsed and checked, but the app has no screen for them yet.
   final int futureCount;
@@ -312,6 +372,10 @@ class DemoFixtures {
       );
     }
     final assigned = current.obj('scenarios').obj('assigned');
+    final pin = assigned.req<String>('pickup_pin');
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+      throw const DemoFixtureException('current_order', 'pin: 4 digits');
+    }
 
     final balance = wallet.obj('summary').req<int>('balance_fils');
     if (home.req<int>('wallet_balance_fils') != balance) {
@@ -352,7 +416,13 @@ class DemoFixtures {
       assignedScenario: DemoOrderSeed(
         id: assigned.req<String>('id'),
         merchantName: assigned.req<String>('merchant_name'),
+        deliveryArea: assigned.req<String>('delivery_area'),
+        deliveryFeeFils: assigned.fils('delivery_fee_fils'),
+        commissionFils: assigned.fils('commission_fils'),
+        pickup: assigned.point(),
+        customerPhone: assigned.opt<String>('customer_phone'),
       ),
+      pickupPin: pin,
       declined: [
         for (final d in history.list('declined_offers'))
           DemoDeclinedSeed(
@@ -364,7 +434,16 @@ class DemoFixtures {
             minutesAgo: d.fils('declined_minutes_ago'),
           ),
       ],
-      completedCount: history.list('completed_deliveries').length,
+      completed: [
+        for (final c in history.list('completed_deliveries'))
+          DemoCompletedSeed(
+            orderId: c.req<String>('id'),
+            merchantName: c.req<String>('merchant_name'),
+            deliveryArea: c.req<String>('delivery_area'),
+            deliveryFeeFils: c.fils('delivery_fee_fils'),
+            minutesAgo: c.fils('occurred_minutes_ago'),
+          ),
+      ],
       futureCount: history.list('future_commitments').length,
       walletBalanceFils: balance,
       debits: [

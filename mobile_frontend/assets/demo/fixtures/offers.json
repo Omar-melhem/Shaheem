@@ -14,7 +14,10 @@
       "commission_fils": 500,
       "captain_net_fils": 2000,
       "expires_in_seconds": 120,
-      "status": "eligible"
+      "status": "eligible",
+      "demo_pickup_latitude": 31.97,
+      "demo_pickup_longitude": 35.902,
+      "demo_customer_phone": "0700000101"
     },
     {
       "id": "demo-offer-102",
@@ -28,7 +31,9 @@
       "commission_fils": 650,
       "captain_net_fils": 2600,
       "expires_in_seconds": 120,
-      "status": "eligible"
+      "status": "eligible",
+      "demo_pickup_latitude": 32.02,
+      "demo_pickup_longitude": 35.872
     },
     {
       "id": "demo-offer-201",
@@ -42,7 +47,9 @@
       "commission_fils": 800,
       "captain_net_fils": 3200,
       "scheduled_in_minutes": 1440,
-      "status": "preview_only_not_actionable"
+      "status": "preview_only_not_actionable",
+      "demo_pickup_latitude": 31.956,
+      "demo_pickup_longitude": 35.865
     }
   ],
   "incoming_offer_template": {
@@ -57,7 +64,10 @@
     "commission_fils": 600,
     "captain_net_fils": 2400,
     "expires_in_seconds": 120,
-    "status": "eligible"
+    "status": "eligible",
+    "demo_pickup_latitude": 31.978,
+    "demo_pickup_longitude": 35.878,
+    "demo_customer_phone": "0700000777"
   },
   "unavailable_offer_scenario": {
     "id": "demo-expired-offer",
@@ -69,5 +79,6 @@
     "delivery_fee_fils": 2000,
     "commission_fils": 400,
     "captain_net_fils": 1600
-  }
+  },
+  "demo_contact_note": "Fictional pickup points in Amman and fictional, non-assignable 070 phone numbers. demo-offer-102 deliberately has no customer phone (D-A81: the phone is optional)."
 }

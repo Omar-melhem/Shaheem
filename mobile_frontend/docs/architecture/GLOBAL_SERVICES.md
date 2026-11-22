@@ -205,6 +205,8 @@ one generic state framework:
 | Command: sign in | `SignIn` | `SignInServiceUnavailable` (no session created) | `SignInNoInternet` | — |
 | Command: availability change | `ChangeCaptainAvailability` | `AvailabilityServiceUnavailable` → the Cubit keeps the last confirmed value and shows "could not confirm" | same notice | — |
 | Command: accept / decline offer | `AcceptOrderOffer`, `DeclineOrderOffer` | `OfferCommandUnconfirmed` (neither success nor rejection; the offer/active-order reads reconcile) | `OfferCommandUnconfirmed` | — |
+| Command: confirm pickup / start / complete delivery (D-A81) | `ConfirmPickup`, `StartDelivery`, `CompleteDelivery` | `OrderCommandUnconfirmed` (also for a server error after sending); the action stays blocked until reconciled, start/complete keep their operation key | `OrderCommandNoInternet` ("not sent") | Wrong PIN / locked / state conflict are typed rejections, never transport failures |
+| Read: completed deliveries, order outcome, pickup route | `GetCompletedDeliveries`, `GetOrderOutcome`, `GetPickupRoute` | retryable failure / still unknown / route unavailable (never "empty", "delivered" or a straight line) | `…NoInternet` | — |
 | Command: account deletion | `RequestAccountDeletion` | **`AccountDeletionUnconfirmed`** (added R04): "no answer in time; we don't know whether the request arrived; your account is not treated as deleted"; no further submission from that screen | `AccountDeletionNoInternet` ("not sent") | — |
 
 **Rules (lesson L-05):**

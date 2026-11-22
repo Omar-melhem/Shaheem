@@ -139,6 +139,12 @@ state vs lifecycle/presentation effects, with Home as the example).
   return (coalesced, session-guarded; failure ≠ "no order"). It never
   creates an order; the destination is the restaurant, never the customer.
   The server decides what is active; never fake an order, coordinate or map.
+- **Current Order stages (D-A81):** one page renders the server-reported
+  stage — pickup (map, Google Maps, «تم الاستلام» → PIN form), `picked_up`
+  (no map, «بدء التوصيل»), `on_the_way` («تم تسليم الطلب»). The customer
+  phone is optional and never blocks a stage. The app never checks a PIN or
+  advances a stage itself; confirmed completion re-reads history/wallet and
+  opens «طلباتي» once. Details: `docs/architecture/STATE_MANAGEMENT.md`.
 - **No Notifications route or feed (D-A72).** Operational order push stays a
   hint to re-read offers/orders.
 - **Debug preview (temporary, D-A40):** the only unauthenticated way into the

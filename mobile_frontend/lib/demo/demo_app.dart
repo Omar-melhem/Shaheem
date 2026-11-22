@@ -76,6 +76,7 @@ class _DemoAppState extends State<DemoApp> {
         orderOfferRepository: DemoOfferRepository(state),
         walletRepository: DemoWalletRepository(state),
         orderHistoryRepository: DemoOrderHistoryRepository(state),
+        orderWorkflowRepository: DemoOrderWorkflowRepository(state),
         demoAppOverlay: (context, child) =>
             DemoStrip(state: state, child: child!),
         demoShellBuilder: (context, child) =>

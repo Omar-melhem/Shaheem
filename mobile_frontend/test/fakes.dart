@@ -149,6 +149,8 @@ class FakeAuthRepository implements AuthRepository {
 /// production code never contains an order or a coordinate.
 const testPickup = GeoPoint(latitude: 31.9539, longitude: 35.9106);
 const testActiveOrder = ActiveOrder(
+  status: ActiveOrderStatus.accepted,
+
   orderId: 'order-42',
   restaurantName: 'مطعم الاختبار',
   pickupLocation: testPickup,

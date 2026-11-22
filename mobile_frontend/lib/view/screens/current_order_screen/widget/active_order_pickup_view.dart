@@ -1,33 +1,42 @@
-// Body of the Current Order screen when an active order can be mapped.
+// Current Order, pickup leg: merchant, actions, captain location, route and
+// the merchant pickup map (D-A62, D-A81).
 
 import 'package:flutter/material.dart';
 import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
+import 'package:mobile_frontend/domain/use_cases/get_pickup_route.dart';
+import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/view/screens/current_order_screen/widget/order_command_notice.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 import 'package:mobile_frontend/view/widget/status/app_status_message.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
-/// Shows the active order's pickup: the restaurant card, the state of the
-/// captain's own location, and the map area.
+/// The pickup leg (`accepted` / `heading_to_pickup`, one presentation):
+/// the merchant card, «تم الاستلام» and «فتح في خرائط Google», the
+/// captain's location state, the route summary and the map area.
 ///
-/// The restaurant card is always shown, because the order is active
-/// regardless of its coordinates. The map area shows, in this order of
-/// priority: "restaurant location unavailable" when the order has no usable
-/// coordinates (never a default location), "map unavailable" when no map is
-/// configured, or the map. The destination is always the restaurant pickup
-/// point from the order.
+/// The merchant card and the pickup action are always shown: a missing
+/// map, route or captain position never hides the order or disables a
+/// valid pickup. The map area shows, by priority: "merchant location
+/// unavailable" (no valid coordinates; never a default point), "map
+/// unavailable" (no provider configured), or the map. The destination is
+/// always the merchant.
 ///
-/// Presentation only: the callbacks are handled by the Cubit.
+/// Presentation only: every callback is handled by the Cubit or the page.
 class ActiveOrderPickupView extends StatelessWidget {
   const ActiveOrderPickupView({
     super.key,
     required this.state,
     required this.onRetryLocation,
     required this.onRefresh,
+    required this.onConfirmPickup,
+    required this.onOpenNavigation,
+    required this.onCheckStatus,
     this.mapBuilder,
   });
 
@@ -36,6 +45,15 @@ class ActiveOrderPickupView extends StatelessWidget {
 
   /// Looks the order up again (it may have gained coordinates).
   final VoidCallback onRefresh;
+
+  /// Opens the pickup-verification form.
+  final VoidCallback onConfirmPickup;
+
+  /// Opens Google Maps navigation to the merchant.
+  final VoidCallback onOpenNavigation;
+
+  /// Reconciles an unconfirmed pickup.
+  final VoidCallback onCheckStatus;
 
   /// Null while no maps provider is configured.
   final PickupMapBuilder? mapBuilder;
@@ -49,6 +67,13 @@ class ActiveOrderPickupView extends StatelessWidget {
     final location = state.captainLocation;
     final pickup = state.pickup;
     final padding = AppBreakpoints.screenPadding(context);
+    final command = state.command;
+    final pickupCommand = command?.action == OrderWorkflowAction.confirmPickup
+        ? command
+        : null;
+    final blocked =
+        pickupCommand?.error == OrderCommandError.pinLocked ||
+        (pickupCommand?.needsReconciliation ?? false);
 
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
@@ -61,9 +86,32 @@ class ActiveOrderPickupView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _PickupCard(state: state),
+                const SizedBox(height: 12),
+                AppButton(
+                  label: l10n.pickupConfirmAction,
+                  icon: const Icon(PhosphorIconsRegular.package),
+                  isLoading: state.isSending,
+                  onPressed: blocked ? null : onConfirmPickup,
+                ),
+                // A locked PIN or an unknown outcome stays visible here
+                // after the form closes.
+                if (blocked)
+                  OrderCommandNotice(
+                    feedback: pickupCommand!,
+                    onCheckStatus: onCheckStatus,
+                  ),
+                const SizedBox(height: 4),
+                AppTextButton(
+                  label: l10n.openInGoogleMaps,
+                  icon: const Icon(PhosphorIconsRegular.navigationArrow),
+                  onPressed: pickup == null ? null : onOpenNavigation,
+                ),
                 // The captain's position is only read when a map can show.
-                if (pickup != null)
+                if (pickup != null) ...[
                   _LocationStatus(result: location, onRetry: onRetryLocation),
+                  if (location is CaptainLocationFound)
+                    _RouteStatus(route: state.route),
+                ],
                 const SizedBox(height: 12),
                 SizedBox(
                   key: mapAreaKey,
@@ -103,6 +151,10 @@ class ActiveOrderPickupView extends StatelessWidget {
                                     location is CaptainLocationFound
                                     ? location.location
                                     : null,
+                                routePath: switch (state.route) {
+                                  PickupRouteFound(:final route) => route.path,
+                                  _ => null,
+                                },
                               ),
                             ),
                     ),
@@ -117,7 +169,7 @@ class ActiveOrderPickupView extends StatelessWidget {
   }
 }
 
-/// Restaurant name, the "pickup point" label and any pickup instructions.
+/// Merchant name, the "pickup point" label and any pickup instructions.
 class _PickupCard extends StatelessWidget {
   const _PickupCard({required this.state});
 
@@ -216,34 +268,71 @@ class _LocationStatus extends StatelessWidget {
       CaptainLocationNotConfigured() => (l10n.locationNotConfigured, false),
     };
     if (text.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Semantics(
-        container: true,
-        liveRegion: true,
-        child: Row(
-          children: [
-            const ExcludeSemantics(
-              child: Icon(
-                PhosphorIconsRegular.crosshair,
-                size: 20,
-                color: AppColor.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColor.textSecondary),
-              ),
-            ),
-            if (canRetry) AppTextButton(label: l10n.retry, onPressed: onRetry),
-          ],
-        ),
-      ),
+    return _StatusLine(
+      icon: PhosphorIconsRegular.crosshair,
+      text: text,
+      action: canRetry
+          ? AppTextButton(label: l10n.retry, onPressed: onRetry)
+          : null,
     );
   }
+}
+
+/// The road route summary, or why there is none. Only real routing data
+/// is shown; there is never a straight-line estimate.
+class _RouteStatus extends StatelessWidget {
+  const _RouteStatus({required this.route});
+
+  /// Null while the route is being read.
+  final PickupRouteResult? route;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = switch (route) {
+      null => l10n.loading,
+      PickupRouteFound(:final route) => l10n.routeDistanceAndTime(
+        ltrIsolate((route.distanceMeters / 1000).toStringAsFixed(1)),
+        (route.durationSeconds / 60).ceil(),
+      ),
+      PickupRouteNotConfigured() => l10n.routeNotConfigured,
+      PickupRouteUnavailable() => l10n.routeUnavailable,
+    };
+    return _StatusLine(icon: PhosphorIconsRegular.path, text: text);
+  }
+}
+
+/// A small icon + text status line (live region).
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.icon, required this.text, this.action});
+
+  final IconData icon;
+  final String text;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: Semantics(
+      container: true,
+      liveRegion: true,
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: Icon(icon, size: 20, color: AppColor.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColor.textSecondary),
+            ),
+          ),
+          ?action,
+        ],
+      ),
+    ),
+  );
 }
