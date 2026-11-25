@@ -24,7 +24,7 @@ import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { isDestinationActive } from '@/domain/regions';
 import { isGovernorateId } from '@/domain/governorates';
 import { cityName, isCityInGovernorate } from '@/domain/cities';
-import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
+import { MERCHANT_PASSWORD_REQUIRED, PASSWORD_TOO_SHORT, isMerchantPasswordAcceptable, isPasswordLongEnough } from '@/domain/account';
 import { CUSTOMER_PHONE_ERROR, PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
@@ -123,9 +123,14 @@ function usernameTaken(data: AppData, username: string, exceptId?: ID): boolean 
   );
 }
 
-function validateCredentials(data: AppData, creds: { username: string; password: string }, exceptId?: ID): string | null {
+type PasswordPolicy = 'standard' | 'merchant';
+
+/** `merchant` accepts any non-empty password (owner, 2026-11-25); `standard` (Captains) keeps the 6-character rule. */
+function validateCredentials(data: AppData, creds: { username: string; password: string }, exceptId?: ID, policy: PasswordPolicy = 'standard'): string | null {
   if (!/^[a-zA-Z0-9._-]{3,30}$/.test(creds.username.trim())) return 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل';
-  if (!isPasswordLongEnough(creds.password)) return PASSWORD_TOO_SHORT;
+  if (policy === 'merchant' ? !isMerchantPasswordAcceptable(creds.password) : !isPasswordLongEnough(creds.password)) {
+    return policy === 'merchant' ? MERCHANT_PASSWORD_REQUIRED : PASSWORD_TOO_SHORT;
+  }
   if (usernameTaken(data, creds.username, exceptId)) return 'اسم المستخدم مستخدم لحساب آخر';
   return null;
 }
@@ -300,7 +305,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             const locErr = pickupLocationError(d.areas, input);
             if (locErr) return fail(locErr);
-            const credErr = validateCredentials(d, input);
+            const credErr = validateCredentials(d, input, undefined, 'merchant');
             if (credErr) return fail(credErr);
             const id = uid('m');
             d.merchants.push({ ...input, address: pickupAddressLabel(d.areas, undefined, input), phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
@@ -317,7 +322,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
               const locErr = pickupLocationError(d.areas, input);
               if (locErr) return fail(locErr);
             }
-            const credErr = validateCredentials(d, input, id);
+            const credErr = validateCredentials(d, input, id, 'merchant');
             if (credErr) return fail(credErr);
             Object.assign(m, { ...input, address: pickupAddressLabel(d.areas, m, input), phone: normalizePhone(input.phone) });
             return done;

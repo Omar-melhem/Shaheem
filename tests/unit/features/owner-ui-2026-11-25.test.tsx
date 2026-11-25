@@ -173,3 +173,18 @@ describe('A1/A3 · locations are chosen by map tap or search — no draggable pi
     expect(document.body.textContent).not.toMatch(/اسحب/);
   });
 });
+
+describe('Create Merchant form: any non-empty password', () => {
+  it('no «6 أحرف» hint; empty is required; a one-letter password is accepted as typed', async () => {
+    const { MerchantFormDialog } = await import('@/features/admin/merchants/MerchantFormDialog');
+    inRouter(<MerchantFormDialog merchant="new" onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).not.toContain('6 أحرف');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء التاجر' }));
+    expect(within(dialog).getByText('كلمة المرور مطلوبة')).toBeInTheDocument();
+    const password = within(dialog).getByLabelText(/كلمة المرور/);
+    await userEvent.type(password, ' أ ');
+    expect(password).toHaveValue(' أ ');
+    expect(within(dialog).queryByText('كلمة المرور مطلوبة')).not.toBeInTheDocument();
+  });
+});

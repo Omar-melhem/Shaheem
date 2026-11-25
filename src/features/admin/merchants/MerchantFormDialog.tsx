@@ -4,7 +4,7 @@ import { useAppStore, type MerchantInput } from '@/app/state';
 import { isUnchangedLegacyLocation, pickupLocationError } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
-import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
+import { MERCHANT_PASSWORD_REQUIRED, isMerchantPasswordAcceptable } from '@/domain/account';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
@@ -47,7 +47,7 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
       if (locationError) e.location = locationError;
     }
     if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (!isPasswordLongEnough(form.password)) e.password = PASSWORD_TOO_SHORT;
+    if (!isMerchantPasswordAcceptable(form.password)) e.password = MERCHANT_PASSWORD_REQUIRED; // any non-empty value, kept as typed
     setErrors(e);
     if (Object.keys(e).length) return;
     setSubmitting(true);
@@ -96,8 +96,8 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
             <Field label="اسم المستخدم" required error={errors.username}>
               <Input value={form.username} onChange={(e) => set('username', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.username} />
             </Field>
-            <Field label="كلمة المرور" required error={errors.password} hint="6 أحرف على الأقل">
-              <Input value={form.password} onChange={(e) => set('password', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.password} />
+            <Field label="كلمة المرور" required error={errors.password}>
+              <Input value={form.password} onChange={(e) => { set('password', e.target.value); setErrors((er) => ({ ...er, password: '' })); }} dir="auto" autoComplete="off" aria-invalid={!!errors.password} />
             </Field>
           </div>
         </div>

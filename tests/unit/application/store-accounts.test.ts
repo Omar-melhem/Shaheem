@@ -3,6 +3,7 @@ import { PHONE_ERROR } from '@/domain/phone';
 import { PICKUP_REQUIRED } from '@/application/merchantLocation';
 import { captainInput, failureOf, memoryRepository, merchantInput, newStore, valueOf } from './storeHarness';
 import { TOPUP_AMOUNT_ERROR, TOPUP_LIMIT_ERROR } from '@/domain/wallet';
+import { MERCHANT_PASSWORD_REQUIRED, PASSWORD_TOO_SHORT } from '@/domain/account';
 
 describe('createMerchant', () => {
   it.each([
@@ -13,7 +14,7 @@ describe('createMerchant', () => {
     [{ areaId: 'a-khalda', cityId: 'irbid' }, 'اختر منطقة تابعة للمدينة المختارة'],
     [{ pickup: { lat: 0, lng: 0 } }, PICKUP_REQUIRED],
     [{ username: 'ab' }, 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل'],
-    [{ password: '123' }, 'كلمة المرور 6 أحرف على الأقل'],
+    [{ password: '' }, MERCHANT_PASSWORD_REQUIRED],
     [{ username: 'captain1' }, 'اسم المستخدم مستخدم لحساب آخر'],
     [{ username: 'ADMIN' }, 'اسم المستخدم مستخدم لحساب آخر'],
   ])('rejects %j', (over, message) => {
@@ -147,5 +148,36 @@ describe('wallet top-up (demo ledger)', () => {
     repo.failNextSave = true;
     expect(state().rechargeWallet('c-yazan', 2_000, 'op-c').ok).toBe(false);
     expect(state().walletTx.length).toBe(before);
+  });
+});
+
+describe('merchant passwords: any non-empty value, kept exactly (owner 2026-11-25)', () => {
+  it.each(['a', '1', '!', 'مرحبا', 'a b', ' abc '])('accepts %j unchanged, and it signs in', (password) => {
+    const { state } = newStore();
+    const id = valueOf(state().createMerchant(merchantInput({ password }) as never));
+    expect(state().merchants.find((m) => m.id === id)!.password).toBe(password);
+    expect(state().authenticate('newshop', password).ok).toBe(true);
+    if (password !== password.trim()) expect(state().authenticate('newshop', password.trim()).ok).toBe(false);
+  });
+
+  it('rejects an empty password on create and on edit', () => {
+    const { state } = newStore();
+    expect(failureOf(state().createMerchant(merchantInput({ password: '' }) as never))).toBe(MERCHANT_PASSWORD_REQUIRED);
+    const m = state().merchants[0];
+    expect(failureOf(state().updateMerchant(m.id, { ...m, password: '' } as never))).toBe(MERCHANT_PASSWORD_REQUIRED);
+  });
+
+  it('a merchant created with a short password can still be edited', () => {
+    const { state } = newStore();
+    const id = valueOf(state().createMerchant(merchantInput({ password: 'a' }) as never));
+    const m = state().merchants.find((x) => x.id === id)!;
+    valueOf(state().updateMerchant(id, { ...m, businessName: 'اسم جديد' } as never));
+  });
+
+  it('username rules are unchanged; captains and password resets keep the 6-character rule', () => {
+    const { state } = newStore();
+    expect(failureOf(state().createMerchant(merchantInput({ username: 'ab', password: 'a' }) as never))).toBe('اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل');
+    expect(failureOf(state().createCaptain(captainInput({ password: '123' })))).toBe(PASSWORD_TOO_SHORT);
+    expect(state().resetAccountPassword({ role: 'merchant', id: state().merchants[0].id }, 'a').ok).toBe(false);
   });
 });
