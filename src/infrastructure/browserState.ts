@@ -1,7 +1,16 @@
 import type { AppData } from '@/application/data';
 import type { AppRepository } from '@/application/ports/AppRepository';
 import { DEFAULT_COMMISSION_BP, isValidCommissionBp } from '@/domain/commission';
-export const STORAGE_KEY = 'shahm-demo-v9';
+export const STORAGE_KEY = 'shahm-demo-v10';
+/** Earlier keys hold the old fictional demo data; they are removed, never read (owner, 2026-11-25). */
+const LEGACY_KEY = /^shahm-demo-v\d+$/;
+
+function removeLegacyData() {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key && key !== STORAGE_KEY && LEGACY_KEY.test(key)) localStorage.removeItem(key);
+  }
+}
 
 const ARRAY_KEYS = ['merchants', 'captains', 'areas', 'routes', 'prices', 'coverage', 'pricingAudit', 'orders', 'offers', 'walletTx', 'supportContacts', 'alerts', 'adminAudit'] as const;
 
@@ -39,6 +48,7 @@ export function isAppDataShape(value: unknown): value is AppData {
 export const browserRepository: AppRepository = {
   load() {
     try {
+      removeLegacyData();
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const saved = JSON.parse(raw) as { version?: unknown; state?: unknown };

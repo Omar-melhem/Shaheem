@@ -35,7 +35,11 @@ export function DemoAccountsPanel() {
       </summary>
       <div className="space-y-2 px-4 pb-4">
         <DemoRow label="الإدارة" onEnter={() => enterAs(DEMO_ADMIN)} />
-        <DemoRow label="تاجر" onEnter={() => enterAs(merchants.find((m) => m.id === merchantId))}>
+        {merchants.length === 0 && captains.length === 0 && (
+          <p className="text-xs text-ink-muted">لا توجد حسابات تجار أو كباتن بعد — ادخل كإدارة وأنشئها.</p>
+        )}
+        {merchants.length > 0 && (
+        <DemoRow label="تاجر" onEnter={() => enterAs(merchants.find((m) => m.id === (merchantId || merchants[0].id)))}>
           <Select value={merchantId} onChange={(e) => setMerchantId(e.target.value)} aria-label="اختر حساب التاجر">
             {merchants.map((m) => (
               <option key={m.id} value={m.id}>
@@ -45,7 +49,9 @@ export function DemoAccountsPanel() {
             ))}
           </Select>
         </DemoRow>
-        <DemoRow label="كابتن" onEnter={() => enterAs(captains.find((c) => c.id === captainId))}>
+        )}
+        {captains.length > 0 && (
+        <DemoRow label="كابتن" onEnter={() => enterAs(captains.find((c) => c.id === (captainId || captains[0].id)))}>
           <Select value={captainId} onChange={(e) => setCaptainId(e.target.value)} aria-label="اختر حساب الكابتن">
             {captains.map((c) => (
               <option key={c.id} value={c.id}>
@@ -55,6 +61,7 @@ export function DemoAccountsPanel() {
             ))}
           </Select>
         </DemoRow>
+        )}
         <div className="border-t border-dashed border-sand-dark/40 pt-3">
           <DemoToolsButton variant="inline" />
         </div>

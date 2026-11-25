@@ -239,3 +239,30 @@ export function createSeedData(now: number = Date.now()): AppData {
     seq,
   };
 }
+
+/**
+ * The live site's starting state (owner, 2026-11-25: «امسح كل الداتا الوهمية»): no merchants,
+ * captains, areas, prices, orders or wallet entries — Admin creates everything. Only the default
+ * settings remain. Order references still start at SH-10001. `createSeedData` above is kept as the
+ * fixture for the test suite only.
+ */
+export function createEmptyData(): AppData {
+  return {
+    merchants: [],
+    captains: [],
+    areas: [],
+    routes: [],
+    prices: [],
+    coverage: [],
+    pricingAudit: [],
+    orders: [],
+    offers: [],
+    walletTx: [],
+    supportContacts: [],
+    alerts: [],
+    adminAudit: [],
+    settings: { publicBroadcast: true, commissionBp: DEFAULT_COMMISSION_BP },
+    demo: { ...DEFAULT_DEMO_SETTINGS },
+    seq: 10_000,
+  };
+}

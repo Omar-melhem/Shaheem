@@ -31,7 +31,7 @@ export function DashboardPage() {
     <div className="min-w-0 space-y-8">
       <PageHeader
         title="نظرة عامة"
-        description="ملخص العمليات وحالة التوصيل. الأرقام محسوبة من بيانات العرض التجريبية."
+        description="ملخص العمليات وحالة التوصيل، محسوب من البيانات المُدخلة في النظام."
         actions={
           <>
             <Link to="/admin/merchants?new=1" className={LINK_OUTLINE}>

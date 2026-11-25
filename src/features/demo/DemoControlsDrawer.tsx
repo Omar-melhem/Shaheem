@@ -26,7 +26,7 @@ export function DemoControlsDrawer({ open, onClose }: { open: boolean; onClose: 
       <section className="space-y-3 rounded-2xl bg-white p-4 shadow-card">
         <h3 className="font-bold">البيانات</h3>
         <Button variant="danger" icon={<RotateCcw className="h-4 w-4" />} onClick={() => setConfirmReset(true)}>
-          إعادة ضبط بيانات العرض
+          مسح كل البيانات
         </Button>
         <p className="text-xs text-ink-muted">تُحفظ البيانات في هذا المتصفح فقط (localStorage). يمكن فتح الإدارة والتاجر والكابتن في تبويبات منفصلة في نفس المتصفح وستتزامن تلقائياً، لكنها لا تتزامن بين أجهزة مختلفة.</p>
       </section>
@@ -145,11 +145,11 @@ export function DemoControlsDrawer({ open, onClose }: { open: boolean; onClose: 
         onConfirm={() => {
           s.resetDemo();
           setThresholdInput('2');
-          toast.success('تمت إعادة ضبط بيانات العرض');
+          toast.success('تم مسح كل البيانات');
         }}
-        title="إعادة ضبط بيانات العرض؟"
-        description="ستُحذف جميع التغييرات وتعود البيانات التجريبية الأصلية."
-        confirmLabel="إعادة الضبط"
+        title="مسح كل البيانات؟"
+        description="ستُحذف كل البيانات المحفوظة في هذا المتصفح (التجار، الكباتن، المناطق، الأسعار، الطلبات والمحافظ) ويبدأ النظام فارغاً."
+        confirmLabel="مسح"
         variant="danger"
       />
     </Drawer>
