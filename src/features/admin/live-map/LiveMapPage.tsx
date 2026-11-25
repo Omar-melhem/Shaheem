@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Marker, Tooltip } from 'react-leaflet';
 import { useAppStore } from '@/app/state';
 import { useCaptainViews, useNow, OP_STATUS_LABEL, type CaptainView } from '@/shared/hooks/application';
+import { isPinnedOnLiveMap } from '@/domain/location';
 import { Card, OpenDecision, PageHeader, SimTag, SearchField } from '@/shared/components/ui';
 import { CaptainStatusBadge, FreshnessBadge, OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { BaseMap } from '@/shared/components/map/BaseMap';
@@ -13,21 +14,26 @@ import { cn } from '@/shared/lib/cn';
 import { LiveMapStats } from './LiveMapStats';
 import { CaptainDetailsPanel } from './CaptainDetailsPanel';
 
-type Filter = 'all' | 'online' | CaptainView['opStatus'] | 'stale';
+type Filter = 'all' | 'available' | 'delivering' | 'stale';
 
 const FILTERS: Array<[Filter, string]> = [
   ['all', 'الكل'],
-  ['online', 'المتصلون'],
-  ['busy', OP_STATUS_LABEL.busy],
   ['available', OP_STATUS_LABEL.available],
+  ['delivering', OP_STATUS_LABEL.busy],
   ['stale', 'GPS متأخر'],
-  ['offline', OP_STATUS_LABEL.offline],
 ];
 
+/** Listed beside the map: pinned Captains plus delivering ones whose GPS stopped. Offline/suspended never. */
+const isListed = (v: CaptainView) => v.presence !== 'hidden';
 const matches = (v: CaptainView, f: Filter) =>
-  f === 'all' ? true : f === 'online' ? v.opStatus === 'available' || v.opStatus === 'busy' : f === 'stale' ? v.freshness === 'stale' : v.opStatus === f;
+  f === 'all' ? isListed(v) : f === 'stale' ? v.presence === 'delivering_stale' : f === 'delivering' ? v.presence === 'delivering' || v.presence === 'delivering_stale' : v.presence === f;
 
-/** Captain-focused operations map (FU-1.2 §6): Captain markers only, counts, and a details panel. */
+/**
+ * Captain operations map (owner, 2026-11-25): only Available Captains with a recent location report
+ * and Captains on an active delivery with live GPS are pins (`liveMapPresence`). A delivering
+ * Captain whose GPS stopped is listed, not pinned. Offline and suspended Captains are not shown.
+ * Admin-only route; customer destinations are never drawn here.
+ */
 export function LiveMapPage() {
   const now = useNow(1000);
   const views = useCaptainViews(now);
@@ -40,17 +46,17 @@ export function LiveMapPage() {
 
   const needle = q.trim();
   const listed = useMemo(() => views.filter((v) => matches(v, filter) && (!needle || v.captain.fullName.includes(needle))), [views, filter, needle]);
-  const onMap = listed.filter((v) => v.captain.lastLocation);
-  const selected = views.find((v) => v.captain.id === selectedId) ?? null;
+  const onMap = listed.filter((v) => isPinnedOnLiveMap(v.presence) && v.captain.lastLocation);
+  const selected = views.find((v) => v.captain.id === selectedId && isListed(v)) ?? null;
   // Centre once on a Captain opened from the Captains table; later selections don't move the map.
-  const [initialCenter] = useState(() => views.find((v) => v.captain.id === params.get('captain'))?.captain.lastLocation?.position);
+  const [initialCenter] = useState(() => views.find((v) => v.captain.id === params.get('captain') && isPinnedOnLiveMap(v.presence))?.captain.lastLocation?.position);
   const orderOf = (v: CaptainView) => orders.find((o) => o.id === v.activeOrderId);
 
   return (
     <>
       <PageHeader
         title="الخريطة الحية"
-        description="مواقع الكباتن وحالة توصيلاتهم. يُتتبع موقع الكابتن أثناء التوصيل النشط فقط؛ مواقع الكباتن الآخرين تجريبية أو آخر موقع معروف ولا تُعرض كمباشرة."
+        description="الكباتن المتاحون والكباتن في توصيل نشط فقط. الكابتن المتاح يرسل موقعه كل 60 ثانية، ويختفي إذا انقطع تحديثه أكثر من 90 ثانية أو أصبح غير متاح."
         actions={<SimTag>جميع المواقع محاكاة</SimTag>}
       />
 
@@ -113,8 +119,9 @@ export function LiveMapPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <FreshnessBadge freshness={v.freshness} />
-                        {v.captain.lastLocation && <span className="text-xs text-ink-muted">{formatRelative(v.captain.lastLocation.recordedAt, now)}</span>}
+                        {v.captain.lastLocation && <span className="text-xs text-ink-muted">آخر تحديث {formatRelative(v.captain.lastLocation.recordedAt, now)}</span>}
                       </div>
+                      {v.presence === 'delivering_stale' && <p className="text-xs font-medium text-amber-800">لا يظهر على الخريطة حتى يعود تحديث الموقع</p>}
                       {order && (
                         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-soft">
                           <span dir="ltr" className="font-mono font-bold">{order.reference}</span>
@@ -125,10 +132,10 @@ export function LiveMapPage() {
                   </li>
                 );
               })}
-              {listed.length === 0 && <li className="p-6 text-center text-sm text-ink-muted">لا يوجد كباتن مطابقون</li>}
+              {listed.length === 0 && <li className="p-6 text-center text-sm text-ink-muted">لا يوجد كباتن متاحون أو في توصيل حالياً</li>}
             </ul>
           </Card>
-          <OpenDecision id="O-001">طريقة الحصول على موقع الكابتن قبل الرحلة غير محددة؛ لا يُعرض أي كابتن خامل كمتتبَّع بشكل مباشر.</OpenDecision>
+          <OpenDecision id="تكامل">إرسال الموقع كل 60 ثانية يتم من تطبيق الكابتن عبر الخادم؛ هنا محاكاة داخل المتصفح. الخريطة تعرض ما يصلها فقط ولا تولّد مواقع.</OpenDecision>
           <div className="md:hidden">
             <MapLegend />
           </div>

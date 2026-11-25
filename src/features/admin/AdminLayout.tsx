@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
   Bell,
-  Headphones,
   LayoutDashboard,
   Map,
   Radio,
@@ -36,7 +35,6 @@ const NAV: Array<Extract<ShellNavItem, { to: string }>> = [
   { to: '/admin/areas', label: 'مناطق التوصيل', icon: Shapes },
   { to: '/admin/pricing', label: 'أسعار التجار', icon: Tags },
   { to: '/admin/wallets', label: 'محافظ الكباتن', icon: Wallet },
-  { to: '/admin/support', label: 'بيانات الدعم', icon: Headphones },
   { to: '/admin/settings', label: 'الإعدادات', icon: Settings },
 ];
 

@@ -22,6 +22,10 @@ const helmetPerson = (stripe: string) => `
   <rect x="9.6" y="13.4" width="12.8" height="3.1" rx="1.5" fill="#242424" opacity=".88"/>
 </svg>`;
 
+/** Parcel badge on a delivering Captain, so the state is not told by colour alone. */
+const deliveryBadge = `<span style="position:absolute;top:-6px;left:-6px;width:18px;height:18px;border-radius:6px;background:#fff;border:1.5px solid #8C2335;display:flex;align-items:center;justify-content:center;">
+<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#8C2335" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span>`;
+
 export function captainIcon(opStatus: CaptainView['opStatus'], freshness: LocationFreshness, selected = false) {
   const stale = freshness === 'stale';
   const color = stale ? STALE_COLOR : CAPTAIN_STATUS_COLOR[opStatus];
@@ -39,7 +43,7 @@ export function captainIcon(opStatus: CaptainView['opStatus'], freshness: Locati
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2],
-    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);${ring}${notTracked ? 'opacity:.85;' : ''}">${helmetPerson(color)}</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px;border-radius:9999px;background:${color};display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);${ring}${notTracked ? 'opacity:.85;' : ''}">${helmetPerson(color)}${opStatus === 'busy' ? deliveryBadge : ''}</div>`,
   });
 }
 

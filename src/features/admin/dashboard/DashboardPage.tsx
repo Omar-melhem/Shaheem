@@ -7,13 +7,14 @@ import { operationalKpis, platformKpis } from '@/application/dashboard';
 import { PageHeader } from '@/shared/components/ui';
 import { OperationalKpiSection, PlatformKpiSection } from './OverviewSection';
 import { LatestOrdersTable } from './LatestOrdersTable';
+import { RevenueCard } from './RevenueCard';
 
 const LINK_OUTLINE = 'inline-flex h-10 items-center gap-2 rounded-xl border border-cream-deep bg-white px-4 text-sm font-bold hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-300';
 
 /**
  * «نظرة عامة»: composition only. Quick actions sit in the page header; public broadcasting is
  * switched from the header pill beside the notifications. Every number comes from
- * application/dashboard.ts over the shared store: KPIs → accounts → latest orders.
+ * application/dashboard.ts over the shared store: SHAHM revenue → KPIs → accounts → latest orders.
  */
 export function DashboardPage() {
   const now = useNow(5000);
@@ -46,6 +47,7 @@ export function DashboardPage() {
         }
       />
 
+      <RevenueCard now={now} />
       <OperationalKpiSection kpis={overview.ops} />
       <PlatformKpiSection kpis={overview.platform} />
       <LatestOrdersTable now={now} />

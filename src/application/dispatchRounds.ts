@@ -1,19 +1,24 @@
 import type { ActorRef, DeliveryOrder, ID } from '@/domain/types';
 import {
   DISPATCH_ROUND_SEC,
+  MAX_DISPATCH_RADIUS_M,
   MAX_DISPATCH_ROUNDS,
   ROUNDS_EXHAUSTED_REASON,
+  describeRound,
   isAutoDispatchEligible,
   rankByProximity,
+  roundPolicy,
   roundsEndedReason,
+  selectRoundCandidates,
 } from '@/domain/dispatch';
 import { SYSTEM_ACTOR, type AppData } from '@/application/data';
 import { eligibleCaptains } from './captainQueries';
 import { note, pushAlert, transition, uid } from './orderMutations';
 
-// Public dispatch rounds (FU-1.2 §5). In the prototype the browser simulation clock
-// drives expiry; in production rounds, expiry and the 3-round cap belong to a
-// persisted backend job with atomic accept/expire handling.
+// Public dispatch rounds (owner, 2026-11-25: 3 within 5 km → next 3 within 10 km → all left within
+// 10 km, 60 s each). In the prototype the browser simulation clock drives expiry; in production the
+// rounds, their persisted start/expiry times, atomic accept/expire and the 3-round cap belong to a
+// backend job — a page timer is never the dispatcher clock.
 
 /** Moves the order to the Admin queue with a visible reason. Never cancels or delivers it. */
 function returnToQueue(data: AppData, order: DeliveryOrder, now: number, reason: string) {
@@ -23,40 +28,51 @@ function returnToQueue(data: AppData, order: DeliveryOrder, now: number, reason:
 }
 
 /**
- * Starts the next public round: offers the order to the next batch of nearest
- * eligible Captains not yet offered in this cycle (batch size = demo policy O-005),
- * each with a 60-second window. After the third round, no further round starts.
+ * Starts the next public round. Candidates are re-checked for eligibility now, ranked by distance
+ * from the Merchant pickup, limited to the round's radius and size, and never include a Captain
+ * already offered this order in the cycle. A round with nobody in range is skipped (noted in the
+ * history) rather than waited out empty. After the last round the order goes to the Admin queue.
  */
 function startRound(data: AppData, order: DeliveryOrder, now: number) {
   if (!data.settings.publicBroadcast) return; // switch off: no new public offers
   if (!isAutoDispatchEligible(order)) return; // scheduled: Admin-only
-  const attempt = (order.dispatchAttempt ?? 0) + 1;
-  if (attempt > MAX_DISPATCH_ROUNDS) return returnToQueue(data, order, now, ROUNDS_EXHAUSTED_REASON);
+  const previous = order.dispatchAttempt ?? 0;
+  if (previous >= MAX_DISPATCH_ROUNDS) return returnToQueue(data, order, now, ROUNDS_EXHAUSTED_REASON);
 
-  const alreadyOffered = new Set(data.offers.filter((o) => o.orderId === order.id && o.round === order.dispatchRound).map((o) => o.captainId));
+  const cycleOffers = data.offers.filter((o) => o.orderId === order.id && o.round === order.dispatchRound);
+  const alreadyOffered = new Set(cycleOffers.map((o) => o.captainId));
   const eligibleNow = eligibleCaptains(data);
-  const notYetOffered = eligibleNow.filter((c) => !alreadyOffered.has(c.id));
-  const size = data.demo.offerPolicy === 'sequential' ? 1 : Math.max(1, data.demo.groupSize);
-  const batch = rankByProximity(notYetOffered, order.pickup.position).slice(0, size);
-  if (batch.length === 0) return returnToQueue(data, order, now, roundsEndedReason(eligibleNow.length));
+  const ranked = rankByProximity(eligibleNow, order.pickup.position);
 
-  order.dispatchAttempt = attempt;
-  if (attempt > 1) note(order, SYSTEM_ACTOR, now, `لم يُقبل العرض — بدء الجولة ${attempt} من ${MAX_DISPATCH_ROUNDS}`);
-  batch.forEach((r, i) => {
-    data.offers.push({
-      id: uid('of'),
-      orderId: order.id,
-      captainId: r.captain.id,
-      mode: 'public',
-      round: order.dispatchRound,
-      attempt,
-      status: 'pending',
-      offeredAt: now,
-      expiresAt: now + DISPATCH_ROUND_SEC * 1000,
-      distanceMeters: r.distanceMeters,
-      rank: alreadyOffered.size + i + 1,
+  for (let attempt = previous + 1; attempt <= MAX_DISPATCH_ROUNDS; attempt++) {
+    const policy = roundPolicy(attempt)!;
+    const batch = selectRoundCandidates(ranked, policy, alreadyOffered);
+    if (batch.length === 0) {
+      note(order, SYSTEM_ACTOR, now, `الجولة ${attempt} من ${MAX_DISPATCH_ROUNDS}: لا يوجد مستلم جديد (${describeRound(policy)})`);
+      continue;
+    }
+    order.dispatchAttempt = attempt;
+    note(order, SYSTEM_ACTOR, now, `بدء الجولة ${attempt} من ${MAX_DISPATCH_ROUNDS}: ${describeRound(policy)} — ${batch.length} عرض`);
+    batch.forEach((r, i) => {
+      data.offers.push({
+        id: uid('of'),
+        orderId: order.id,
+        captainId: r.captain.id,
+        mode: 'public',
+        round: order.dispatchRound,
+        attempt,
+        status: 'pending',
+        offeredAt: now,
+        expiresAt: now + DISPATCH_ROUND_SEC * 1000,
+        distanceMeters: r.distanceMeters,
+        rank: cycleOffers.length + i + 1,
+      });
     });
-  });
+    return;
+  }
+  order.dispatchAttempt = MAX_DISPATCH_ROUNDS;
+  const inRange = ranked.filter((r) => r.distanceMeters <= MAX_DISPATCH_RADIUS_M).length;
+  returnToQueue(data, order, now, roundsEndedReason(eligibleNow.length, inRange));
 }
 
 /** Starts a new public cycle of up to three rounds (system on creation, or an explicit Admin publish). */
@@ -66,7 +82,7 @@ export function startPublicDispatch(data: AppData, order: DeliveryOrder, actor: 
   order.dispatchAttempt = 0;
   order.dispatchMode = 'public';
   order.queueReason = undefined;
-  transition(order, 'awaiting_captain', actor, now, `نشر للعموم — ترتيب حسب القرب من التاجر، الجولة 1 من ${MAX_DISPATCH_ROUNDS}`);
+  transition(order, 'awaiting_captain', actor, now, `نشر للعموم — حتى ${MAX_DISPATCH_ROUNDS} جولات حسب القرب من موقع التاجر`);
   startRound(data, order, now);
 }
 

@@ -1,4 +1,4 @@
-import { pointInPolygon } from './geo';
+import { isValidLatLng, polygonCovers } from './geo';
 import type { Destination, LatLng, ServiceArea } from './types';
 
 export const AREA_REQUIRED = 'يرجى اختيار منطقة التوصيل من القائمة';
@@ -9,26 +9,49 @@ export const AREA_UNAVAILABLE = 'التوصيل إلى هذه المنطقة غ�
 export const NO_EXACT_LOCATION = 'لم يتم تحديد موقع دقيق للعميل';
 export const PINNED_LOCATION_LABEL = 'موقع محدد على الخريطة';
 
-/** Only legacy areas still carry a drawn boundary; the region catalogue is name-based (CR v1.4 §1). */
+export const PIN_ON_SHARED_BORDER = 'هذا الموقع على الحد بين أكثر من منطقة. اختر المنطقة من القائمة.';
+export const PIN_INVALID = 'الموقع الدقيق غير صالح. حرّك الدبوس أو أزله.';
+export const AREA_HAS_NO_BOUNDARY = 'لا تتوفر حدود لهذه المنطقة، فلا يمكن التحقق من موقع دقيق عليها. أرسل الطلب بالمنطقة فقط.';
+
+/**
+ * An area's boundary is what a customer pin is checked against. The region catalogue is managed by
+ * name (CR v1.4 §1); only areas with stored geometry accept a pin. The demo geometry is approximate —
+ * authoritative boundaries still have to be imported and validated.
+ */
 export const hasAreaBoundary = (area: ServiceArea) => area.polygon.length >= 3;
 
-/**
- * Why a customer pin cannot be used with this area, or null. A legacy boundary is still
- * enforced; an area without one has no map pin at all (the map only accepts taps inside a
- * drawn boundary), and the pin never sets the fee.
- */
-export function destinationPinError(area: ServiceArea, pin: LatLng): string | null {
-  if (hasAreaBoundary(area) && !pointInPolygon(pin, area.polygon)) return `الدبوس خارج منطقة «${area.name}». حرّكه إلى داخل المنطقة أو أزله.`;
-  return null;
-}
+/** The «outside the area» message, named after the area. */
+export const pinOutsideAreaError = (area: ServiceArea) => `الموقع خارج منطقة التوصيل المحددة «${area.name}». حرّك الدبوس إلى داخل المنطقة أو أزله.`;
 
 /**
- * The Merchant's area that contains a pin, when the pin is dropped before an area is chosen.
- * Only areas with a drawn boundary can match; none or more than one match → null (never a guess).
+ * Why a customer pin cannot be used with this area, or null. Anywhere inside the area's boundary,
+ * including on the boundary itself, is accepted (owner, 2026-11-25). An area without a boundary
+ * cannot verify a pin, so it is refused rather than treating the whole city as valid. The 5/10 km
+ * Captain search radius plays no part here, and the pin never sets the fee.
  */
+export function destinationPinError(area: ServiceArea, pin: LatLng): string | null {
+  if (!isValidLatLng(pin) || (pin.lat === 0 && pin.lng === 0)) return PIN_INVALID;
+  if (!hasAreaBoundary(area)) return AREA_HAS_NO_BOUNDARY;
+  return polygonCovers(area.polygon, pin) ? null : pinOutsideAreaError(area);
+}
+
+export type PinAreaMatch<T> = { kind: 'one'; area: T } | { kind: 'none' } | { kind: 'ambiguous' };
+
+/**
+ * The Merchant's area that contains a pin, when the pin is dropped before an area is chosen. Only
+ * areas with a boundary can match. None → `none`; on a border shared by several → `ambiguous`
+ * (the Merchant chooses; never a guess).
+ */
+export function matchAreaForPin<T extends ServiceArea>(areas: T[], pin: LatLng): PinAreaMatch<T> {
+  const matches = areas.filter((a) => hasAreaBoundary(a) && polygonCovers(a.polygon, pin));
+  if (matches.length === 1) return { kind: 'one', area: matches[0] };
+  return matches.length === 0 ? { kind: 'none' } : { kind: 'ambiguous' };
+}
+
+/** `matchAreaForPin` for callers that only need the single match, or null. */
 export function detectAreaForPin<T extends ServiceArea>(areas: T[], pin: LatLng): T | null {
-  const matches = areas.filter((a) => hasAreaBoundary(a) && pointInPolygon(pin, a.polygon));
-  return matches.length === 1 ? matches[0] : null;
+  const match = matchAreaForPin(areas, pin);
+  return match.kind === 'one' ? match.area : null;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { startDemoClock } from '@/app/state';
 import { useEffect, useMemo, useState } from 'react';
 import { useAppStore, captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains } from '@/app/state';
-import { locationFreshness, type LocationFreshness } from '@/domain/location';
+import { liveMapPresence, locationFreshness, type LocationFreshness, type MapPresence } from '@/domain/location';
 import type { Captain, ID } from '@/domain/types';
 import type { Eligibility } from '@/domain/eligibility';
 
@@ -23,6 +23,8 @@ export interface CaptainView {
   freshness: LocationFreshness;
   /** Derived operational status for display. */
   opStatus: 'inactive' | 'offline' | 'busy' | 'available';
+  /** Whether and how the Captain appears on the live map (`liveMapPresence`). */
+  presence: MapPresence;
 }
 
 /** Combines a Captain with derived wallet, eligibility and location freshness. */
@@ -37,13 +39,15 @@ export function useCaptainViews(now: number): CaptainView[] {
       const active = captainActiveOrder(data, captain.id);
       const opStatus: CaptainView['opStatus'] =
         captain.status !== 'active' ? 'inactive' : active ? 'busy' : captain.availability === 'available' ? 'available' : 'offline';
+      const freshness = locationFreshness(captain, now, demo.staleAfterSec, active?.id);
       return {
         captain,
         balance: captainBalance(data, captain.id),
         eligibility: captainEligibility(data, captain),
         activeOrderId: active?.id,
-        freshness: locationFreshness(captain, now, demo.staleAfterSec, active?.id),
+        freshness,
         opStatus,
+        presence: liveMapPresence({ accountActive: captain.status === 'active', available: captain.availability === 'available', hasActiveDelivery: !!active, freshness }),
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

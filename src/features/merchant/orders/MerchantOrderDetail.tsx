@@ -28,6 +28,7 @@ export function MerchantOrderDetail({ order, onClose }: { order: DeliveryOrder |
         {destinationParts(order).place && <DetailRow label="الوجهة">{destinationParts(order).place}</DetailRow>}
         <DetailRow label="رسوم التوصيل">{formatMoney(order.deliveryPrice)}</DetailRow>
         <DetailRow label="هاتف العميل">{order.customerPhone ? <span dir="ltr">{order.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
+        <DetailRow label="مجموع الطلب">{order.mealValue !== undefined ? formatMoney(order.mealValue) : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
         <DetailRow label="نوع الطلب">{scheduled ? 'طلب مؤجل' : 'طلب فوري'}</DetailRow>
         {scheduled && order.scheduledPickupAt !== undefined && <DetailRow label="موعد الاستلام">{formatAmmanDateTime(order.scheduledPickupAt)}</DetailRow>}
         <DetailRow label="الكابتن">{captain ? captain.fullName : <span className="text-ink-muted">لم يُسند</span>}</DetailRow>

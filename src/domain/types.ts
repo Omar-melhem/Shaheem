@@ -50,10 +50,11 @@ export type Availability = 'available' | 'offline';
 
 /**
  * Every coordinate in the prototype is simulated. `trip_simulated` stands in for
- * active-delivery GPS; `demo_idle` is a seeded/presenter-set position for idle
- * Captains (the real pre-dispatch location source is open — SRS O-001).
+ * active-delivery GPS; `idle_report` stands in for the Captain app's periodic report while
+ * Available with no delivery (owner request: every 60 s — `domain/location.ts`); `demo_idle`
+ * is a seeded/presenter-set position that has not been reported yet.
  */
-export type LocationSource = 'trip_simulated' | 'demo_idle';
+export type LocationSource = 'trip_simulated' | 'demo_idle' | 'idle_report';
 
 export interface CaptainLocation {
   position: LatLng;
@@ -200,7 +201,10 @@ export interface DeliveryOrder {
   areaId: ID;
   /** Snapshot so later area renames do not rewrite history. */
   areaName: string;
-  /** Legacy goods value from older orders; new orders no longer collect it (CR v1.4 §4). */
+  /**
+   * «مجموع الطلب»: the optional goods/basket total the Merchant typed (owner, 2026-11-25). Absent when
+   * left blank. Information only: it never feeds the fee, the commission or SHAHM's revenue.
+   */
   mealValue?: Money;
   deliveryInstructions?: string;
   /** Missing on older orders = immediate. Scheduled orders are dispatched by Admin only (CR v1.4 §6). */
@@ -210,6 +214,13 @@ export interface DeliveryOrder {
   /** Fee locked at confirmation time (Pricing Spec §8). */
   deliveryPrice: Money;
   pricingSnapshotAt: number;
+  /**
+   * Commission rate (basis points) and amount locked when a Captain accepts (owner, 2026-11-25).
+   * Later rate changes never touch them. Absent on orders accepted before commission existed:
+   * those are never charged.
+   */
+  commissionBp?: number;
+  commissionFils?: Money;
   captainId?: ID;
   dispatchMode?: DispatchMode;
   /** Dispatch cycle counter (each public publish or private assignment starts one). */
@@ -244,18 +255,34 @@ export interface DispatchOffer {
   rank?: number;
 }
 
-/** Only Admin recharges are modelled; debit/reservation rules are open (SRS §10.4). */
-export type WalletTxType = 'recharge';
+/**
+ * Append-only Captain wallet ledger. `recharge` is an Admin credit (> 0); `commission_debit` is
+ * SHAHM's commission on one delivered order (< 0). The balance is the signed sum.
+ */
+export type WalletTxType = 'recharge' | 'commission_debit';
 
 export interface WalletTransaction {
   id: ID;
   captainId: ID;
   type: WalletTxType;
+  /** Signed fils: credits positive, debits negative. */
   amount: Money;
   createdAt: number;
   actor: ActorRef;
+  /** Older recharges carry a typed reference; new ones have none (owner, 2026-11-25). */
   reason?: string;
+  /** The delivered order a commission debit belongs to. */
+  orderId?: ID;
+  /** Rate snapshot behind a commission debit. */
+  commissionBp?: number;
+  /** One business operation = one entry: `recharge:{operationId}` or `commission:{orderId}`. */
+  idempotencyKey?: string;
 }
+
+/** Admin audit trail: financial policy and account-security actions. Never holds a password. */
+export type AdminAuditEntry =
+  | { id: ID; kind: 'commission_rate'; previousBp: number; nextBp: number; actor: ActorRef; at: number }
+  | { id: ID; kind: 'password_reset'; targetRole: 'merchant' | 'captain'; targetId: ID; targetName: string; actor: ActorRef; at: number };
 
 export type SupportChannel = 'phone' | 'whatsapp' | 'email' | 'other';
 
@@ -295,9 +322,6 @@ export interface OpsAlert {
 export interface DemoSettings {
   /** O-020: wallet amount a Captain must hold to qualify. */
   walletThreshold: Money;
-  /** O-005: sequential (one Captain at a time) or a group of nearest Captains. */
-  offerPolicy: 'sequential' | 'group';
-  groupSize: number;
   /** O-006: seconds a Captain has to respond to a private offer. Public rounds are fixed at 60 s. */
   offerTimeoutSec: number;
   /** Seconds without a GPS update before a trip location is shown as stale. */
@@ -308,4 +332,6 @@ export interface DemoSettings {
 
 export interface PlatformSettings {
   publicBroadcast: boolean;
+  /** Global commission rate in basis points (2000 = 20%), applied to new acceptances only. */
+  commissionBp: number;
 }

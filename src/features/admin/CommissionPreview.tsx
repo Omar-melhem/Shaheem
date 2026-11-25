@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { COMMISSION_BP_PROPOSED, commissionFils, formatPercentBp } from '@/domain/commission';
+import { DEFAULT_COMMISSION_BP, commissionFils, formatPercentBp } from '@/domain/commission';
 import { formatMoneyExact, parseJodInput } from '@/domain/money';
 import { Input } from '@/shared/components/ui';
 
@@ -9,7 +9,7 @@ const EXAMPLES_FILS = [1000, 1500, 2000, 750];
  * Worked preview of the percentage commission (CR v1.4 §3.1) using the same domain function a
  * backend would. A calculator only: it changes no setting and charges nothing.
  */
-export function CommissionPreview({ bp = COMMISSION_BP_PROPOSED }: { bp?: number }) {
+export function CommissionPreview({ bp = DEFAULT_COMMISSION_BP }: { bp?: number }) {
   const [fee, setFee] = useState('1.500');
   const fils = parseJodInput(fee);
   const line = (feeFils: number) => `${formatMoneyExact(feeFils)} × ${formatPercentBp(bp)} = ${formatMoneyExact(commissionFils(feeFils, bp))}`;

@@ -1,12 +1,12 @@
 import { useAppStore, captainEligibility } from '@/app/state';
 import { merchantZoneOptions, pricedAreaIds, resolveZoneFee } from '@/application/queries';
 import { polygonCentroid } from '@/domain/geo';
-import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON, isAutoDispatchEligible } from '@/domain/dispatch';
+import { DISPATCH_ROUND_SEC, MAX_DISPATCH_RADIUS_M, MAX_DISPATCH_ROUNDS, isAutoDispatchEligible, roundPolicy } from '@/domain/dispatch';
 import { commissionFils, isValidCommissionBp } from '@/domain/commission';
 import { ammanDayKey, ammanWallTimeToEpoch, lastThreeAmmanDays } from '@/domain/time';
 import { areaLabel, isDestinationActive } from '@/domain/regions';
 import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
-import { destinationPinError, isAreaOnly } from '@/domain/destination';
+import { AREA_HAS_NO_BOUNDARY, destinationPinError, isAreaOnly } from '@/domain/destination';
 import { formatJodInput, parseJodAmount, parseJodInput } from '@/domain/money';
 import { previewPricingCopy } from '@/application/pricingCopy';
 import { MERCHANT_RECENT_PREVIEW, merchantOrderOverview, operationalKpis, platformKpis } from '@/application/dashboard';
@@ -77,7 +77,7 @@ section('Request validation');
 check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-abdoun', location: at('a-abdoun') }).ok, 'zone not enabled for merchant rejected');
 check(S().createOrder(mid, { customerPhone: '', areaId: 'a-khalda', location: at('a-khalda') }).ok, 'customer phone is optional (owner decision 2026-11-15)');
 const noGoods = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda' });
-check(noGoods.ok && S().orders.find((x) => x.id === noGoods.value.id)!.mealValue === undefined, 'no goods/order value is collected (CR v1.4 §4)');
+check(noGoods.ok && S().orders.find((x) => x.id === noGoods.value.id)!.mealValue === undefined, 'a blank «مجموع الطلب» is stored as absent, never 0');
 S().setMerchantAreaPriceStatus(mid, 'a-tla', false);
 check(!merchantZoneOptions(S(), mid).some((z) => z.area.id === 'a-tla'), 'disabled zone hidden from merchant');
 S().setServiceAreaStatus('a-jubaiha', false);
@@ -99,9 +99,7 @@ for (let i = 0; i < 4; i++) S().advanceDelivery(o.id, offer.captainId);
 check(S().orders.find((x) => x.id === o.id)!.status === 'delivered', 'delivered');
 check(!captainEligibility(S(), S().captains.find((c) => c.id === 'c-yazan')!).eligible, 'wallet eligibility intact');
 
-section('Dispatch rounds: 60 s × 3, then Admin queue (FU-1.2 §5)');
-// One Captain per round so three rounds need only three eligible Captains.
-S().updateDemoSettings({ offerPolicy: 'sequential' });
+section('Dispatch rounds: 5 km → 10 km → 10 km, 60 s each, then Admin queue (owner 2026-11-25)');
 const newOrder = () => {
   const r = S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-khalda', location: at('a-khalda') });
   return r.ok ? r.value.id : '';
@@ -111,25 +109,25 @@ const pendingOf = (id: string) => S().offers.filter((x) => x.orderId === id && x
 const ROUND_MS = DISPATCH_ROUND_SEC * 1000;
 
 const r1 = newOrder();
-check(orderById(r1).dispatchAttempt === 1 && pendingOf(r1).length === 1, 'round 1 starts immediately');
-const first = pendingOf(r1)[0];
+const round1 = pendingOf(r1);
+check(orderById(r1).dispatchAttempt! >= 1 && round1.length >= 1 && round1.length <= 3, 'a round starts immediately with at most 3 offers');
+check(round1.every((x) => x.distanceMeters! <= roundPolicy(x.attempt!)!.radiusMeters), 'every offer is within its round radius of the Merchant');
+const first = round1[0];
 check(first.expiresAt - first.offeredAt === ROUND_MS && ROUND_MS === 60_000, 'round window is 60 seconds');
 let clock = first.offeredAt;
-clock += ROUND_MS + 1000;
-S().tick(clock);
-check(orderById(r1).dispatchAttempt === 2 && pendingOf(r1)[0]?.attempt === 2, 'no acceptance → round 2 starts automatically');
-check(pendingOf(r1)[0]?.captainId !== first.captainId, 'round 2 goes to the next nearest Captain');
-clock += ROUND_MS + 1000;
-S().tick(clock);
-check(orderById(r1).dispatchAttempt === 3, 'round 3 starts');
-clock += ROUND_MS + 1000;
-S().tick(clock);
+for (let i = 0; i < MAX_DISPATCH_ROUNDS + 1; i++) {
+  clock += ROUND_MS + 1000;
+  S().tick(clock);
+}
 const exhausted = orderById(r1);
-check(exhausted.status === 'dispatch_expired' && exhausted.queueReason === ROUNDS_EXHAUSTED_REASON, 'after 3 rounds → Admin queue with reason');
+const cycleOffers = S().offers.filter((x) => x.orderId === r1 && x.round === exhausted.dispatchRound);
+check(exhausted.status === 'dispatch_expired' && !!exhausted.queueReason, 'no acceptance → Admin queue with a reason');
+check(new Set(cycleOffers.map((x) => x.captainId)).size === cycleOffers.length, 'no Captain is offered the same order twice in a cycle');
+check(cycleOffers.every((x) => x.distanceMeters! <= MAX_DISPATCH_RADIUS_M), 'nobody beyond 10 km is ever offered');
 check(pendingOf(r1).length === 0 && !S().offers.some((x) => x.orderId === r1 && (x.attempt ?? 0) > MAX_DISPATCH_ROUNDS), 'no fourth automatic round');
 S().tick(clock + 5 * ROUND_MS);
 check(orderById(r1).status === 'dispatch_expired', 'stays in the queue — never cancelled or delivered by expiry');
-check(S().dispatchPublic(r1).ok && orderById(r1).dispatchAttempt === 1 && !orderById(r1).queueReason, 'explicit Admin publish starts a new cycle');
+check(S().dispatchPublic(r1).ok && orderById(r1).dispatchAttempt! >= 1 && !orderById(r1).queueReason, 'explicit Admin publish starts a new cycle');
 S().cancelOrder(r1, 'تنظيف الاختبار');
 
 const r2 = newOrder();
@@ -252,7 +250,7 @@ check(withPinOrder.deliveryPrice === areaOnlyOrder.deliveryPrice, 'adding a pin 
 
 const areaBeforeEdit = S().areas.find((a) => a.id === 'a-khalda')!;
 check(destinationPinError(areaBeforeEdit, at('a-khalda')) === null && destinationPinError(areaBeforeEdit, at('a-tla')) !== null, 'pin check follows the selected area');
-check(destinationPinError({ ...areaBeforeEdit, polygon: [] }, at('a-khalda')) === null, 'an area with no boundary accepts the optional pin, unverified');
+check(destinationPinError({ ...areaBeforeEdit, polygon: [] }, at('a-khalda')) === AREA_HAS_NO_BOUNDARY, 'an area with no boundary cannot verify a pin, so it is refused (never the whole city)');
 const noBoundaryArea = S().createZone({ governorateId: areaBeforeEdit.governorateId, cityId: areaBeforeEdit.cityId, name: 'منطقة بلا حدود', aliases: [], polygon: [] } as never);
 check(noBoundaryArea.ok, 'area without a boundary can be configured');
 if (noBoundaryArea.ok) {
@@ -260,7 +258,7 @@ if (noBoundaryArea.ok) {
   const noBoundary = S().createOrder(mid, { customerPhone: PHONE, areaId: noBoundaryArea.value });
   check(noBoundary.ok && S().orders.find((x) => x.id === noBoundary.value.id)!.deliveryPrice === 1200, 'area without a boundary can still be ordered area-only');
   const unverified = S().createOrder(mid, { customerPhone: PHONE, areaId: noBoundaryArea.value, location: at('a-khalda') });
-  check(unverified.ok && S().orders.find((x) => x.id === unverified.value.id)!.areaId === noBoundaryArea.value, 'its optional pin is kept, never moving the order to another area');
+  check(!unverified.ok && unverified.code === 'pin_outside_area', 'a pin on an area without a boundary is refused; the order goes area-only');
 }
 check(!S().createOrder(mid, { customerPhone: PHONE, areaId: 'a-abdoun' }).ok && resolveZoneFee(S(), mid, 'a-abdoun').kind === 'not_covered', 'not covered → blocked');
 S().setMerchantCoverage(mid, ['a-abdoun'], true);
@@ -288,11 +286,14 @@ for (const raw of ['abc', '-5', '+5', '.', '1.2.3', '50 د.أ', 'NaN', '1e3', ''
 check(filsOf('50.1234') === null && filsOf('1,500') === null, 'a fourth decimal and the ambiguous "1,500" are refused, never guessed');
 check(parseJodInput('0') === 0 && parseJodInput('2') === 2000 && parseJodInput('١٫٥') === 1500, 'parser still serves the Admin money fields');
 
-section('Commission boundary (CR v1.3 §6): nothing charged from browser code');
+section('Commission ledger (owner 2026-11-25): one debit per delivered order');
 const txBefore = S().walletTx.length;
-const debitOrder = S().orders.find((x) => x.status === 'on_the_way')!;
-S().advanceDelivery(debitOrder.id, debitOrder.captainId!);
-check(S().walletTx.length === txBefore && S().walletTx.every((t) => t.amount > 0), 'delivery posts no wallet debit in the prototype');
+const legacyOrder = S().orders.find((x) => x.status === 'on_the_way' && x.commissionFils === undefined)!;
+S().advanceDelivery(legacyOrder.id, legacyOrder.captainId!);
+check(S().walletTx.length === txBefore, 'an order accepted before commission existed is never charged');
+const charged = S().orders.find((x) => x.id === o.id)!;
+const debits = S().walletTx.filter((t) => t.type === 'commission_debit' && t.orderId === o.id);
+check(charged.commissionBp === 2000 && debits.length === 1 && debits[0].amount === -commissionFils(charged.deliveryPrice, 2000), 'the order delivered above has exactly one 20% debit of its fee snapshot');
 
 section('Sub-areas (CR v1.4 §1.2)');
 const parentRes = S().createZone({ governorateId: 'amman', cityId: 'amman', name: 'ضاحية الاختبار', aliases: [] });

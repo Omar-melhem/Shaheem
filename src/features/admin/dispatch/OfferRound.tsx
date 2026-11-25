@@ -1,6 +1,6 @@
 import { useAppStore } from '@/app/state';
 import type { DeliveryOrder, DispatchOffer } from '@/domain/types';
-import { MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
+import { MAX_DISPATCH_ROUNDS, roundPolicy } from '@/domain/dispatch';
 import { formatDistance } from '@/domain/geo';
 import { Badge } from '@/shared/components/ui';
 import { formatCountdown } from '@/shared/lib/format';
@@ -14,7 +14,7 @@ const OFFER_STATUS_LABEL: Record<DispatchOffer['status'], string> = {
 };
 const OFFER_TONE = { pending: 'warning', accepted: 'success', rejected: 'danger', expired: 'neutral', withdrawn: 'neutral' } as const;
 
-/** Current round of an order being offered: "الجولة 2 من 3", time left, and each Captain's response. */
+/** Current round of an order being offered: "الجولة 2 من 3", its radius, time left, and each Captain's response. */
 export function OfferRound({ order, now }: { order: DeliveryOrder; now: number }) {
   const offers = useAppStore((s) => s.offers);
   const captains = useAppStore((s) => s.captains);
@@ -30,7 +30,12 @@ export function OfferRound({ order, now }: { order: DeliveryOrder; now: number }
     <div className="space-y-2 rounded-xl bg-cream p-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {isPublic ? (
-          <Badge tone="warning">الجولة {order.dispatchAttempt ?? 1} من {MAX_DISPATCH_ROUNDS}</Badge>
+          <>
+            <Badge tone="warning">الجولة {order.dispatchAttempt ?? 1} من {MAX_DISPATCH_ROUNDS}</Badge>
+            {roundPolicy(order.dispatchAttempt ?? 1) && (
+              <span className="text-xs text-ink-soft">ضمن {formatDistance(roundPolicy(order.dispatchAttempt ?? 1)!.radiusMeters)} · {pending.length} بانتظار الرد</span>
+            )}
+          </>
         ) : (
           <Badge tone="info">عرض خاص</Badge>
         )}

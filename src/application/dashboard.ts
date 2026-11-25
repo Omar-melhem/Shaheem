@@ -1,4 +1,5 @@
-import type { DeliveryOrder, ID } from '@/domain/types';
+import type { DeliveryOrder, ID, Money, WalletTransaction } from '@/domain/types';
+import { realizedCommission } from '@/domain/wallet';
 import { FINAL_STATUSES, countByGroup, isActiveDelivery } from '@/domain/orderStatus';
 import { ammanDayKey } from '@/domain/time';
 
@@ -71,5 +72,29 @@ export function merchantOrderOverview(orders: DeliveryOrder[], merchantId: ID | 
     active: open.filter(hasCaptain).sort(byLatestUpdate),
     waiting: open.filter((o) => !hasCaptain(o)).sort(byLatestUpdate),
     history: mine.filter((o) => FINAL_STATUSES.includes(o.status)).sort((a, b) => b.createdAt - a.createdAt),
+  };
+}
+
+export type RevenuePeriod = 'today' | 'month' | 'all';
+export const REVENUE_PERIOD_LABEL: Record<RevenuePeriod, string> = { today: 'اليوم', month: 'هذا الشهر', all: 'الإجمالي' };
+
+export interface CommissionRevenue {
+  amount: Money;
+  /** Delivered orders whose commission is in `amount`. */
+  orders: number;
+}
+
+/**
+ * «أرباح شهم»: commission finalised on delivered orders, by the Amman calendar day or month of the
+ * debit. Top-ups, holds on undelivered orders and «مجموع الطلب» are never included. Gross
+ * commission revenue, not net profit.
+ */
+export function commissionRevenue(walletTx: WalletTransaction[], now: number, period: RevenuePeriod): CommissionRevenue {
+  const today = ammanDayKey(now);
+  const inPeriod = (t: WalletTransaction) =>
+    period === 'all' ? true : period === 'today' ? ammanDayKey(t.createdAt) === today : ammanDayKey(t.createdAt).slice(0, 7) === today.slice(0, 7);
+  return {
+    amount: realizedCommission(walletTx, inPeriod),
+    orders: walletTx.filter((t) => t.type === 'commission_debit' && inPeriod(t)).length,
   };
 }

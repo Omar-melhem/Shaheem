@@ -34,31 +34,27 @@ import {
   isInQueue,
 } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
-import { AREA_REQUIRED, AREA_UNAVAILABLE, PINNED_LOCATION_LABEL, destinationPinError } from '@/domain/destination';
+import { AREA_REQUIRED, AREA_UNAVAILABLE, PINNED_LOCATION_LABEL, PIN_INVALID, destinationPinError } from '@/domain/destination';
+import { ORDER_TOTAL_ERROR, isValidOrderTotal } from '@/domain/orderTotal';
 import { resolveZoneFee } from './queries';
 import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError } from './merchantLocation';
 import { previewPricingCopy, type PricingCopyMode } from './pricingCopy';
-import { captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains } from './captainQueries';
+import { captainActiveOrder, captainBalance, captainEligibility, captainHeldCommission, eligibleCaptains } from './captainQueries';
 import { pushAlert, transition, uid, withdrawPendingOffers } from './orderMutations';
 import { afterOfferResolved, startPublicDispatch } from './dispatchRounds';
+import { done, fail, ok, type Result } from './result';
+import { lockCommission, rechargeCaptainWallet, settleDeliveredCommission, updateCommissionRate } from './walletLedger';
+import { resetAccountPassword, type PasswordResetTarget } from './accountAdmin';
+import { reportIdleLocations } from './locationReports';
 
-export { captainActiveOrder, captainBalance, captainEligibility, eligibleCaptains };
+export { captainActiveOrder, captainBalance, captainEligibility, captainHeldCommission, eligibleCaptains };
+export type { PasswordResetTarget };
 
 // Application layer: use cases operating on shared state. In the prototype this
 // stands in for the backend (source of truth); in production each action maps
 // to an authenticated API call validated server-side (SRS §13.4).
 
-export interface Failure {
-  ok: false;
-  error: string;
-  /** Machine-readable reason, e.g. 'fee_changed'. */
-  code?: string;
-  currentFee?: Money;
-}
-export type Result<T = undefined> = { ok: true; value: T } | Failure;
-const ok = <T,>(value: T): Result<T> => ({ ok: true, value });
-const done: Result = { ok: true, value: undefined };
-const fail = (error: string, extra?: Omit<Failure, 'ok' | 'error'>): Failure => ({ ok: false, error, ...extra });
+export type { Failure, Result } from './result';
 
 const captainActor = (c: Captain): ActorRef => ({ role: 'captain', id: c.id, name: c.fullName });
 const merchantActor = (m: Merchant): ActorRef => ({ role: 'merchant', id: m.id, name: m.businessName });
@@ -80,6 +76,8 @@ export interface CreateOrderInput {
   scheduledPickupAt?: number;
   /** Fee the Merchant saw; if the current fee differs, creation is refused with code 'fee_changed'. */
   expectedFee?: Money;
+  /** Optional «مجموع الطلب» in fils (goods value). Information only: never the fee or commission. */
+  orderTotal?: Money;
 }
 
 export interface ZoneInput {
@@ -178,7 +176,10 @@ interface Actions {
   setMerchantAreaPriceStatus: (merchantId: ID, areaId: ID, active: boolean) => Result;
   copyMerchantPricing: (sourceId: ID, targetId: ID, mode: PricingCopyMode) => Result<{ changed: number }>;
 
-  rechargeWallet: (captainId: ID, amount: Money, reason: string) => Result;
+  /** `operationId` is created once per top-up dialog; retrying it never credits twice. */
+  rechargeWallet: (captainId: ID, amount: Money, operationId: string) => Result<{ duplicate: boolean }>;
+  setCommissionRate: (bp: number) => Result;
+  resetAccountPassword: (target: PasswordResetTarget, temporaryPassword: string) => Result<{ name: string; username: string }>;
 
   createOrder: (merchantId: ID, input: CreateOrderInput) => Result<{ id: ID; reference: string }>;
   setPublicBroadcast: (enabled: boolean) => Result;
@@ -204,9 +205,6 @@ interface Actions {
 }
 
 export type AppState = AppData & Actions;
-
-// v8: no merchant contact person, no captain vehicle data, no customer name on orders (older saved demo data is discarded).
-
 
 export const createApplicationStore = (createSeedData: () => AppData, repository: AppRepository) => createStore<AppState>()(
     (setState, get) => {
@@ -288,6 +286,9 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
                 order.gpsStaleAlerted = false;
               }
             }
+
+            // 3. Simulated 60-second location reports from Available Captains without a delivery.
+            reportIdleLocations(d as AppData, now);
           }); } catch { /* keep the last good state */ }
         },
 
@@ -562,24 +563,10 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             return ok({ changed: rows.length });
           }),
 
-        // ----- Wallet (Admin only; recharge is simulated — SRS §4.10) -----
-        rechargeWallet: (captainId, amount, reason) =>
-          run((d, now) => {
-            const c = d.captains.find((x) => x.id === captainId);
-            if (!c) return fail('الكابتن غير موجود');
-            if (!Number.isInteger(amount) || amount <= 0) return fail('أدخل مبلغاً موجباً');
-            if (amount > 500_000) return fail('المبلغ يتجاوز الحد التجريبي (500 د.أ)');
-            d.walletTx.unshift({
-              id: uid('tx'),
-              captainId,
-              type: 'recharge',
-              amount,
-              createdAt: now,
-              actor: ADMIN_ACTOR,
-              reason: reason.trim() || 'شحن رصيد (محاكاة)',
-            });
-            return done;
-          }),
+        // ----- Wallet, commission and accounts (Admin only; demo ledger — see walletLedger.ts) -----
+        rechargeWallet: (captainId, amount, operationId) => run((d, now) => rechargeCaptainWallet(d, now, captainId, amount, operationId)),
+        setCommissionRate: (bp) => run((d, now) => updateCommissionRate(d, now, bp)),
+        resetAccountPassword: (target, temporaryPassword) => run((d, now) => resetAccountPassword(d, now, target, temporaryPassword)),
 
         // ----- Orders & dispatch -----
         createOrder: (merchantId, input) =>
@@ -589,6 +576,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (m.status !== 'active') return fail('حساب التاجر غير مفعّل — تواصل مع إدارة شهم');
             // Customer phone is optional (owner decision, 2026-11-15); a supplied one must be 10 digits.
             if (!isValidOptionalPhone(input.customerPhone)) return fail(CUSTOMER_PHONE_ERROR);
+            if (!isValidOrderTotal(input.orderTotal)) return fail(ORDER_TOTAL_ERROR, { code: 'invalid_total' });
             const requestType: RequestType = input.requestType ?? 'immediate';
             if (requestType === 'scheduled') {
               const at = input.scheduledPickupAt;
@@ -601,7 +589,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (resolution.kind !== 'ok') return fail(AREA_UNAVAILABLE, { code: resolution.kind });
             const pin = input.location ?? undefined;
             if (pin) {
-              if (!isValidLatLng(pin)) return fail('الموقع الدقيق غير صالح. حرّك الدبوس أو أزله.', { code: 'invalid_pin' });
+              if (!isValidLatLng(pin)) return fail(PIN_INVALID, { code: 'invalid_pin' });
               const pinError = destinationPinError(resolution.area, pin);
               if (pinError) return fail(pinError, { code: 'pin_outside_area' });
             }
@@ -626,6 +614,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
               },
               areaId: zone.id,
               areaName: zone.name,
+              mealValue: input.orderTotal,
               requestType,
               scheduledPickupAt: requestType === 'scheduled' ? input.scheduledPickupAt : undefined,
               queueReason: requestType === 'scheduled' ? 'طلب مؤجل — بانتظار تنسيق الإدارة' : undefined,
@@ -749,6 +738,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             offer.respondedAt = now;
             withdrawPendingOffers(d, order.id, now, offer.id);
             order.captainId = captainId;
+            lockCommission(d, order); // the hold: rate and amount fixed now, debited once on delivery
             transition(order, 'accepted', captainActor(captain), now);
             // Trip-start event for tracking is open; the demo starts at acceptance.
             if (captain.lastLocation) {
@@ -786,6 +776,7 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             transition(order, next, captainActor(captain), now);
             if (next === 'delivered') {
               order.deliveredAt = now;
+              settleDeliveredCommission(d, order, now);
               // Tracking ends: the position becomes a last-known location.
               if (captain.lastLocation) captain.lastLocation = { ...captain.lastLocation, activeOrderId: undefined, recordedAt: now };
               pushAlert(d, 'delivered', `تم تسليم الطلب ${order.reference} بواسطة ${captain.fullName}`, now, order.id);

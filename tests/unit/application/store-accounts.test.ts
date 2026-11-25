@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { PHONE_ERROR } from '@/domain/phone';
 import { PIN_OUTSIDE_AREA } from '@/application/merchantLocation';
-import { captainInput, failureOf, merchantInput, newStore, valueOf } from './storeHarness';
+import { captainInput, failureOf, memoryRepository, merchantInput, newStore, valueOf } from './storeHarness';
+import { TOPUP_AMOUNT_ERROR, TOPUP_LIMIT_ERROR } from '@/domain/wallet';
 
 describe('createMerchant', () => {
   it.each([
@@ -112,18 +113,39 @@ describe('captains', () => {
   });
 });
 
-describe('wallet recharge (simulated)', () => {
-  it('validates captain and amount', () => {
+describe('wallet top-up (demo ledger)', () => {
+  it('validates captain, operation and amount (0, negative, fractional fils, over 5 JOD)', () => {
     const { state } = newStore();
-    expect(failureOf(state().rechargeWallet('c-nobody', 1_000, ''))).toBe('الكابتن غير موجود');
-    expect(failureOf(state().rechargeWallet('c-ahmad', 0, ''))).toBe('أدخل مبلغاً موجباً');
-    expect(failureOf(state().rechargeWallet('c-ahmad', 1.5, ''))).toBe('أدخل مبلغاً موجباً');
-    expect(failureOf(state().rechargeWallet('c-ahmad', 500_001, ''))).toBe('المبلغ يتجاوز الحد التجريبي (500 د.أ)');
+    expect(failureOf(state().rechargeWallet('c-nobody', 1_000, 'op-1'))).toBe('الكابتن غير موجود');
+    expect(failureOf(state().rechargeWallet('c-ahmad', 1_000, ' '))).toBe('تعذّر تسجيل العملية، أعد المحاولة');
+    expect(failureOf(state().rechargeWallet('c-ahmad', 0, 'op-2'))).toBe(TOPUP_AMOUNT_ERROR);
+    expect(failureOf(state().rechargeWallet('c-ahmad', -500, 'op-3'))).toBe(TOPUP_AMOUNT_ERROR);
+    expect(failureOf(state().rechargeWallet('c-ahmad', 1.5, 'op-4'))).toBe(TOPUP_AMOUNT_ERROR);
+    expect(failureOf(state().rechargeWallet('c-ahmad', 5_001, 'op-5'))).toBe(TOPUP_LIMIT_ERROR);
   });
 
-  it('adds a recharge transaction with a default reason', () => {
+  it('exactly 5.000 JOD is accepted and recorded with its key, actor and no typed reason', () => {
     const { state } = newStore();
-    valueOf(state().rechargeWallet('c-yazan', 2_000, '  '));
-    expect(state().walletTx[0]).toMatchObject({ captainId: 'c-yazan', type: 'recharge', amount: 2_000, reason: 'شحن رصيد (محاكاة)' });
+    expect(valueOf(state().rechargeWallet('c-yazan', 5_000, 'op-a'))).toEqual({ duplicate: false });
+    expect(state().walletTx[0]).toMatchObject({ captainId: 'c-yazan', type: 'recharge', amount: 5_000, idempotencyKey: 'recharge:op-a', actor: { role: 'admin' } });
+    expect(state().walletTx[0].reason).toBeUndefined();
+  });
+
+  it('a retried confirmation never credits twice; a reused id for a different amount is refused', () => {
+    const { state } = newStore();
+    const before = state().walletTx.length;
+    valueOf(state().rechargeWallet('c-yazan', 2_000, 'op-b'));
+    expect(valueOf(state().rechargeWallet('c-yazan', 2_000, 'op-b'))).toEqual({ duplicate: true });
+    expect(state().walletTx.length).toBe(before + 1);
+    expect(failureOf(state().rechargeWallet('c-yazan', 3_000, 'op-b'))).toBe('رقم العملية مستخدم لعملية أخرى');
+  });
+
+  it('a failed save leaves no credit behind', () => {
+    const repo = memoryRepository();
+    const { state } = newStore(repo);
+    const before = state().walletTx.length;
+    repo.failNextSave = true;
+    expect(state().rechargeWallet('c-yazan', 2_000, 'op-c').ok).toBe(false);
+    expect(state().walletTx.length).toBe(before);
   });
 });

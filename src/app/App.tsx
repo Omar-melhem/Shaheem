@@ -18,7 +18,6 @@ import { ServiceAreasPage } from '@/features/admin/service-areas/ServiceAreasPag
 import { MerchantPricingPage } from '@/features/admin/merchant-pricing/MerchantPricingPage';
 import { MerchantPricingDetails } from '@/features/admin/merchant-pricing/MerchantPricingDetails';
 import { WalletsPage } from '@/features/admin/WalletsPage';
-import { SupportSettingsPage } from '@/features/admin/SupportSettingsPage';
 import { AdminSettingsPage } from '@/features/admin/AdminSettingsPage';
 import { MerchantPortal } from '@/features/merchant/MerchantPortal';
 import { MerchantLayout } from '@/features/merchant/MerchantLayout';
@@ -57,7 +56,6 @@ export function App() {
           <Route path="pricing" element={<MerchantPricingPage />} />
           <Route path="pricing/:merchantId" element={<MerchantPricingDetails backTo={{ path: '/admin/pricing', label: 'أسعار التجار' }} />} />
           <Route path="wallets" element={<WalletsPage />} />
-          <Route path="support" element={<SupportSettingsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
         <Route

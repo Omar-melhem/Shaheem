@@ -14,6 +14,7 @@ import type {
   DeliveryRoute,
   PricingCopyAudit,
   MerchantCoverage,
+  AdminAuditEntry,
 } from '@/domain/types';
 export interface AppData {
   merchants: Merchant[];
@@ -28,6 +29,8 @@ export interface AppData {
   walletTx: WalletTransaction[];
   supportContacts: SupportContact[];
   alerts: OpsAlert[];
+  /** Commission-rate changes and password resets, newest first. */
+  adminAudit: AdminAuditEntry[];
   settings: PlatformSettings;
   demo: DemoSettings;
   seq: number;

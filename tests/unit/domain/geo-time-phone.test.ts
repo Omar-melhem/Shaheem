@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { formatDistance, haversineMeters, isValidLatLng, moveTowards, pointInPolygon, polygonCentroid } from '@/domain/geo';
 import { ammanDayKey, ammanWallTimeToEpoch, formatAmmanDateTime, formatAmmanTime, lastThreeAmmanDays } from '@/domain/time';
 import { isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
-import { destinationPinError, hasAreaBoundary, isAreaOnly } from '@/domain/destination';
+import { destinationPinError, hasAreaBoundary, isAreaOnly, AREA_HAS_NO_BOUNDARY } from '@/domain/destination';
 import { isAutoDispatchEligible, rankByProximity } from '@/domain/dispatch';
 import { CANCELLABLE_STATUSES, CAPTAIN_NEXT_STATUS, isActiveDelivery, isInQueue, isOffering, ORDER_STATUS_LABEL } from '@/domain/orderStatus';
 import { makeArea, makeCaptain, SQUARE } from '../../fixtures';
@@ -111,8 +111,8 @@ describe('destination', () => {
     expect(destinationPinError(legacy, { lat: 31.95, lng: 35.9 })).toBeNull();
   });
 
-  it('an area without a boundary accepts the pin (shown unverified elsewhere)', () => {
-    expect(destinationPinError(makeArea(), { lat: 10, lng: 10 })).toBeNull();
+  it('an area without a boundary cannot verify a pin, so the pin is refused (never the whole city)', () => {
+    expect(destinationPinError(makeArea(), { lat: 10, lng: 10 })).toBe(AREA_HAS_NO_BOUNDARY);
   });
 
   it('area-only destinations have no coordinates', () => {

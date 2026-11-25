@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { filsToJod, formatJodInput, formatMoney, formatMoneyExact, jodToFils, parseJodAmount, parseJodInput } from '@/domain/money';
-import { COMMISSION_BP_PROPOSED, commissionFils, formatPercentBp, isValidCommissionBp } from '@/domain/commission';
+import { DEFAULT_COMMISSION_BP, commissionFils, formatPercentBp, isValidCommissionBp } from '@/domain/commission';
 
 describe('money (integer fils)', () => {
   it('converts JOD to fils without float drift', () => {
@@ -68,8 +68,8 @@ describe('parseJodAmount', () => {
 
 describe('commission (percentage of the delivery-fee snapshot)', () => {
   it('proposed rate is 20% in basis points', () => {
-    expect(COMMISSION_BP_PROPOSED).toBe(2_000);
-    expect(formatPercentBp(COMMISSION_BP_PROPOSED)).toBe('20%');
+    expect(DEFAULT_COMMISSION_BP).toBe(2_000);
+    expect(formatPercentBp(DEFAULT_COMMISSION_BP)).toBe('20%');
     expect(formatPercentBp(1_250)).toBe('12.5%');
   });
 

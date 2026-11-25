@@ -130,7 +130,7 @@ export function CaptainsPage() {
                     <IconAction icon={<Pencil />} label="تعديل البيانات" onClick={() => setEditing(c)} />
                     <IconAction icon={<Wallet />} label="شحن المحفظة" tone="secondary" onClick={() => setRecharging(v)} />
                     <IconAction icon={<Star />} label="تقييم الكابتن" onClick={() => setRating(c)} />
-                    <IconAction icon={<MapPin />} label="فتح الموقع على الخريطة" to={`/admin/map?captain=${c.id}`} disabled={!c.lastLocation} disabledReason="لا يوجد موقع مسجّل بعد" />
+                    <IconAction icon={<MapPin />} label="فتح الموقع على الخريطة" to={`/admin/map?captain=${c.id}`} disabled={v.presence === 'hidden'} disabledReason="لا يظهر على الخريطة الحية: غير متاح أو لا يوجد موقع محدَّث" />
                     <IconAction icon={<Power />} label={c.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب'} tone={c.status === 'active' ? 'danger' : 'secondary'} onClick={() => setToggling(c)} />
                   </RowActions>
                 </tr>

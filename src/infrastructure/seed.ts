@@ -14,6 +14,7 @@ import type {
 import { MAX_DISPATCH_ROUNDS, ROUNDS_EXHAUSTED_REASON } from '@/domain/dispatch';
 import { haversineMeters, polygonCentroid } from '@/domain/geo';
 import { jodToFils } from '@/domain/money';
+import { DEFAULT_COMMISSION_BP } from '@/domain/commission';
 
 // Fictional demo fixtures for Amman (SRS §19.6). Names, phones and prices are
 // illustrative only — not real business data or approved prices.
@@ -23,8 +24,6 @@ export { ADMIN_ACTOR, SYSTEM_ACTOR, type AppData } from '@/application/data';
 
 export const DEFAULT_DEMO_SETTINGS: DemoSettings = {
   walletThreshold: jodToFils(2),
-  offerPolicy: 'group',
-  groupSize: 3,
   offerTimeoutSec: 60,
   staleAfterSec: 20,
   simSpeedMps: 60,
@@ -234,7 +233,8 @@ export function createSeedData(now: number = Date.now()): AppData {
       { id: 'al-1', kind: 'no_candidate', message: `الطلب ${expired.reference}: ${ROUNDS_EXHAUSTED_REASON} — بحاجة إلى إجراء من الإدارة`, at: expired.updatedAt, orderId: expired.id, read: false },
       { id: 'al-2', kind: 'new_order', message: `طلب جديد ${newest.reference} من ${merchants.find((m) => m.id === newest.merchantId)!.businessName}`, at: newest.createdAt, orderId: newest.id, read: false },
     ],
-    settings: { publicBroadcast: true },
+    adminAudit: [],
+    settings: { publicBroadcast: true, commissionBp: DEFAULT_COMMISSION_BP },
     demo: { ...DEFAULT_DEMO_SETTINGS },
     seq,
   };

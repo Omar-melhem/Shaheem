@@ -51,7 +51,7 @@ export function CaptainDetailsPanel({ view, now, onClose }: { view: CaptainView 
         ) : (
           <p className="text-xs text-ink-muted">لا يتوفر أي موقع لهذا الكابتن.</p>
         )}
-        <p className="text-[11px] text-ink-muted">يُتتبع الموقع أثناء التوصيل النشط فقط. أي موقع آخر تجريبي أو آخر موقع معروف، ولا يُعرض كموقع مباشر.</p>
+        <p className="text-[11px] text-ink-muted">الكابتن المتاح يرسل موقعه كل 60 ثانية، وأثناء التوصيل كل 30 ثانية. الموقع الأقدم من 90 ثانية لا يُعرض كموقع حالي. جميع المواقع هنا محاكاة.</p>
       </Card>
     </Drawer>
   );

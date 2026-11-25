@@ -74,8 +74,8 @@ describe('alerts and demo controls', () => {
 
   it('updateDemoSettings merges the patch', () => {
     const { state } = newStore();
-    state().updateDemoSettings({ groupSize: 5 });
-    expect(state().demo.groupSize).toBe(5);
+    state().updateDemoSettings({ staleAfterSec: 45 });
+    expect(state().demo.staleAfterSec).toBe(45);
     expect(state().demo.offerTimeoutSec).toBe(60);
   });
 

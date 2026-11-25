@@ -120,7 +120,9 @@ export function CustomerLocationSection({
         ) : (
           <p className="text-xs text-ink-muted">لا توجد حدود مرسومة لهذه المنطقة، لذا لا يمكن تحديد موقع دقيق عليها. المنطقة تكفي للإرسال.</p>
         )}
-        {canPin && <OpenDecision id="O-018">البحث من OpenStreetMap للعرض؛ مزوّد الخرائط والبحث النهائي لم يُعتمد بعد.</OpenDecision>}
+        {canPin && (
+          <OpenDecision id="O-018 · حدود">أي نقطة داخل حدود المنطقة أو على حدها مقبولة. حدود المناطق في هذا النموذج تقريبية للعرض، والحدود الرسمية لم تُستورد بعد؛ البحث من OpenStreetMap للعرض.</OpenDecision>
+        )}
       </div>
     </div>
   );

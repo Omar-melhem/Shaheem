@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { LogOut, RadioTower, UserCog, Wallet } from 'lucide-react';
+import { LogOut, RadioTower, UserCog } from 'lucide-react';
 import { useAppStore, DEMO_ADMIN } from '@/app/state';
-import { formatMoney } from '@/domain/money';
-import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS } from '@/domain/dispatch';
-import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
-import { CommissionPreview } from './CommissionPreview';
+import { DISPATCH_ROUNDS, DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, describeRound } from '@/domain/dispatch';
+import { ACTIVE_REPORT_INTERVAL_SEC, IDLE_REPORT_INTERVAL_SEC, IDLE_STALE_AFTER_SEC } from '@/domain/location';
+import { CommissionSettingsSection } from './settings/CommissionSettingsSection';
+import { PasswordResetSection } from './settings/PasswordResetSection';
 import { Badge, OpenDecision, PageHeader, SettingsRow, SettingsSection, Toggle } from '@/shared/components/ui';
 import { SignOutSection } from '@/features/auth/SignOutSection';
 import { BroadcastConfirmDialog } from './BroadcastConfirmDialog';
 
 /**
  * Admin settings: only settings that exist and affect the platform. The broadcast switch is the
- * same single setting as the header pill (through BroadcastConfirmDialog); dispatch values and the
- * commission rate are shown read-only because changing them is not an approved feature yet.
- * Areas, support channels, merchants and wallets are managed on their own pages.
+ * same single setting as the header pill (through BroadcastConfirmDialog); dispatch values are
+ * read-only; the commission rate is editable with confirmation and audit (owner, 2026-11-25);
+ * Merchant/Captain password resets live here. Areas, merchants and wallets have their own pages.
  */
 export function AdminSettingsPage() {
   const broadcast = useAppStore((s) => s.settings.publicBroadcast);
@@ -34,7 +34,7 @@ export function AdminSettingsPage() {
             </div>
           </SettingsRow>
           <SettingsRow label="سياسة إرسال العروض" readOnly>
-            {demo.offerPolicy === 'group' ? `أقرب ${demo.groupSize} كباتن معاً` : 'كابتن واحد في كل مرة'}
+            {DISPATCH_ROUNDS.map((policy, i) => `${i + 1}) ${describeRound(policy)}`).join(' ← ')}
           </SettingsRow>
           <SettingsRow label="جولات العرض العام" readOnly>
             {MAX_DISPATCH_ROUNDS} جولات × {DISPATCH_ROUND_SEC} ثانية
@@ -42,33 +42,15 @@ export function AdminSettingsPage() {
           <SettingsRow label="مهلة العرض الخاص" readOnly>
             {demo.offerTimeoutSec} ثانية
           </SettingsRow>
+          <SettingsRow label="تحديث موقع الكابتن" description={`يُعتبر الموقع متأخراً بعد ${IDLE_STALE_AFTER_SEC} ثانية دون تحديث.`} readOnly>
+            متاح بلا طلب: كل {IDLE_REPORT_INTERVAL_SEC} ث · أثناء التوصيل: كل {ACTIVE_REPORT_INTERVAL_SEC} ث
+          </SettingsRow>
           <div className="px-5 py-3">
-            <OpenDecision id="O-005 · O-006">قيم افتراضية للعرض وغير معتمدة. يغيّرها مقدّم العرض من «أدوات العرض» فقط.</OpenDecision>
+            <OpenDecision id="بانتظار التأكيد">تفسير الجولات (3 كباتن ضمن 5 كم أولاً) ومدة الجولتين الثانية والثالثة مقترحة، ومهلة العرض الخاص (O-006) تجريبية. إرسال الموقع يتم من تطبيق الكابتن والخادم، وهنا محاكاة.</OpenDecision>
           </div>
         </SettingsSection>
 
-        <SettingsSection title="العمولة" icon={<Wallet className="h-5 w-5" />}>
-          <SettingsRow
-            label="نسبة عمولة شهم من رسوم التوصيل"
-            description="تُحسب من رسوم توصيل الطلب عند قبوله، وتُخصم مرة واحدة بعد التسليم. حفظها وتعديلها والخصم تحتاج خادماً، فهي معروضة فقط."
-            readOnly
-          >
-            <span className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <span dir="ltr" className="font-bold">{formatPercentBp(COMMISSION_BP_PROPOSED)}</span>
-              <Badge tone="warning">مقترحة — غير مفعّلة</Badge>
-            </span>
-          </SettingsRow>
-          <div className="border-b border-cream-dark px-5 py-4">
-            <p className="mb-2 text-sm font-bold">معاينة الحساب</p>
-            <CommissionPreview />
-          </div>
-          <SettingsRow label="الحد الأدنى لرصيد المحفظة" readOnly>
-            {formatMoney(demo.walletThreshold)}
-          </SettingsRow>
-          <div className="px-5 py-3">
-            <OpenDecision id="CR-1.4 §9.4">التقريب المقترح: لأقرب فلس (النصف يُقرَّب للأعلى) — بانتظار الاعتماد. الحد الأدنى للرصيد (O-020) قيمة تجريبية. لا تُخصم أي عمولة في هذا النموذج.</OpenDecision>
-          </div>
-        </SettingsSection>
+        <CommissionSettingsSection />
 
         <SettingsSection title="الحساب والأمان" icon={<UserCog className="h-5 w-5" />}>
           <SettingsRow label="اسم المستخدم" readOnly>
@@ -78,6 +60,8 @@ export function AdminSettingsPage() {
             مدير النظام
           </SettingsRow>
         </SettingsSection>
+
+        <PasswordResetSection />
 
         <SignOutSection icon={<LogOut className="h-5 w-5" />} />
       </div>

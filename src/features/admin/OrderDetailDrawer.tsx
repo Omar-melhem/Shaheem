@@ -3,6 +3,7 @@ import { NO_EXACT_LOCATION, destinationParts, isAreaOnly } from '@/domain/destin
 import { useAppStore } from '@/app/state';
 import { useEligibleCaptainCount, useNow } from '@/shared/hooks/application';
 import { formatMoney } from '@/domain/money';
+import { formatPercentBp } from '@/domain/commission';
 import { formatAmmanDateTime } from '@/domain/time';
 import { formatDistance } from '@/domain/geo';
 import { isActiveDelivery } from '@/domain/orderStatus';
@@ -94,7 +95,17 @@ export function OrderDetailDrawer({ orderId, onClose }: { orderId: string | null
             <span className="block text-xs text-ink-muted">حُفظت {formatDateTime(order.pricingSnapshotAt)}</span>
           </DetailRow>
           <DetailRow label="هاتف العميل">{order.customerPhone ? <span dir="ltr">{order.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
-          <DetailRow label="قيمة الطلب">{order.mealValue !== undefined ? formatMoney(order.mealValue) : <span className="text-ink-muted">غير مُدخلة</span>}</DetailRow>
+          <DetailRow label="عمولة شهم">
+            {order.commissionFils !== undefined ? (
+              <>
+                {formatMoney(order.commissionFils)} <span dir="ltr" className="text-xs text-ink-muted">({formatPercentBp(order.commissionBp ?? 0)})</span>
+                <span className="block text-xs text-ink-muted">{order.status === 'delivered' ? 'خُصمت عند التسليم' : 'محجوزة — تُخصم عند التسليم'}</span>
+              </>
+            ) : (
+              <span className="text-ink-muted">{order.captainId ? 'لا عمولة (قُبل قبل تفعيل العمولة)' : 'تُحدَّد عند قبول الكابتن'}</span>
+            )}
+          </DetailRow>
+          <DetailRow label="مجموع الطلب">{order.mealValue !== undefined ? formatMoney(order.mealValue) : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
           <DetailRow label="الكابتن">
             {captain ? (
               <>

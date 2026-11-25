@@ -3,7 +3,7 @@ import { AlertTriangle, Lock, MapPin, Send } from 'lucide-react';
 import { PINNED_LOCATION_LABEL } from '@/domain/destination';
 import type { Merchant } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
-import { Button, Card, Field, PhoneField, PHONE_HINT } from '@/shared/components/ui';
+import { Button, Card, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { CustomerLocationSection } from '../location/CustomerLocationSection';
 import { OrderReviewDialog } from './OrderReviewDialog';
 import { RequestTypeSelector } from './RequestTypeSelector';
@@ -12,8 +12,8 @@ import { useRequestCaptainForm } from './useRequestCaptainForm';
 
 /**
  * Merchant "Request Captain" form on one page, in three sections: request type → delivery
- * information → order details with the fee and the main action. No customer name and no goods
- * value (CR v1.4 §4). The read-only fee comes from Merchant + area in the application layer and
+ * information → order details (optional «مجموع الطلب», the fee) and the main action. No customer
+ * name; the goods total never affects the fee (owner, 2026-11-25). The read-only fee comes from Merchant + area in the application layer and
  * is re-checked when the order is created, so a stale price can never be submitted.
  */
 export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
@@ -79,6 +79,23 @@ export function RequestCaptainPanel({ merchant }: { merchant: Merchant }) {
         </FormSection>
 
         <FormSection step={3} title="تفاصيل الطلب">
+          <Field label="مجموع الطلب" htmlFor="order-total" optional error={errors.orderTotal} hint="قيمة مشتريات العميل بالدينار. لا تؤثر على رسوم التوصيل.">
+            <div className="relative">
+              <Input
+                id="order-total"
+                dir="ltr"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0.000"
+                value={form.orderTotal}
+                onChange={(e) => set('orderTotal', e.target.value)}
+                onBlur={request.validateOrderTotal}
+                aria-invalid={!!errors.orderTotal}
+                className="pl-12 rtl:text-right"
+              />
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-bold text-ink-muted" aria-hidden>د.أ</span>
+            </div>
+          </Field>
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-1 text-sm text-ink-soft">

@@ -42,7 +42,7 @@ describe('merchant and captain tables: one ⓘ legend above each table', () => {
     const [first] = useAppStore.getState().captains;
     useAppStore.setState((s) => ({ captains: s.captains.map((c) => (c.id === first.id ? { ...c, lastLocation: undefined } : c)) }));
     inRouter(<CaptainsPage />);
-    expect(screen.getAllByRole('button', { name: /فتح الموقع على الخريطة — لا يوجد موقع مسجّل بعد/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /فتح الموقع على الخريطة — لا يظهر على الخريطة الحية/ }).length).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole('button', { name: 'شرح إجراءات الجدول' }));
     expect(within(screen.getByRole('dialog', { name: 'شرح إجراءات الكباتن' })).getAllByRole('listitem')).toHaveLength(6);
   });

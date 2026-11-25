@@ -1,12 +1,19 @@
 import type { Captain, DeliveryOrder, ID, Money } from '@/domain/types';
 import { evaluateEligibility } from '@/domain/eligibility';
 import { isActiveDelivery } from '@/domain/orderStatus';
+import { heldCommission, ledgerBalance } from '@/domain/wallet';
 import type { AppData } from '@/application/data';
 
 // Pure reads over AppData, shared by the store, the dispatch rounds and selectors.
 
+/** Ledger balance: recharges minus finalised commission debits. */
 export function captainBalance(data: AppData, captainId: ID): Money {
-  return data.walletTx.filter((t) => t.captainId === captainId).reduce((sum, t) => sum + t.amount, 0);
+  return ledgerBalance(data.walletTx, captainId);
+}
+
+/** Commission reserved on the Captain's accepted, undelivered orders (not yet debited). */
+export function captainHeldCommission(data: Pick<AppData, 'orders'>, captainId: ID): Money {
+  return heldCommission(data.orders, captainId);
 }
 
 export function captainActiveOrder(data: AppData, captainId: ID): DeliveryOrder | undefined {

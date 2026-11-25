@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { merchantZoneOptions, resolveZoneFee } from '@/application/queries';
 import { useAppStore } from '@/app/state';
-import { AREA_UNAVAILABLE, LOCATION_REQUIRED, PIN_OUTSIDE_COVERAGE, destinationPinError, detectAreaForPin } from '@/domain/destination';
+import { AREA_UNAVAILABLE, LOCATION_REQUIRED, PIN_ON_SHARED_BORDER, PIN_OUTSIDE_COVERAGE, destinationPinError, matchAreaForPin } from '@/domain/destination';
 import { CUSTOMER_PHONE_ERROR, isValidOptionalPhone } from '@/domain/phone';
+import { parseOrderTotal } from '@/domain/orderTotal';
 import { ammanDayKey, ammanWallTimeToEpoch } from '@/domain/time';
 import type { ID, Merchant, RequestType } from '@/domain/types';
 import { toast } from '@/shared/components/toast';
@@ -14,12 +15,14 @@ interface FormState {
   scheduleDate: string;
   scheduleTime: string;
   customerPhone: string;
+  /** «مجموع الطلب» as typed; blank = not provided. */
+  orderTotal: string;
   areaId: ID | null;
   location: CustomerLocation | null;
 }
 type Errors = Partial<Record<keyof FormState | 'schedule', string>>;
 
-const EMPTY_FORM: FormState = { requestType: 'immediate', scheduleDate: '', scheduleTime: '', customerPhone: '', areaId: null, location: null };
+const EMPTY_FORM: FormState = { requestType: 'immediate', scheduleDate: '', scheduleTime: '', customerPhone: '', orderTotal: '', areaId: null, location: null };
 /** Stands in for the network round-trip so the progress state is real to the user (demo, no backend). */
 const SUBMIT_PAUSE_MS = 400;
 
@@ -34,7 +37,8 @@ function scheduledPickup(form: FormState, now: number): { at: number } | { error
 
 /**
  * Request Captain flow: form state, validation, the review step and the single create-order call.
- * No goods value is collected (CR v1.4 §4); a scheduled request goes to Admin only (§6).
+ * «مجموع الطلب» is optional and never affects the fee (owner, 2026-11-25); a scheduled request goes to
+ * Admin only (CR v1.4 §6).
  */
 export function useRequestCaptainForm(merchant: Merchant) {
   const areas = useAppStore((s) => s.areas);
@@ -89,12 +93,13 @@ export function useRequestCaptainForm(merchant: Merchant) {
    */
   const setPin = (location: CustomerLocation | null) => {
     if (location && !form.areaId) {
-      const detected = detectAreaForPin(areaOptions.map((o) => o.area), location.position);
-      if (!detected) {
-        setErrors((e) => ({ ...e, areaId: PIN_OUTSIDE_COVERAGE }));
+      const match = matchAreaForPin(areaOptions.map((o) => o.area), location.position);
+      if (match.kind !== 'one') {
+        setErrors((e) => ({ ...e, areaId: match.kind === 'ambiguous' ? PIN_ON_SHARED_BORDER : PIN_OUTSIDE_COVERAGE }));
         setPinNotice(null);
         return;
       }
+      const detected = match.area;
       const label = areaOptions.find((o) => o.area.id === detected.id)?.label ?? detected.name;
       setForm((f) => ({ ...f, areaId: detected.id, location }));
       setErrors((e) => ({ ...e, areaId: undefined }));
@@ -110,10 +115,18 @@ export function useRequestCaptainForm(merchant: Merchant) {
     setErrors((e) => ({ ...e, customerPhone: isValidOptionalPhone(form.customerPhone) ? undefined : CUSTOMER_PHONE_ERROR }));
   };
 
+  /** Inline check when «مجموع الطلب» loses focus: blank is fine (optional). */
+  const validateOrderTotal = () => {
+    const total = parseOrderTotal(form.orderTotal);
+    setErrors((e) => ({ ...e, orderTotal: total.ok ? undefined : total.error }));
+  };
+
   /** Validates everything and opens the review; returns false when a field needs fixing. */
   const openReview = (): boolean => {
     const next: Errors = {};
     if (!isValidOptionalPhone(form.customerPhone)) next.customerPhone = CUSTOMER_PHONE_ERROR;
+    const total = parseOrderTotal(form.orderTotal);
+    if (!total.ok) next.orderTotal = total.error;
     if (!form.areaId) next.areaId = LOCATION_REQUIRED;
     let scheduledAt: number | undefined;
     if (form.requestType === 'scheduled') {
@@ -124,7 +137,7 @@ export function useRequestCaptainForm(merchant: Merchant) {
     setErrors(next);
     if (Object.keys(next).length > 0 || pinError || resolution?.kind !== 'ok') return false;
     setSubmitError(null);
-    setReview({ fee: resolution.price, requestType: form.requestType, scheduledPickupAt: scheduledAt });
+    setReview({ fee: resolution.price, requestType: form.requestType, scheduledPickupAt: scheduledAt, orderTotal: total.ok ? total.fils : undefined });
     return true;
   };
 
@@ -147,6 +160,7 @@ export function useRequestCaptainForm(merchant: Merchant) {
         requestType: review.requestType,
         scheduledPickupAt: review.scheduledPickupAt,
         expectedFee: review.fee,
+        orderTotal: review.orderTotal,
       });
       submitLock.current = false;
       setSubmitting(false);
@@ -172,7 +186,7 @@ export function useRequestCaptainForm(merchant: Merchant) {
   };
 
   return {
-    form, errors, set, setSchedule, minScheduleDate, areaOptions, selectedArea, resolution, areaError, pinError, pinNotice, selectArea, setPin, validatePhone,
+    form, errors, set, setSchedule, minScheduleDate, areaOptions, selectedArea, resolution, areaError, pinError, pinNotice, selectArea, setPin, validatePhone, validateOrderTotal,
     resetCount, review, submitting, submitError, openReview, closeReview, confirm,
   };
 }

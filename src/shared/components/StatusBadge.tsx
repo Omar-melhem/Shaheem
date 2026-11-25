@@ -13,7 +13,7 @@ export function OrderStatusBadge({ status, scheduled, audience = 'admin' }: { st
   );
 }
 
-const FRESHNESS_TONE = { live: 'success', stale: 'warning', last_known: 'neutral', demo: 'sand', none: 'neutral' } as const;
+const FRESHNESS_TONE = { live: 'success', reported: 'success', stale: 'warning', last_known: 'neutral', demo: 'sand', none: 'neutral' } as const;
 
 export function FreshnessBadge({ freshness }: { freshness: LocationFreshness }) {
   return <Badge tone={FRESHNESS_TONE[freshness]}>{FRESHNESS_LABEL[freshness]}</Badge>;

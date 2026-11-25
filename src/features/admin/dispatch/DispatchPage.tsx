@@ -4,11 +4,11 @@ import { useAppStore } from '@/app/state';
 import { useEligibleCaptainCount, useNow } from '@/shared/hooks/application';
 import { dispatchQueues } from '@/application/dispatchQueues';
 import type { DeliveryOrder } from '@/domain/types';
-import { DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, describeQueueReason } from '@/domain/dispatch';
+import { DISPATCH_ROUNDS, DISPATCH_ROUND_SEC, MAX_DISPATCH_ROUNDS, describeRound, describeQueueReason } from '@/domain/dispatch';
 import { ORDER_GROUP_LABEL } from '@/domain/orderStatus';
 import { formatMoney } from '@/domain/money';
 import { destinationText } from '@/domain/destination';
-import { Badge, Card, CardHeader, EmptyState, OpenDecision, PageHeader, SimTag } from '@/shared/components/ui';
+import { Badge, Card, CardHeader, EmptyState, OpenDecision, PageHeader } from '@/shared/components/ui';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatRelative } from '@/shared/lib/format';
 import { OrderActions } from '../OrderActions';
@@ -26,7 +26,6 @@ export function DispatchPage() {
   const now = useNow(1000);
   const orders = useAppStore((s) => s.orders);
   const merchants = useAppStore((s) => s.merchants);
-  const demo = useAppStore((s) => s.demo);
   const eligibleNow = useEligibleCaptainCount();
   const [detailId, setDetailId] = useState<string | null>(null);
   const { scheduled, intervention, waiting, offering } = useMemo(() => dispatchQueues(orders), [orders]);
@@ -68,15 +67,16 @@ export function DispatchPage() {
 
       <DispatchSummary />
 
-      <Card className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-sm">
+      <Card className="mb-6 space-y-2 px-4 py-3 text-sm">
         <p className="font-bold">
-          كل جولة {DISPATCH_ROUND_SEC} ثانية، بحد أقصى {MAX_DISPATCH_ROUNDS} جولات تلقائية؛ بعدها يعود الطلب إلى الإدارة.
+          {MAX_DISPATCH_ROUNDS} جولات تلقائية، {DISPATCH_ROUND_SEC} ثانية لكل جولة، من موقع التاجر — أول قبول يفوز، وبعدها يعود الطلب إلى الإدارة:
         </p>
-        <SimTag>اختيار الكباتن في كل جولة — افتراض تجريبي</SimTag>
-        <span className="text-ink-soft">
-          {demo.offerPolicy === 'group' ? `أقرب ${demo.groupSize} كباتن مؤهلين لم يُعرض عليهم بعد — أول قبول يفوز` : 'الكابتن الأقرب التالي في كل جولة'}
-        </span>
-        <OpenDecision id="O-004 / O-005">من يستلم العرض في كل جولة وطريقة حساب القرب قرارات مفتوحة؛ الجولات هنا بساعة محاكاة داخل المتصفح.</OpenDecision>
+        <ol className="flex flex-wrap gap-2 text-ink-soft">
+          {DISPATCH_ROUNDS.map((policy, i) => (
+            <li key={i} className="rounded-lg bg-cream px-2.5 py-1 text-xs"><b className="text-ink">الجولة {i + 1}:</b> {describeRound(policy)}</li>
+          ))}
+        </ol>
+        <OpenDecision id="بانتظار التأكيد">«3 إلى 5 كيلو» مفهومة كأقرب 3 كباتن ضمن 5 كم، وعدد الجولة الثانية (3) ومدة الجولتين الثانية والثالثة مقترحة. الجولات هنا بساعة محاكاة داخل المتصفح؛ في الإنتاج يديرها الخادم.</OpenDecision>
       </Card>
 
       {/* Most urgent queue, full width (owner review 2026-11-21). */}

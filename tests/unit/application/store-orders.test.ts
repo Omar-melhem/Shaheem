@@ -61,7 +61,10 @@ describe('createOrder success', () => {
     expect(o).toMatchObject({ status: 'awaiting_captain', customerPhone: PHONE, areaId: 'a-khalda', requestType: 'immediate', dispatchMode: 'public' });
     expect(o.destination.position).toBeUndefined();
     expect(o.destination.label).toBe('منطقة خلدا');
-    expect(offersOf(s, id).filter((x) => x.status === 'pending')).toHaveLength(3); // demo group size
+    const pending = offersOf(s, id).filter((x) => x.status === 'pending');
+    expect(pending.length).toBeGreaterThan(0);
+    expect(pending.length).toBeLessThanOrEqual(3); // round 1: up to 3 nearest within 5 km
+    expect(pending.every((x) => x.distanceMeters! <= 5_000)).toBe(true);
     expect(s.state().alerts[0].kind).toBe('new_order');
   });
 
@@ -146,15 +149,18 @@ describe('captain actions', () => {
 
   it('going offline withdraws the pending offer; when the round empties the next round starts', () => {
     const s = newStore();
-    s.state().updateDemoSettings({ offerPolicy: 'sequential' });
     const id = immediateOrder(s);
-    const first = offersOf(s, id)[0];
-    valueOf(s.state().setCaptainAvailability(first.captainId, false));
-    expect(s.state().offers.find((o) => o.id === first.id)?.status).toBe('withdrawn');
-    const pending = offersOf(s, id).filter((o) => o.status === 'pending');
-    expect(pending).toHaveLength(1);
-    expect(pending[0].captainId).not.toBe(first.captainId);
-    expect(pending[0].attempt).toBe(2);
+    const round1 = offersOf(s, id);
+    round1.forEach((o) => valueOf(s.state().setCaptainAvailability(o.captainId, false)));
+    expect(round1.every((o) => s.state().offers.find((x) => x.id === o.id)?.status === 'withdrawn')).toBe(true);
+    const next = offersOf(s, id).filter((o) => o.status === 'pending');
+    const after = order(s, id);
+    // Either round 2/3 reached someone new within 10 km, or the order went to the Admin queue.
+    if (next.length > 0) {
+      expect(next.every((o) => !round1.some((r) => r.captainId === o.captainId) && (o.attempt ?? 0) >= 2)).toBe(true);
+    } else {
+      expect(after.status).toBe('dispatch_expired');
+    }
   });
 
   it('accepting an offer assigns the order, withdraws the others and starts trip tracking', () => {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ListPlus, Plus, Route, Shapes } from 'lucide-react';
+import { ListPlus, Plus, Shapes } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import type { ServiceArea } from '@/domain/types';
 import { governorateName } from '@/domain/governorates';
@@ -8,14 +8,14 @@ import { Button, Card, EmptyState, Field, OpenDecision, PageHeader, SearchField 
 import { GovernorateSelect } from './GovernorateSelect';
 import { ZoneDialog, type ZoneEditing } from './ZoneDialog';
 import { ZoneStatusDialog } from './ZoneStatusDialog';
-import { DeliveryRouteDialog } from './DeliveryRouteDialog';
 import { DeliveryRoutesCard } from './DeliveryRoutesCard';
 import { AreaImportDialog } from './AreaImportDialog';
 import { AreaTreeTable } from './AreaTreeTable';
 
 /**
  * Region catalogue (CR v1.4 §1): Governorate → City → Area → optional sections, managed by
- * name with no map or boundary anywhere on this page. Origin → destination routes stay below.
+ * name with no map or boundary anywhere on this page. Routes saved earlier are listed below; new
+ * routes are no longer created here (owner, 2026-11-25).
  */
 export function ServiceAreasPage() {
   const areas = useAppStore((s) => s.areas);
@@ -23,7 +23,6 @@ export function ServiceAreasPage() {
   const [governorateId, setGovernorateId] = useState('');
   const [editing, setEditing] = useState<ZoneEditing | null>(null);
   const [toggling, setToggling] = useState<ServiceArea | null>(null);
-  const [addingRoute, setAddingRoute] = useState(false);
   const [importing, setImporting] = useState(false);
 
   const needle = q.trim().toLowerCase();
@@ -45,7 +44,6 @@ export function ServiceAreasPage() {
         description="المحافظة ← المدينة ← المنطقة ← الأقسام. تُدار بالأسماء، ولكل منطقة وقسم سعر مستقل لكل تاجر من «أسعار التجار»."
         actions={
           <>
-            <Button variant="outline" icon={<Route className="h-4 w-4" />} onClick={() => setAddingRoute(true)}>مسار توصيل جديد</Button>
             <Button variant="outline" icon={<ListPlus className="h-4 w-4" />} onClick={() => setImporting(true)}>استيراد مناطق</Button>
             <Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing({ mode: 'new' })}>منطقة جديدة</Button>
           </>
@@ -78,7 +76,6 @@ export function ServiceAreasPage() {
 
       <ZoneDialog editing={editing} onClose={() => setEditing(null)} />
       <ZoneStatusDialog zone={toggling} onClose={() => setToggling(null)} />
-      <DeliveryRouteDialog open={addingRoute} onClose={() => setAddingRoute(false)} />
       <AreaImportDialog open={importing} onClose={() => setImporting(false)} />
     </>
   );

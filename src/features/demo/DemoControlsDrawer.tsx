@@ -39,21 +39,12 @@ export function DemoControlsDrawer({ open, onClose }: { open: boolean; onClose: 
           label="البث العام للطلبات"
           description="نفس مفتاح لوحة الإدارة"
         />
-        <Field label="سياسة إرسال العروض (افتراض تجريبي)">
-          <Select value={s.demo.offerPolicy} onChange={(e) => s.updateDemoSettings({ offerPolicy: e.target.value as 'sequential' | 'group' })}>
-            <option value="group">مجموعة من الأقرب في آن واحد — أول قبول يفوز</option>
-            <option value="sequential">تسلسلي — الأقرب أولاً ثم التالي</option>
-          </Select>
-        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="حجم المجموعة">
-            <Input type="number" min={1} max={8} value={s.demo.groupSize} disabled={s.demo.offerPolicy === 'sequential'} onChange={(e) => s.updateDemoSettings({ groupSize: Math.max(1, Math.min(8, Number(e.target.value) || 1)) })} />
-          </Field>
           <Field label="مهلة العرض الخاص (ثانية)" hint={`العرض العام ثابت: ${MAX_DISPATCH_ROUNDS} جولات × ${DISPATCH_ROUND_SEC} ث`}>
             <Input type="number" min={15} max={600} value={s.demo.offerTimeoutSec} onChange={(e) => s.updateDemoSettings({ offerTimeoutSec: Math.max(15, Math.min(600, Number(e.target.value) || DISPATCH_ROUND_SEC)) })} />
           </Field>
         </div>
-        <OpenDecision id="O-005 / O-006">اختيار الكباتن في كل جولة ومهلة العرض الخاص قرارات مفتوحة؛ القيم هنا لأغراض العرض فقط.</OpenDecision>
+        <OpenDecision id="O-006">جولات العرض العام تتبع سياسة المالك (5 كم ثم 10 كم). مهلة العرض الخاص قرار مفتوح؛ القيمة هنا لأغراض العرض فقط.</OpenDecision>
       </section>
 
       <section className="space-y-3 rounded-2xl bg-white p-4 shadow-card">

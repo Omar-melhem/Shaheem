@@ -39,6 +39,31 @@ export function pointInPolygon(p: LatLng, polygon: LatLng[]): boolean {
   return inside;
 }
 
+/** Degrees of tolerance for "on the edge" (~1 cm at Amman's latitude). */
+const EDGE_EPSILON = 1e-7;
+
+function onSegment(p: LatLng, a: LatLng, b: LatLng): boolean {
+  const cross = (b.lng - a.lng) * (p.lat - a.lat) - (b.lat - a.lat) * (p.lng - a.lng);
+  if (Math.abs(cross) > EDGE_EPSILON * Math.max(1, Math.hypot(b.lng - a.lng, b.lat - a.lat))) return false;
+  return (
+    p.lng >= Math.min(a.lng, b.lng) - EDGE_EPSILON && p.lng <= Math.max(a.lng, b.lng) + EDGE_EPSILON &&
+    p.lat >= Math.min(a.lat, b.lat) - EDGE_EPSILON && p.lat <= Math.max(a.lat, b.lat) + EDGE_EPSILON
+  );
+}
+
+/**
+ * Boundary-inclusive containment (like PostGIS `ST_Covers`): a point on an edge or vertex counts
+ * as inside. Used for customer pins so a location on the area's own border is never refused.
+ * The server must repeat this check against the authoritative geometry.
+ */
+export function polygonCovers(polygon: LatLng[], p: LatLng): boolean {
+  if (polygon.length < 3 || !isValidLatLng(p)) return false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    if (onSegment(p, polygon[j], polygon[i])) return true;
+  }
+  return pointInPolygon(p, polygon);
+}
+
 export function moveTowards(from: LatLng, to: LatLng, meters: number): LatLng {
   const total = haversineMeters(from, to);
   if (total <= meters || total === 0) return { ...to };
@@ -56,5 +81,5 @@ export function polygonCentroid(polygon: LatLng[]): LatLng {
 
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} م`;
-  return `${(meters / 1000).toFixed(1)} كم`;
+  return `${(meters / 1000).toFixed(1).replace(/\.0$/, '')} كم`;
 }

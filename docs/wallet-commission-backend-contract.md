@@ -1,8 +1,15 @@
 # Captain wallet and commission: backend contract
 
-**Status: not implemented.** This repository has no backend, so no commission is charged anywhere.
-The prototype keeps all data in browser storage, which Change Request v1.3 forbids as the source of
-truth for balances and debits. `src/domain/commission.ts` holds the approved amount for display only.
+**Status (2026-11-25): demo ledger implemented in the browser; production still needs this backend.**
+The owner asked for realised commission to appear as «أرباح شهم». The web prototype now runs the
+whole lifecycle against its in-browser store: the rate and amount are locked on the order when a
+Captain accepts (`lockCommission`), the single `commission_debit` is posted when the order is
+delivered (`settleDeliveredCommission`, key `commission:{orderId}`), top-ups are capped at 5.000 JOD
+per transaction (assumption) and keyed `recharge:{operationId}`, and the rate is editable with an
+audit entry (`updateCommissionRate`). See `src/application/walletLedger.ts` and
+`src/domain/wallet.ts`. A localStorage write is **not** a financial transaction: everything below
+is still required before real money is involved. The hold is the locked snapshot on the order (no
+separate hold row in the demo); the backend should post `hold` / `hold_release` rows as specified.
 
 **Approved rule (CR v1.3 §6):** Admin credits a Captain's wallet after payment outside the system.
 Each delivered order then debits the Captain a **percentage of that order's delivery fee**

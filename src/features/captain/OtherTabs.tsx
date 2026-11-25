@@ -6,7 +6,8 @@ import type { Captain } from '@/domain/types';
 import { formatMoney } from '@/domain/money';
 import { FINAL_STATUSES } from '@/domain/orderStatus';
 import { EmptyState, SimTag, Tabs } from '@/shared/components/ui';
-import { COMMISSION_BP_PROPOSED, formatPercentBp } from '@/domain/commission';
+import { formatPercentBp } from '@/domain/commission';
+import { heldCommission } from '@/domain/wallet';
 import { OrderStatusBadge } from '@/shared/components/StatusBadge';
 import { formatDateTime } from '@/shared/lib/format';
 import { SupportContactList } from '@/features/support/SupportContacts';
@@ -53,7 +54,11 @@ export function HistoryTab({ captainId }: { captainId: string }) {
 
 export function WalletTab({ view }: { view: CaptainView }) {
   const walletTx = useAppStore((s) => s.walletTx);
+  const orders = useAppStore((s) => s.orders);
+  const commissionBp = useAppStore((s) => s.settings.commissionBp);
   const threshold = useAppStore((s) => s.demo.walletThreshold);
+  const held = heldCommission(orders, view.captain.id);
+  const reference = (orderId?: string) => orders.find((o) => o.id === orderId)?.reference ?? '—';
   const tx = walletTx.filter((t) => t.captainId === view.captain.id).sort((a, b) => b.createdAt - a.createdAt);
   const sufficient = view.balance > 0 && view.balance >= threshold;
   return (
@@ -61,6 +66,7 @@ export function WalletTab({ view }: { view: CaptainView }) {
       <div className="rounded-2xl bg-secondary p-5 text-white shadow-card">
         <p className="flex items-center gap-2 text-sm text-white/80"><Wallet className="h-4 w-4" /> رصيد المحفظة</p>
         <p className="mt-1 text-4xl font-extrabold">{formatMoney(view.balance)}</p>
+        {held > 0 && <p className="mt-1 text-xs text-white/80">عمولة محجوزة على طلبك الحالي: {formatMoney(held)}</p>}
         <p className="mt-2 text-xs text-white/80">{sufficient ? 'الرصيد كافٍ لاستقبال العروض' : `الرصيد أقل من الحد المطلوب (${formatMoney(threshold)}) — لن تصلك عروض`}</p>
       </div>
       <p className="text-center text-xs text-ink-muted">شحن المحفظة يتم من إدارة شهم فقط.</p>
@@ -72,16 +78,16 @@ export function WalletTab({ view }: { view: CaptainView }) {
           {tx.map((t) => (
             <li key={t.id} className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-card">
               <div className="flex-1">
-                <p className="text-sm font-bold">شحن رصيد</p>
+                <p className="text-sm font-bold">{t.type === 'commission_debit' ? `عمولة شهم — الطلب ${reference(t.orderId)}` : 'شحن رصيد'}</p>
                 <p className="text-xs text-ink-muted">{formatDateTime(t.createdAt)}{t.reason ? ` · ${t.reason}` : ''}</p>
               </div>
-              <span className="font-extrabold text-secondary" dir="ltr">+{formatMoney(t.amount)}</span>
+              <span className={t.amount < 0 ? 'font-extrabold text-primary' : 'font-extrabold text-secondary'} dir="ltr">{t.amount < 0 ? '−' : '+'}{formatMoney(Math.abs(t.amount))}</span>
             </li>
           ))}
         </ul>
       )}
       <div className="flex justify-center"><SimTag>حركات المحفظة محاكاة</SimTag></div>
-      <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">عمولة شهم {formatPercentBp(COMMISSION_BP_PROPOSED)} من رسوم توصيل كل طلب، تُخصم بعد تأكيد تسليمه عند تفعيلها من الخادم. لا يتم خصم أي مبلغ في هذا النموذج.</p>
+      <p className="rounded-xl bg-cream p-3 text-xs text-ink-soft">عمولة شهم {formatPercentBp(commissionBp)} من رسوم توصيل كل طلب: تُحجز عند قبولك للطلب، وتُخصم مرة واحدة بعد تأكيد التسليم.</p>
     </div>
   );
 }

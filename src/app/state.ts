@@ -8,3 +8,4 @@ export const useAppStore = Object.assign(<T = AppState>(selector: (state: AppSta
 export const getAppData = () => store.getState();
 export const enableCrossTabSync = () => observeStorage(STORAGE_KEY, () => { const data = browserRepository.load(); if (data) store.setState(data); });
 export const startDemoClock = () => startSimulationClock((now) => store.getState().tick(now));
+export { generateTemporaryPassword } from '@/infrastructure/credentials';

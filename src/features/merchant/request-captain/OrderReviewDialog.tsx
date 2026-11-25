@@ -13,6 +13,8 @@ export interface ReviewState {
   scheduledPickupAt?: number;
   /** Set when Admin changed the fee while the form was open (Spec §10). */
   changedFrom?: Money;
+  /** Optional «مجموع الطلب» in fils; undefined when left blank. */
+  orderTotal?: Money;
 }
 
 export interface ReviewDetails {
@@ -95,6 +97,7 @@ export function OrderReviewDialog({
               {details.exactLocation ?? <span className="text-amber-800">{NO_EXACT_LOCATION}</span>}
             </DetailRow>
             <DetailRow label="هاتف العميل">{details.customerPhone ? <span dir="ltr">{details.customerPhone}</span> : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
+            <DetailRow label="مجموع الطلب">{review.orderTotal !== undefined ? formatMoney(review.orderTotal) : <span className="text-ink-muted">غير مضاف</span>}</DetailRow>
           </dl>
           <dl className="mt-3 divide-y divide-cream-deep rounded-xl bg-cream px-3 text-sm">
             <DetailRow label="رسوم التوصيل"><span className="text-lg font-extrabold text-primary">{formatMoney(review.fee)}</span></DetailRow>

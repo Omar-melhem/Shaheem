@@ -1,8 +1,25 @@
 import type { AppData } from '@/application/data';
 import type { AppRepository } from '@/application/ports/AppRepository';
+import { DEFAULT_COMMISSION_BP, isValidCommissionBp } from '@/domain/commission';
 export const STORAGE_KEY = 'shahm-demo-v9';
 
-const ARRAY_KEYS = ['merchants', 'captains', 'areas', 'routes', 'prices', 'coverage', 'pricingAudit', 'orders', 'offers', 'walletTx', 'supportContacts', 'alerts'] as const;
+const ARRAY_KEYS = ['merchants', 'captains', 'areas', 'routes', 'prices', 'coverage', 'pricingAudit', 'orders', 'offers', 'walletTx', 'supportContacts', 'alerts', 'adminAudit'] as const;
+
+/**
+ * Upgrades saved demo data from before the commission ledger (2026-11-25) in place of discarding
+ * it: adds the empty audit trail and the default commission rate. Orders, wallet history and every
+ * other record are kept exactly as saved. Anything that is not an object is returned unchanged.
+ */
+export function migrateAppData(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value;
+  const v = value as Record<string, unknown>;
+  const settings = v.settings && typeof v.settings === 'object' ? (v.settings as Record<string, unknown>) : null;
+  return {
+    ...v,
+    adminAudit: v.adminAudit === undefined ? [] : v.adminAudit,
+    settings: settings && !isValidCommissionBp(settings.commissionBp as number) ? { ...settings, commissionBp: DEFAULT_COMMISSION_BP } : v.settings,
+  };
+}
 
 /**
  * Minimal shape check for data read back from localStorage (it can be corrupted or edited by hand).
@@ -25,7 +42,9 @@ export const browserRepository: AppRepository = {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const saved = JSON.parse(raw) as { version?: unknown; state?: unknown };
-      return saved?.version === 1 && isAppDataShape(saved.state) ? saved.state : null;
+      if (saved?.version !== 1) return null;
+      const state = migrateAppData(saved.state);
+      return isAppDataShape(state) ? state : null;
     } catch {
       return null;
     }

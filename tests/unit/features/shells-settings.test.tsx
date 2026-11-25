@@ -119,16 +119,16 @@ describe('Admin shell and settings', () => {
     renderAdmin('/admin');
     const nav = within(screen.getByTestId('shell-sidebar')).getByRole('navigation', { name: 'التنقل الرئيسي للإدارة' });
     const labels = within(nav).getAllByRole('link').map((a) => a.textContent?.replace(/\d+$/, ''));
-    expect(labels).toEqual(['لوحة التحكم', 'مركز التوزيع', 'الخريطة الحية', 'الطلبات', 'التجار', 'الكباتن', 'مناطق التوصيل', 'أسعار التجار', 'محافظ الكباتن', 'بيانات الدعم', 'الإعدادات']);
+    expect(labels).toEqual(['لوحة التحكم', 'مركز التوزيع', 'الخريطة الحية', 'الطلبات', 'التجار', 'الكباتن', 'مناطق التوصيل', 'أسعار التجار', 'محافظ الكباتن', 'الإعدادات']);
     const header = screen.getByRole('banner');
     expect(within(header).getByRole('button', { name: /البث العام للطلبات/ })).toBeInTheDocument();
     expect(within(header).getByRole('button', { name: /التنبيهات التشغيلية/ })).toBeInTheDocument();
     expect(within(header).queryByRole('button', { name: /خروج/ })).not.toBeInTheDocument();
   });
 
-  it('settings: operation, commission, account and sign-out only; the toggle is the same single setting', async () => {
+  it('settings: operation, commission, account, password reset and sign-out only; the toggle is the same single setting', async () => {
     renderAdmin('/admin/settings');
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['إعدادات التشغيل', 'العمولة', 'الحساب والأمان', 'تسجيل الخروج']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['إعدادات التشغيل', 'إعدادات العمولة', 'الحساب والأمان', 'إعادة تعيين كلمة المرور', 'تسجيل الخروج']);
     await userEvent.click(screen.getByRole('switch', { name: 'البث العام للطلبات' }));
     await userEvent.click(within(screen.getByRole('dialog', { name: 'إيقاف البث العام؟' })).getByRole('button', { name: 'تأكيد الإيقاف' }));
     expect(useAppStore.getState().settings.publicBroadcast).toBe(false);
