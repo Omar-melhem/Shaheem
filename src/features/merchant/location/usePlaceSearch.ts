@@ -8,7 +8,7 @@ export type PlaceSearchState =
   | { status: 'error' };
 
 /** Debounced place search (min 2 chars); cancels stale requests so results never arrive out of order. */
-export function usePlaceSearch(query: string, enabled: boolean): PlaceSearchState {
+export function usePlaceSearch(query: string, enabled: boolean, bounded = true): PlaceSearchState {
   const [state, setState] = useState<PlaceSearchState>({ status: 'idle' });
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export function usePlaceSearch(query: string, enabled: boolean): PlaceSearchStat
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setState({ status: 'loading' });
-      searchPlaces(q, controller.signal)
+      searchPlaces(q, controller.signal, { bounded })
         .then((results) => setState({ status: 'done', results }))
         .catch((err: unknown) => {
           if ((err as Error).name !== 'AbortError') setState({ status: 'error' });
@@ -30,7 +30,7 @@ export function usePlaceSearch(query: string, enabled: boolean): PlaceSearchStat
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, enabled]);
+  }, [query, enabled, bounded]);
 
   return state;
 }

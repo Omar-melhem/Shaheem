@@ -46,8 +46,14 @@ async function fetchWithTimeout(url: string, signal?: AbortSignal): Promise<Resp
 const isCoordinatePair = (c: unknown): c is [number, number] =>
   Array.isArray(c) && c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]) && Math.abs(c[1]) <= 90 && Math.abs(c[0]) <= 180;
 
-export async function searchPlaces(query: string, signal?: AbortSignal): Promise<PlaceResult[]> {
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&bbox=${AMMAN_BBOX}&${BIAS}`;
+/**
+ * `bounded` (default) keeps results inside Amman for customer destinations. Merchant registration
+ * passes `bounded: false`: a shop may be registered anywhere (owner, 2026-11-25); results are
+ * only ranked nearer Amman, never filtered by it.
+ */
+export async function searchPlaces(query: string, signal?: AbortSignal, options: { bounded?: boolean } = {}): Promise<PlaceResult[]> {
+  const bbox = options.bounded === false ? '' : `&bbox=${AMMAN_BBOX}`;
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6${bbox}&${BIAS}`;
   const res = await fetchWithTimeout(url, signal);
   if (!res.ok) throw new Error(`place search failed: ${res.status}`);
   const json = (await res.json()) as { features?: PhotonFeature[] };

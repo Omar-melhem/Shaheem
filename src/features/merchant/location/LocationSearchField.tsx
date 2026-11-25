@@ -21,6 +21,7 @@ export function LocationSearchField({
   invalid,
   placeholder = 'ابحث عن موقع: شارع، مجمّع، معلم…',
   label = 'ابحث عن الموقع',
+  bounded = true,
 }: {
   onSelect: (place: PlaceResult) => void;
   onSelectArea?: (area: ServiceArea) => void;
@@ -28,12 +29,14 @@ export function LocationSearchField({
   invalid?: boolean;
   placeholder?: string;
   label?: string;
+  /** false = search anywhere (merchant registration); true = Amman only (customer destination). */
+  bounded?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const listId = useId();
-  const search = usePlaceSearch(query, open);
+  const search = usePlaceSearch(query, open, bounded);
   const needle = query.trim().toLowerCase();
 
   const options = useMemo<Option[]>(() => {

@@ -16,7 +16,7 @@ vi.mock('@/shared/components/map/BaseMap', () => ({
   MapClickHandler: () => null,
 }));
 vi.mock('react-leaflet', () => ({
-  Marker: ({ title, children }: { title?: string; children?: ReactNode }) => <div data-testid="marker" title={title}>{children}</div>,
+  Marker: ({ title, children, draggable }: { title?: string; children?: ReactNode; draggable?: boolean }) => <div data-testid="marker" data-draggable={String(!!draggable)} title={title}>{children}</div>,
   Tooltip: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
   Polygon: () => null,
   useMap: () => ({ setView: () => {}, getZoom: () => 13 }),
@@ -158,5 +158,18 @@ describe('1 · the Captain wallet shows the commission debit as a deduction', ()
     render(<WalletTab view={{ captain, balance: 0, eligibility: { eligible: true, reasons: [] }, freshness: 'none', opStatus: 'available', presence: 'hidden' }} />);
     expect(screen.getByText(`عمولة شهم — الطلب ${order.reference}`)).toBeInTheDocument();
     expect(screen.getAllByText((t) => t.startsWith('−')).length).toBe(1);
+  });
+});
+
+describe('A1/A3 · locations are chosen by map tap or search — no draggable pin', () => {
+  it('merchant pickup and customer destination markers cannot be dragged', async () => {
+    const { LocationPicker } = await import('@/features/admin/LocationPicker');
+    const { DestinationMapPicker } = await import('@/features/merchant/location/DestinationMapPicker');
+    const point = { lat: 31.99, lng: 35.83 };
+    render(<><LocationPicker value={point} onChange={() => {}} /><DestinationMapPicker value={point} pickup={point} area={S().areas[0]} onChange={() => {}} /></>);
+    const markers = screen.getAllByTestId('marker');
+    expect(markers.length).toBeGreaterThan(0);
+    expect(markers.every((m) => m.getAttribute('data-draggable') === 'false')).toBe(true);
+    expect(document.body.textContent).not.toMatch(/اسحب/);
   });
 });

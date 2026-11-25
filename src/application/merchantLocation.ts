@@ -1,6 +1,6 @@
 import type { ID, LatLng, Merchant, ServiceArea } from '@/domain/types';
 import { cityName, findCity } from '@/domain/cities';
-import { isValidLatLng, pointInPolygon } from '@/domain/geo';
+import { isValidLatLng } from '@/domain/geo';
 
 export interface PickupLocationInput {
   cityId: string | null;
@@ -8,19 +8,20 @@ export interface PickupLocationInput {
   pickup: LatLng;
 }
 
-export const PIN_OUTSIDE_AREA = 'موقع المتجر خارج حدود المنطقة المختارة. حرّك الدبوس أو اختر المنطقة الصحيحة.';
+export const PICKUP_REQUIRED = 'حدّد موقع المتجر: اضغط على الخريطة أو ابحث باسم المتجر أو العنوان';
 
 /**
- * Validates City → Area → pin for a Merchant (CR v1.3 §3.2). The Area is never reassigned
- * silently: a pin outside the chosen Area's polygon is an error for Admin to resolve.
- * Areas without a drawn boundary cannot be checked; the form states that limitation.
+ * Validates a Merchant **record** (owner, 2026-11-25): City → Area from the catalogue (any area, priced
+ * or not) and any real coordinate. Registration is never limited by delivery zones, an area's
+ * boundary or the captain search radius — those are order/dispatch policies, checked separately.
+ * The Area is stored as chosen and is never reassigned from the coordinate. (0,0) is treated as
+ * "not set".
  */
 export function pickupLocationError(areas: ServiceArea[], input: PickupLocationInput): string | null {
   if (!findCity(input.cityId)) return 'اختر المدينة';
   const area = areas.find((a) => a.id === input.areaId);
   if (!area || area.cityId !== input.cityId) return 'اختر منطقة تابعة للمدينة المختارة';
-  if (!isValidLatLng(input.pickup)) return 'حدّد موقع المتجر على الخريطة';
-  if (area.polygon.length >= 3 && !pointInPolygon(input.pickup, area.polygon)) return PIN_OUTSIDE_AREA;
+  if (!isValidLatLng(input.pickup) || (input.pickup.lat === 0 && input.pickup.lng === 0)) return PICKUP_REQUIRED;
   return null;
 }
 

@@ -107,7 +107,7 @@ export function CustomerLocationSection({
         {location ? (
           !pinError && (
             <p className="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft" aria-live="polite">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary" aria-hidden /> اسحب الدبوس لتحديد موقع العميل بدقة.
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary" aria-hidden /> حُدّد موقع العميل. لتغييره اضغط مكاناً آخر على الخريطة أو ابحث عنه.
               {location.placeName && <span className="text-ink-muted">· {location.placeName}</span>}
             </p>
           )

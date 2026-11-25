@@ -16,8 +16,8 @@ function FollowPoint({ point, zoom }: { point: LatLng | null; zoom: number }) {
 
 /**
  * Shows the chosen delivery area's boundary and frames it; no pin is ever placed for the
- * Merchant. Inside an area with a boundary, tapping the map or dragging the pin sets the
- * exact location. Before an area is chosen, the Merchant's own areas with a boundary are shaded
+ * Merchant. Inside an area with a boundary, tapping the map (or a search result) sets the exact
+ * location; the marker only shows it and is not draggable (owner, 2026-11-25). Before an area is chosen, the Merchant's own areas with a boundary are shaded
  * (`selectableAreas`) and a tap there lets the form detect the area. Shows the pickup for reference.
  */
 export function DestinationMapPicker({
@@ -56,20 +56,7 @@ export function DestinationMapPicker({
       )}
       <FollowPoint point={value} zoom={16} />
       <Marker position={[pickup.lat, pickup.lng]} icon={merchantIcon()} interactive={false} title="موقع الاستلام" />
-      {value && (
-        <Marker
-          position={[value.lat, value.lng]}
-          icon={destinationIcon()}
-          draggable
-          title="موقع العميل — اسحبه لتعديل الموقع"
-          eventHandlers={{
-            dragend: (e) => {
-              const ll = e.target.getLatLng();
-              onChange({ lat: ll.lat, lng: ll.lng });
-            },
-          }}
-        />
-      )}
+      {value && <Marker position={[value.lat, value.lng]} icon={destinationIcon()} interactive={false} keyboard={false} title="موقع العميل المحدد" />}
     </BaseMap>
   );
 }

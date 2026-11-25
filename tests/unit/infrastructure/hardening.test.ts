@@ -71,6 +71,16 @@ describe('place search hardening (H3)', () => {
     await assertion;
   });
 
+  it('customer search stays inside Amman; merchant registration search is unbounded', async () => {
+    const fetchMock = vi.fn(async () => ok({ features: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    await searchPlaces('مطعم');
+    await searchPlaces('مطعم', undefined, { bounded: false });
+    const urls = (fetchMock.mock.calls as unknown as [string][]).map((c) => c[0]);
+    expect(urls[0]).toContain('bbox=');
+    expect(urls[1]).not.toContain('bbox=');
+  });
+
   it('a caller abort still reads as an AbortError (not a timeout)', async () => {
     vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_, reject) => {
       init.signal!.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));

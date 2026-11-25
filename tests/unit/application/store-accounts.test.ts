@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PHONE_ERROR } from '@/domain/phone';
-import { PIN_OUTSIDE_AREA } from '@/application/merchantLocation';
+import { PICKUP_REQUIRED } from '@/application/merchantLocation';
 import { captainInput, failureOf, memoryRepository, merchantInput, newStore, valueOf } from './storeHarness';
 import { TOPUP_AMOUNT_ERROR, TOPUP_LIMIT_ERROR } from '@/domain/wallet';
 
@@ -11,7 +11,7 @@ describe('createMerchant', () => {
     [{ phone: '123' }, PHONE_ERROR],
     [{ cityId: null }, 'اختر المدينة'],
     [{ areaId: 'a-khalda', cityId: 'irbid' }, 'اختر منطقة تابعة للمدينة المختارة'],
-    [{ pickup: { lat: 31.0, lng: 35.0 } }, PIN_OUTSIDE_AREA],
+    [{ pickup: { lat: 0, lng: 0 } }, PICKUP_REQUIRED],
     [{ username: 'ab' }, 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل'],
     [{ password: '123' }, 'كلمة المرور 6 أحرف على الأقل'],
     [{ username: 'captain1' }, 'اسم المستخدم مستخدم لحساب آخر'],

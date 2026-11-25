@@ -20,6 +20,23 @@ and the identity provider are not in this repository. Anything that needs them i
 | 10 | Pin anywhere inside a priced area | Pin checked against demo rectangles (edges unreliable) | Boundary-inclusive check, shared-border handling, no-boundary areas refuse pins |
 | 11 | Architecture, UX, tests | — | Domain/application stay framework-free; 608 tests; RTL checked 320–1440 px |
 
+## Consolidated master prompt (Part II, sections 12–22)
+
+| § | Item | Status |
+|---|---|---|
+| A1/18 | Merchant location by map tap or search, no draggable pin | Done: non-draggable marker, unbounded search, «الموقع المحدد» summary |
+| A2 | Register a merchant anywhere | Done: area boundary no longer blocks; (0,0) rejected. No pickup-service geofence exists in this codebase to enforce separately (needs backend policy) |
+| A3/10 | Customer destination by tap or search, no dragging | Done |
+| 12 | Login brand + original car animation | Already in place (earlier task); unchanged |
+| 13 | Request form | Already in place + «مجموع الطلب» |
+| 14 | Dashboard KPIs and removals | Already in place + «أرباح شهم» |
+| 15 | Distribution center: right 3 queues (~65%), left offers (~35%) | Done: «بحاجة لتدخل الإدارة» moved into the right column |
+| 16 | Merchant sidebar, logout in Settings with confirmation | Already in place |
+| 17 | Compact password reset | Done: role + search, account + button, compact disclosure; stale selection dropped |
+| 19 | Tables, filters, dropdown | Already in place |
+| 20 | Responsive | Checked 320, 375, 390, 430, 768, 1024, 1280, 1440, 1920, 2560 px: no page overflow, no runtime errors |
+| 22 | External Claude Code tools | Not installed (owner approval required) |
+
 ## What runs where
 
 | Concern | Layer | Files |

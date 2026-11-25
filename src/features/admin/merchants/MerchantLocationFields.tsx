@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { Info, MapPin } from 'lucide-react';
 import { useAppStore } from '@/app/state';
 import { pickupLocationError, isUnchangedLegacyLocation } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
@@ -18,14 +18,16 @@ export interface PickupValue {
 }
 
 /**
- * City → Area → exact pickup pin (CR v1.3 §3). Changing City clears the Area and pin; changing
- * Area keeps the pin but re-checks it against the Area's boundary and never reassigns it.
+ * City → Area → pickup location (owner, 2026-11-25): the location is chosen by tapping the map or by
+ * picking a search result (shop name, area or address, anywhere — not limited to Amman or to priced
+ * zones). No draggable pin. Changing City clears the Area and location; the Area is never derived
+ * from the coordinate.
  */
 export function MerchantLocationFields({ value, existing, error, onChange }: { value: PickupValue; existing?: Merchant; error?: string; onChange: (patch: Partial<PickupValue>) => void }) {
   const areas = useAppStore((s) => s.areas);
   const [focus, setFocus] = useState<LatLng | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
   const area = areas.find((a) => a.id === value.areaId);
-  const hasBoundary = !!area && area.polygon.length >= 3;
   const legacy = !!existing && !existing.areaId;
   const liveError =
     value.pickup && area && !(legacy && isUnchangedLegacyLocation(existing, { ...value, pickup: value.pickup }))
@@ -45,7 +47,7 @@ export function MerchantLocationFields({ value, existing, error, onChange }: { v
           <CitySelect
             id="merchant-city"
             value={value.cityId ?? ''}
-            onChange={(e) => { setFocus(null); onChange({ cityId: e.target.value || null, areaId: null, pickup: null }); }}
+            onChange={(e) => { setFocus(null); setPlaceName(null); onChange({ cityId: e.target.value || null, areaId: null, pickup: null }); }}
           />
         </Field>
         <Field label="المنطقة" required={!legacy} htmlFor="merchant-area">
@@ -63,23 +65,25 @@ export function MerchantLocationFields({ value, existing, error, onChange }: { v
           />
         </Field>
       </div>
-      <Field label="تحديد موقع المتجر على الخريطة" required={!legacy} error={error || liveError || undefined}>
+      <Field label="موقع المتجر / موقع الاستلام" required={!legacy} error={error || liveError || undefined}>
         <div className="space-y-2">
-          <LocationSearchField label="ابحث عن موقع المتجر" onSelect={(p) => onChange({ pickup: p.position })} />
-          <LocationPicker value={value.pickup} focus={focus} boundary={area?.polygon} onChange={(p) => onChange({ pickup: p })} />
+          <LocationSearchField
+            label="ابحث باسم المتجر أو المنطقة أو العنوان"
+            placeholder="ابحث باسم المتجر أو المنطقة أو العنوان"
+            bounded={false}
+            onSelect={(p) => { setPlaceName([p.name, p.context].filter(Boolean).join('، ')); onChange({ pickup: p.position }); }}
+          />
+          <LocationPicker value={value.pickup} focus={focus} boundary={area?.polygon} onChange={(p) => { setPlaceName(null); onChange({ pickup: p }); }} />
         </div>
       </Field>
-      {area && !hasBoundary && (
-        <p className="flex items-start gap-1.5 text-xs font-medium text-amber-800">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> هذه المنطقة بلا حدود مرسومة، فلا يمكن التحقق من أن الدبوس داخلها.
+      {value.pickup && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-cream px-3 py-2 text-sm" aria-live="polite">
+          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span>الموقع المحدد: <b>{placeName ?? (area ? `${area.name}، ${cityName(value.cityId)}` : 'نقطة على الخريطة')}</b></span>
+          <span dir="ltr" className="text-xs text-ink-muted">{value.pickup.lat.toFixed(5)}, {value.pickup.lng.toFixed(5)}</span>
         </p>
       )}
-      {value.cityId && area && value.pickup && (
-        <p className="rounded-lg bg-cream px-3 py-2 text-sm">
-          <b>{cityName(value.cityId)}</b> › <b>{area.name}</b> ›{' '}
-          <span dir="ltr" className="text-xs">{value.pickup.lat.toFixed(5)}, {value.pickup.lng.toFixed(5)}</span>
-        </p>
-      )}
+      <p className="text-xs text-ink-muted">يمكن تسجيل المتجر في أي موقع. تسجيله لا يعني تفعيل مناطق توصيل له؛ المناطق والأسعار تُدار من «أسعار التجار».</p>
       <OpenDecision id="CR-1.3 §14">قائمة المدن مقترحة (المدينة الرئيسية لكل محافظة) بانتظار اعتماد مصدر رسمي للمدن والمناطق.</OpenDecision>
     </div>
   );

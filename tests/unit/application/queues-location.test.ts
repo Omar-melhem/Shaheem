@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dispatchQueues } from '@/application/dispatchQueues';
-import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError, PIN_OUTSIDE_AREA } from '@/application/merchantLocation';
+import { isUnchangedLegacyLocation, pickupAddressLabel, pickupLocationError, PICKUP_REQUIRED } from '@/application/merchantLocation';
 import type { DeliveryOrder, Merchant } from '@/domain/types';
 import { makeArea, SQUARE } from '../../fixtures';
 
@@ -53,14 +53,16 @@ describe('merchant pickup location (City → Area → pin)', () => {
     [{ cityId: 'nowhere' }, 'اختر المدينة'],
     [{ areaId: 'a-nowhere' }, 'اختر منطقة تابعة للمدينة المختارة'],
     [{ cityId: 'irbid' }, 'اختر منطقة تابعة للمدينة المختارة'],
-    [{ pickup: { lat: 99, lng: 0 } }, 'حدّد موقع المتجر على الخريطة'],
-    [{ pickup: { lat: 31.0, lng: 35.0 } }, PIN_OUTSIDE_AREA],
+    [{ pickup: { lat: 99, lng: 0 } }, PICKUP_REQUIRED],
+    [{ pickup: { lat: 0, lng: 0 } }, PICKUP_REQUIRED],
   ])('rejects %j', (over, message) => {
     expect(pickupLocationError(areas, input(over))).toBe(message);
   });
 
-  it('accepts a pin inside a legacy boundary, and any pin for an area without one', () => {
+  it('a merchant may be registered anywhere: inside or outside the area boundary, or far away', () => {
     expect(pickupLocationError(areas, input())).toBeNull();
+    expect(pickupLocationError(areas, input({ pickup: { lat: 31.0, lng: 35.0 } }))).toBeNull();
+    expect(pickupLocationError(areas, input({ pickup: { lat: 29.53, lng: 35.0 } }))).toBeNull(); // Aqaba
     expect(pickupLocationError(areas, input({ areaId: 'a-plain', pickup: { lat: 31.0, lng: 35.0 } }))).toBeNull();
   });
 

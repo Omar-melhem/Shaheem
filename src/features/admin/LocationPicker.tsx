@@ -13,8 +13,9 @@ function MoveTo({ point }: { point: LatLng | null | undefined }) {
 }
 
 /**
- * Pickup pin for Merchant profiles: tap to place, drag to adjust. `focus` moves the map
- * without placing a pin; `boundary` outlines the selected Area for reference.
+ * Merchant pickup location (owner, 2026-11-25): set by tapping the map (or by a search result in the
+ * form). The marker only shows the choice — it is not draggable. `focus` moves the map without
+ * choosing a location; `boundary` outlines the selected Area for reference only.
  */
 export function LocationPicker({ value, onChange, focus, boundary }: { value: LatLng | null; onChange: (p: LatLng) => void; focus?: LatLng | null; boundary?: LatLng[] }) {
   return (
@@ -28,23 +29,10 @@ export function LocationPicker({ value, onChange, focus, boundary }: { value: La
           <Polygon positions={boundary.map((p) => [p.lat, p.lng] as [number, number])} interactive={false} pathOptions={{ color: '#263D34', weight: 2, fillOpacity: 0.08 }} />
         )}
         {value && (
-          <Marker
-            position={[value.lat, value.lng]}
-            icon={merchantIcon()}
-            draggable
-            title="موقع الاستلام — اسحبه للتعديل"
-            eventHandlers={{
-              dragend: (e) => {
-                const ll = e.target.getLatLng();
-                onChange({ lat: ll.lat, lng: ll.lng });
-              },
-            }}
-          />
+          <Marker position={[value.lat, value.lng]} icon={merchantIcon()} interactive={false} keyboard={false} title="موقع الاستلام المحدد" />
         )}
       </BaseMap>
-      <p className="text-xs text-ink-muted" dir="ltr" style={{ textAlign: 'right' }}>
-        {value ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}` : 'اضغط على الخريطة لتحديد الموقع'}
-      </p>
+      {!value && <p className="text-xs text-ink-muted">اضغط على مكان المتجر في الخريطة، أو ابحث عنه بالاسم أو العنوان.</p>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Copy, KeyRound } from 'lucide-react';
 import { generateTemporaryPassword, useAppStore, type PasswordResetTarget } from '@/app/state';
-import { Badge, Button, ConfirmDialog, Dialog, Field, OpenDecision, SearchField, Select, SettingsSection } from '@/shared/components/ui';
+import { Badge, Button, ConfirmDialog, Dialog, Field, SearchField, Select, SettingsSection } from '@/shared/components/ui';
 import { toast } from '@/shared/components/toast';
 import { formatDateTime } from '@/shared/lib/format';
 
@@ -40,7 +40,8 @@ export function PasswordResetSection() {
   );
   const needle = q.trim().toLowerCase();
   const matches = accounts.filter((a) => !needle || a.name.toLowerCase().includes(needle) || a.username.toLowerCase().includes(needle));
-  const selected = accounts.find((a) => a.id === selectedId) ?? null;
+  // A selection hidden by the current search is dropped, so the button never targets an account the Admin cannot see.
+  const selected = matches.find((a) => a.id === selectedId) ?? null;
   const resets = audit.filter((a) => a.kind === 'password_reset').slice(0, AUDIT_PREVIEW);
 
   const reset = () => {
@@ -68,30 +69,30 @@ export function PasswordResetSection() {
 
   return (
     <SettingsSection title="إعادة تعيين كلمة المرور" description="لحسابات التجار والكباتن. لا تُعرض كلمة المرور الحالية أبداً." icon={<KeyRound className="h-5 w-5" />}>
-      <div className="space-y-4 px-5 py-4">
-        <div className="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+      <div className="space-y-3 px-5 py-4">
+        <div className="grid items-end gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <Field label="نوع الحساب" htmlFor="reset-role">
             <Select id="reset-role" value={role} onChange={(e) => { setRole(e.target.value as PasswordResetTarget['role']); setSelectedId(''); setQ(''); }}>
               <option value="merchant">تاجر</option>
               <option value="captain">كابتن</option>
             </Select>
           </Field>
-          <SearchField label="بحث بالاسم أو اسم المستخدم" placeholder="ابحث بالاسم أو اسم المستخدم" value={q} onChange={(e) => setQ(e.target.value)} />
+          <SearchField label="بحث عن الحساب" placeholder="ابحث بالاسم أو اسم المستخدم" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <Field label="الحساب" htmlFor="reset-account">
-          <Select id="reset-account" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-            <option value="">{matches.length ? 'اختر الحساب' : 'لا توجد حسابات مطابقة'}</option>
-            {matches.map((a) => (
-              <option key={a.id} value={a.id}>{a.name} — {a.username}{a.active ? '' : ' (موقوف)'}</option>
-            ))}
-          </Select>
-        </Field>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" icon={<KeyRound className="h-4 w-4" />} disabled={!selected} onClick={() => setConfirming(true)}>
+        <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <Field label="الحساب" htmlFor="reset-account">
+            <Select id="reset-account" value={selected?.id ?? ''} onChange={(e) => setSelectedId(e.target.value)}>
+              <option value="">{matches.length ? 'اختر الحساب' : 'لا توجد حسابات مطابقة'}</option>
+              {matches.map((a) => (
+                <option key={a.id} value={a.id}>{a.name} — {a.username}{a.active ? '' : ' (موقوف)'}</option>
+              ))}
+            </Select>
+          </Field>
+          <Button variant="outline" className="w-full sm:w-auto" icon={<KeyRound className="h-4 w-4" />} disabled={!selected} onClick={() => setConfirming(true)}>
             إعادة تعيين كلمة المرور
           </Button>
-          {selected && !selected.active && <Badge tone="warning">الحساب موقوف — لن يستطيع الدخول حتى يُفعَّل</Badge>}
         </div>
+        {selected && !selected.active && <Badge tone="warning">الحساب موقوف — لن يستطيع الدخول حتى يُفعَّل</Badge>}
 
         {resets.length > 0 && (
           <div>
@@ -107,7 +108,10 @@ export function PasswordResetSection() {
             </ul>
           </div>
         )}
-        <OpenDecision id="أمان">نموذج عرض: الحسابات محفوظة في هذا المتصفح. في الإنتاج تتم إعادة التعيين على الخادم (صلاحيات، تشفير، حد للمحاولات، إنهاء الجلسات، وتسليم آمن) — بانتظار اعتماد طريقة التسليم.</OpenDecision>
+        <details className="text-xs text-ink-muted">
+          <summary className="cursor-pointer font-bold text-ink-soft">حدود نموذج العرض</summary>
+          <p className="mt-1">الحسابات محفوظة في هذا المتصفح. في الإنتاج تتم إعادة التعيين على الخادم (صلاحيات، تشفير، حد للمحاولات، إنهاء الجلسات، وتسليم آمن) — طريقة التسليم بانتظار الاعتماد.</p>
+        </details>
       </div>
 
       <ConfirmDialog
