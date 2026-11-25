@@ -24,7 +24,8 @@ import { isAutoDispatchEligible } from '@/domain/dispatch';
 import { isDestinationActive } from '@/domain/regions';
 import { isGovernorateId } from '@/domain/governorates';
 import { cityName, isCityInGovernorate } from '@/domain/cities';
-import { MERCHANT_PASSWORD_REQUIRED, PASSWORD_TOO_SHORT, isMerchantPasswordAcceptable, isPasswordLongEnough } from '@/domain/account';
+import { ACCOUNT_PASSWORD_REQUIRED, USERNAME_INVALID, USERNAME_TAKEN, canonicalUsername, isAccountPasswordAcceptable, isValidUsername, normalizeUsername } from '@/domain/account';
+import { DEMO_ADMIN, isUsernameTaken } from './accountIdentity';
 import { CUSTOMER_PHONE_ERROR, PHONE_ERROR, isValidOptionalPhone, isValidPhone, normalizePhone } from '@/domain/phone';
 import {
   CANCELLABLE_STATUSES,
@@ -42,7 +43,7 @@ import { previewPricingCopy, type PricingCopyMode } from './pricingCopy';
 import { captainActiveOrder, captainBalance, captainEligibility, captainHeldCommission, eligibleCaptains } from './captainQueries';
 import { pushAlert, transition, uid, withdrawPendingOffers } from './orderMutations';
 import { afterOfferResolved, startPublicDispatch } from './dispatchRounds';
-import { done, fail, ok, type Result } from './result';
+import { done, fail, ok, type Failure, type Result } from './result';
 import { lockCommission, rechargeCaptainWallet, settleDeliveredCommission, updateCommissionRate } from './walletLedger';
 import { resetAccountPassword, type PasswordResetTarget } from './accountAdmin';
 import { reportIdleLocations } from './locationReports';
@@ -109,29 +110,22 @@ export type Session = { role: 'admin'; id: 'admin' } | { role: 'merchant'; id: I
 export type MerchantInput = Omit<Merchant, 'id' | 'createdAt' | 'status' | 'address'>;
 export type CaptainInput = Pick<Captain, 'fullName' | 'phone' | 'username' | 'password'>;
 
-export const DEMO_ADMIN = { username: 'admin', password: 'admin1234' };
+export { DEMO_ADMIN };
 
 const normalizeName = (v: string) =>
   v.trim().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ');
 
-function usernameTaken(data: AppData, username: string, exceptId?: ID): boolean {
-  const u = username.trim().toLowerCase();
-  return (
-    u === DEMO_ADMIN.username ||
-    data.merchants.some((m) => m.id !== exceptId && m.username.toLowerCase() === u) ||
-    data.captains.some((c) => c.id !== exceptId && c.username.toLowerCase() === u)
-  );
-}
-
-type PasswordPolicy = 'standard' | 'merchant';
-
-/** `merchant` accepts any non-empty password (owner, 2026-11-25); `standard` (Captains) keeps the 6-character rule. */
-function validateCredentials(data: AppData, creds: { username: string; password: string }, exceptId?: ID, policy: PasswordPolicy = 'standard'): string | null {
-  if (!/^[a-zA-Z0-9._-]{3,30}$/.test(creds.username.trim())) return 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل';
-  if (policy === 'merchant' ? !isMerchantPasswordAcceptable(creds.password) : !isPasswordLongEnough(creds.password)) {
-    return policy === 'merchant' ? MERCHANT_PASSWORD_REQUIRED : PASSWORD_TOO_SHORT;
-  }
-  if (usernameTaken(data, creds.username, exceptId)) return 'اسم المستخدم مستخدم لحساب آخر';
+/**
+ * Account credentials for Merchants and Captains: username syntax, the shared any-non-empty password
+ * rule and one global username namespace (Admin, Merchants, Captains; case-insensitive, outer
+ * spaces ignored). Runs inside the store's single update, so check-and-create cannot interleave
+ * within this browser; cross-tab localStorage writes are last-write-wins (demo limit — production
+ * needs a unique index on the canonical username).
+ */
+function credentialsFailure(data: AppData, creds: { username: string; password: string }, exceptId?: ID): Failure | null {
+  if (!isValidUsername(creds.username)) return fail(USERNAME_INVALID, { code: 'username_invalid' });
+  if (isUsernameTaken(data, creds.username, exceptId)) return fail(USERNAME_TAKEN, { code: 'username_taken' });
+  if (!isAccountPasswordAcceptable(creds.password)) return fail(ACCOUNT_PASSWORD_REQUIRED, { code: 'password_required' });
   return null;
 }
 
@@ -239,11 +233,11 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
         // Demo authentication only — production uses a real identity provider.
         authenticate: (username, password) => {
           const d = get();
-          const u = username.trim().toLowerCase();
+          const u = canonicalUsername(username);
           if (u === DEMO_ADMIN.username && password === DEMO_ADMIN.password) return ok<Session>({ role: 'admin', id: 'admin' });
-          const m = d.merchants.find((x) => x.username.toLowerCase() === u && x.password === password);
+          const m = d.merchants.find((x) => canonicalUsername(x.username) === u && x.password === password);
           if (m) return ok<Session>({ role: 'merchant', id: m.id });
-          const c = d.captains.find((x) => x.username.toLowerCase() === u && x.password === password);
+          const c = d.captains.find((x) => canonicalUsername(x.username) === u && x.password === password);
           if (c) return ok<Session>({ role: 'captain', id: c.id });
           return fail('اسم المستخدم أو كلمة المرور غير صحيحة');
         },
@@ -305,10 +299,10 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
             const locErr = pickupLocationError(d.areas, input);
             if (locErr) return fail(locErr);
-            const credErr = validateCredentials(d, input, undefined, 'merchant');
-            if (credErr) return fail(credErr);
+            const credErr = credentialsFailure(d, input);
+            if (credErr) return credErr;
             const id = uid('m');
-            d.merchants.push({ ...input, address: pickupAddressLabel(d.areas, undefined, input), phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
+            d.merchants.push({ ...input, username: normalizeUsername(input.username), address: pickupAddressLabel(d.areas, undefined, input), phone: normalizePhone(input.phone), id, status: 'active', createdAt: now });
             return ok(id);
           }),
         updateMerchant: (id, input) =>
@@ -322,9 +316,9 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
               const locErr = pickupLocationError(d.areas, input);
               if (locErr) return fail(locErr);
             }
-            const credErr = validateCredentials(d, input, id, 'merchant');
-            if (credErr) return fail(credErr);
-            Object.assign(m, { ...input, address: pickupAddressLabel(d.areas, m, input), phone: normalizePhone(input.phone) });
+            const credErr = credentialsFailure(d, input, id);
+            if (credErr) return credErr;
+            Object.assign(m, { ...input, username: normalizeUsername(input.username), address: pickupAddressLabel(d.areas, m, input), phone: normalizePhone(input.phone) });
             return done;
           }),
         setMerchantStatus: (id, active) =>
@@ -341,10 +335,10 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (!input.fullName.trim()) return fail('اسم الكابتن مطلوب');
             if (!input.phone.trim()) return fail('رقم هاتف الكابتن مطلوب');
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
-            const credErr = validateCredentials(d, input);
-            if (credErr) return fail(credErr);
+            const credErr = credentialsFailure(d, input);
+            if (credErr) return credErr;
             const id = uid('c');
-            d.captains.push({ ...input, phone: normalizePhone(input.phone), id, status: 'active', availability: 'offline', gpsSignal: 'ok', createdAt: now });
+            d.captains.push({ ...input, username: normalizeUsername(input.username), phone: normalizePhone(input.phone), id, status: 'active', availability: 'offline', gpsSignal: 'ok', createdAt: now });
             return ok(id);
           }),
         updateCaptain: (id, input) =>
@@ -353,9 +347,9 @@ export const createApplicationStore = (createSeedData: () => AppData, repository
             if (!c) return fail('الكابتن غير موجود');
             if (!input.fullName.trim() || !input.phone.trim()) return fail('الاسم ورقم الهاتف مطلوبان');
             if (!isValidPhone(input.phone)) return fail(PHONE_ERROR);
-            const credErr = validateCredentials(d, input, id);
-            if (credErr) return fail(credErr);
-            Object.assign(c, { ...input, phone: normalizePhone(input.phone) });
+            const credErr = credentialsFailure(d, input, id);
+            if (credErr) return credErr;
+            Object.assign(c, { ...input, username: normalizeUsername(input.username), phone: normalizePhone(input.phone) });
             return done;
           }),
         setCaptainStatus: (id, active) =>

@@ -3,7 +3,8 @@ import { PHONE_ERROR } from '@/domain/phone';
 import { PICKUP_REQUIRED } from '@/application/merchantLocation';
 import { captainInput, failureOf, memoryRepository, merchantInput, newStore, valueOf } from './storeHarness';
 import { TOPUP_AMOUNT_ERROR, TOPUP_LIMIT_ERROR } from '@/domain/wallet';
-import { MERCHANT_PASSWORD_REQUIRED, PASSWORD_TOO_SHORT } from '@/domain/account';
+import { ACCOUNT_PASSWORD_REQUIRED, USERNAME_INVALID, USERNAME_TAKEN } from '@/domain/account';
+import { duplicateUsernames } from '@/application/accountIdentity';
 
 describe('createMerchant', () => {
   it.each([
@@ -14,9 +15,9 @@ describe('createMerchant', () => {
     [{ areaId: 'a-khalda', cityId: 'irbid' }, 'اختر منطقة تابعة للمدينة المختارة'],
     [{ pickup: { lat: 0, lng: 0 } }, PICKUP_REQUIRED],
     [{ username: 'ab' }, 'اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل'],
-    [{ password: '' }, MERCHANT_PASSWORD_REQUIRED],
-    [{ username: 'captain1' }, 'اسم المستخدم مستخدم لحساب آخر'],
-    [{ username: 'ADMIN' }, 'اسم المستخدم مستخدم لحساب آخر'],
+    [{ password: '' }, ACCOUNT_PASSWORD_REQUIRED],
+    [{ username: 'captain1' }, USERNAME_TAKEN],
+    [{ username: 'ADMIN' }, USERNAME_TAKEN],
   ])('rejects %j', (over, message) => {
     const { state } = newStore();
     expect(failureOf(state().createMerchant(merchantInput(over) as never))).toBe(message);
@@ -66,7 +67,7 @@ describe('captains', () => {
     [{ fullName: ' ' }, 'اسم الكابتن مطلوب'],
     [{ phone: ' ' }, 'رقم هاتف الكابتن مطلوب'],
     [{ phone: '12' }, PHONE_ERROR],
-    [{ username: 'merchant1' }, 'اسم المستخدم مستخدم لحساب آخر'],
+    [{ username: 'merchant1' }, USERNAME_TAKEN],
   ])('createCaptain rejects %j', (over, message) => {
     const { state } = newStore();
     expect(failureOf(state().createCaptain(captainInput(over)))).toBe(message);
@@ -162,9 +163,9 @@ describe('merchant passwords: any non-empty value, kept exactly (owner 2026-11-2
 
   it('rejects an empty password on create and on edit', () => {
     const { state } = newStore();
-    expect(failureOf(state().createMerchant(merchantInput({ password: '' }) as never))).toBe(MERCHANT_PASSWORD_REQUIRED);
+    expect(failureOf(state().createMerchant(merchantInput({ password: '' }) as never))).toBe(ACCOUNT_PASSWORD_REQUIRED);
     const m = state().merchants[0];
-    expect(failureOf(state().updateMerchant(m.id, { ...m, password: '' } as never))).toBe(MERCHANT_PASSWORD_REQUIRED);
+    expect(failureOf(state().updateMerchant(m.id, { ...m, password: '' } as never))).toBe(ACCOUNT_PASSWORD_REQUIRED);
   });
 
   it('a merchant created with a short password can still be edited', () => {
@@ -174,10 +175,81 @@ describe('merchant passwords: any non-empty value, kept exactly (owner 2026-11-2
     valueOf(state().updateMerchant(id, { ...m, businessName: 'اسم جديد' } as never));
   });
 
-  it('username rules are unchanged; captains and password resets keep the 6-character rule', () => {
+  it('username syntax is unchanged; password resets keep their 6-character temporary password', () => {
     const { state } = newStore();
-    expect(failureOf(state().createMerchant(merchantInput({ username: 'ab', password: 'a' }) as never))).toBe('اسم المستخدم: 3 أحرف إنجليزية أو أرقام على الأقل');
-    expect(failureOf(state().createCaptain(captainInput({ password: '123' })))).toBe(PASSWORD_TOO_SHORT);
+    expect(failureOf(state().createMerchant(merchantInput({ username: 'ab', password: 'a' }) as never))).toBe(USERNAME_INVALID);
     expect(state().resetAccountPassword({ role: 'merchant', id: state().merchants[0].id }, 'a').ok).toBe(false);
+  });
+});
+
+describe('captain passwords follow the same rule as merchants (owner 2026-11-25)', () => {
+  it.each(['a', '1', '123', '!', 'مرحبا', 'a b', ' abc ', '   '])('captain accepts %j unchanged and signs in', (password) => {
+    const { state } = newStore();
+    const id = valueOf(state().createCaptain(captainInput({ password })));
+    expect(state().captains.find((c) => c.id === id)!.password).toBe(password);
+    expect(state().authenticate('newcap', password).ok).toBe(true);
+  });
+
+  it('both roles reject an empty password with the same message and code', () => {
+    const { state } = newStore();
+    const m = state().createMerchant(merchantInput({ password: '' }) as never);
+    const c = state().createCaptain(captainInput({ password: '' }));
+    expect(m).toMatchObject({ ok: false, error: ACCOUNT_PASSWORD_REQUIRED, code: 'password_required' });
+    expect(c).toMatchObject({ ok: false, error: ACCOUNT_PASSWORD_REQUIRED, code: 'password_required' });
+  });
+});
+
+describe('one global username namespace (owner 2026-11-25)', () => {
+  const taken = (r: { ok: boolean; code?: string; error?: string }) => expect(r).toMatchObject({ ok: false, code: 'username_taken', error: USERNAME_TAKEN });
+
+  it('merchant ↔ captain, merchant ↔ merchant, captain ↔ captain and admin collisions are refused', () => {
+    const { state } = newStore();
+    valueOf(state().createMerchant(merchantInput({ username: 'omar123' }) as never));
+    taken(state().createCaptain(captainInput({ username: 'omar123' })));
+    taken(state().createMerchant(merchantInput({ username: 'captain1', phone: '0791112234' }) as never));
+    taken(state().createMerchant(merchantInput({ username: 'merchant1', phone: '0791112235' }) as never));
+    taken(state().createCaptain(captainInput({ username: 'captain2' })));
+    taken(state().createCaptain(captainInput({ username: 'ADMIN' })));
+  });
+
+  it('case and outer spaces do not make a different username; the trimmed value is stored', () => {
+    const { state } = newStore();
+    valueOf(state().createMerchant(merchantInput({ username: 'Store_A' }) as never));
+    taken(state().createMerchant(merchantInput({ username: 'store_a', phone: '0791112236' }) as never));
+    const id = valueOf(state().createCaptain(captainInput({ username: ' mohammad ' })));
+    expect(state().captains.find((c) => c.id === id)!.username).toBe('mohammad');
+    expect(state().authenticate('MOHAMMAD', 'secret1').ok).toBe(true);
+    taken(state().createCaptain(captainInput({ username: 'mohammad', phone: '0795556678' })));
+  });
+
+  it('a different username is allowed; an account keeps its own username on edit', () => {
+    const { state } = newStore();
+    valueOf(state().createMerchant(merchantInput({ username: 'store1' }) as never));
+    const id = valueOf(state().createMerchant(merchantInput({ username: 'store2', phone: '0791112237' }) as never));
+    const m = state().merchants.find((x) => x.id === id)!;
+    valueOf(state().updateMerchant(id, { ...m, businessName: 'محدّث' } as never));
+    taken(state().updateMerchant(id, { ...m, username: 'STORE1' } as never));
+  });
+
+  it('suspended accounts keep their username', () => {
+    const { state } = newStore();
+    const suspended = state().captains.find((c) => c.status === 'inactive')!;
+    taken(state().createMerchant(merchantInput({ username: suspended.username }) as never));
+  });
+
+  it('two creates with the same username: the first wins, the second gets a typed conflict', () => {
+    const { state } = newStore();
+    const first = state().createMerchant(merchantInput({ username: 'race' }) as never);
+    const second = state().createCaptain(captainInput({ username: 'race' }));
+    expect(first.ok).toBe(true);
+    taken(second);
+    expect([...state().merchants, ...state().captains].filter((a) => a.username === 'race')).toHaveLength(1);
+  });
+
+  it('duplicates already in saved data are reported, not changed', () => {
+    const { state } = newStore();
+    const merchants = state().merchants.map((m, i) => (i === 0 ? { ...m, username: 'Captain1' } : m));
+    expect(duplicateUsernames({ merchants, captains: state().captains })).toEqual(['captain1']);
+    expect(duplicateUsernames(state())).toEqual([]);
   });
 });

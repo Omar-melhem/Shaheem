@@ -16,6 +16,7 @@ import { formatDate, formatDateTime } from '@/shared/lib/format';
 import { MerchantCategoryBadge } from '@/features/merchants/MerchantCategoryBadge';
 import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
 import { MerchantFormDialog } from './merchants/MerchantFormDialog';
+import { DuplicateUsernamesNotice } from './DuplicateUsernamesNotice';
 
 const HEADERS = ['النشاط التجاري', 'الفئة', 'الهاتف', 'العنوان', 'الطلبات', 'الحالة'];
 const LEGEND = [
@@ -54,6 +55,7 @@ export function MerchantsPage() {
         description="تسجيل التجار وإدارتهم. موقع الاستلام يُحفظ في ملف التاجر فلا يحتاج لإدخاله مع كل طلب."
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing('new')}>إضافة تاجر</Button>}
       />
+      <DuplicateUsernamesNotice />
       <Card className="mb-4 flex flex-wrap gap-3 p-4">
         <SearchField label="بحث في التجار" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف أو العنوان" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="w-full sm:w-56">

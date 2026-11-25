@@ -15,6 +15,7 @@ import { CaptainFormDialog } from './CaptainFormDialog';
 import { CaptainDetailDrawer } from './CaptainDetailDrawer';
 import { CaptainRatingForm } from './CaptainRatingForm';
 import { CaptainStatusDialog } from './CaptainStatusDialog';
+import { DuplicateUsernamesNotice } from '../DuplicateUsernamesNotice';
 
 type AccountFilter = '' | 'active' | 'inactive';
 type AvailabilityFilter = '' | 'available' | 'busy' | 'offline';
@@ -76,6 +77,7 @@ export function CaptainsPage() {
         description="تسجيل الكباتن ومتابعة التوفر والأهلية والموقع والمحفظة."
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEditing('new')}>إضافة كابتن</Button>}
       />
+      <DuplicateUsernamesNotice />
       <Card className="mb-4 flex flex-wrap items-end gap-3 p-4">
         <SearchField label="بحث في الكباتن" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="w-full sm:w-44">

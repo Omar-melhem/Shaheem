@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppStore, type CaptainInput } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
-import { PASSWORD_TOO_SHORT, isPasswordLongEnough } from '@/domain/account';
+import { AccountCredentialsFields, credentialFieldErrors, credentialFieldOf } from '../AccountCredentialsFields';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 
@@ -14,6 +14,8 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
   const updateCaptain = useAppStore((s) => s.updateCaptain);
   const [form, setForm] = useState<CaptainInput>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [credentialAttempt, setCredentialAttempt] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const set = (k: keyof CaptainInput, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
@@ -26,11 +28,20 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
     if (!form.fullName.trim()) e.fullName = 'الاسم الكامل مطلوب';
     if (!form.phone.trim()) e.phone = 'رقم الهاتف مطلوب';
     else if (!isValidPhone(form.phone)) e.phone = PHONE_ERROR;
-    if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (!isPasswordLongEnough(form.password)) e.password = PASSWORD_TOO_SHORT;
+    const creds = credentialFieldErrors(form);
+    if (creds.username) e.username = creds.username;
+    if (creds.password) e.password = creds.password;
     setErrors(e);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length) return setCredentialAttempt((n) => n + 1);
+    if (submitting) return;
+    setSubmitting(true);
     const result = captain === 'new' ? createCaptain(form) : updateCaptain((captain as Captain).id, form);
+    setSubmitting(false);
+    const field = !result.ok ? credentialFieldOf(result.code) : null;
+    if (!result.ok && field) {
+      setErrors((er) => ({ ...er, [field]: result.error }));
+      return setCredentialAttempt((n) => n + 1);
+    }
     if (reportResult(result, captain === 'new' ? 'تم إنشاء حساب الكابتن (تجريبي) — يبدأ بحالة غير متاح ورصيد صفر' : 'تم حفظ بيانات الكابتن')) onClose();
   };
 
@@ -43,7 +54,7 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
       footer={
         <>
           <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit}>{captain === 'new' ? 'إنشاء الكابتن' : 'حفظ'}</Button>
+          <Button onClick={submit} loading={submitting}>{captain === 'new' ? 'إنشاء الكابتن' : 'حفظ'}</Button>
         </>
       }
     >
@@ -54,17 +65,14 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
         <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
           <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
         </Field>
-        <div className="rounded-xl border border-dashed border-sand-dark/50 bg-sand-light/20 p-4 md:col-span-2">
-          <p className="mb-3 text-sm font-bold text-ink">بيانات الدخول (تجريبية)</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="اسم المستخدم" required error={errors.username}>
-              <Input value={form.username} onChange={(e) => set('username', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.username} />
-            </Field>
-            <Field label="كلمة المرور" required error={errors.password} hint="6 أحرف على الأقل">
-              <Input value={form.password} onChange={(e) => set('password', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.password} />
-            </Field>
-          </div>
-        </div>
+        <AccountCredentialsFields
+          idPrefix="captain"
+          username={form.username}
+          password={form.password}
+          errors={{ username: errors.username, password: errors.password }}
+          focusAttempt={credentialAttempt}
+          onChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((er) => ({ ...er, ...(patch.username !== undefined ? { username: '' } : { password: '' }) })); }}
+        />
       </div>
     </Dialog>
   );

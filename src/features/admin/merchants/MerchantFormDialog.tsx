@@ -4,7 +4,7 @@ import { useAppStore, type MerchantInput } from '@/app/state';
 import { isUnchangedLegacyLocation, pickupLocationError } from '@/application/merchantLocation';
 import type { LatLng, Merchant } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
-import { MERCHANT_PASSWORD_REQUIRED, isMerchantPasswordAcceptable } from '@/domain/account';
+import { AccountCredentialsFields, credentialFieldErrors, credentialFieldOf } from '../AccountCredentialsFields';
 import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
@@ -21,6 +21,7 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [credentialAttempt, setCredentialAttempt] = useState(0);
   const navigate = useNavigate();
   const existing = merchant && merchant !== 'new' ? merchant : undefined;
 
@@ -46,14 +47,22 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
       const locationError = pickupLocationError(areas, location);
       if (locationError) e.location = locationError;
     }
-    if (!form.username.trim()) e.username = 'اسم المستخدم مطلوب';
-    if (!isMerchantPasswordAcceptable(form.password)) e.password = MERCHANT_PASSWORD_REQUIRED; // any non-empty value, kept as typed
+    const creds = credentialFieldErrors(form);
+    if (creds.username) e.username = creds.username;
+    if (creds.password) e.password = creds.password;
     setErrors(e);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length) return setCredentialAttempt((n) => n + 1);
+    if (submitting) return;
     setSubmitting(true);
     const input: MerchantInput = { ...form, pickup: form.pickup as LatLng };
     const result = existing ? updateMerchant(existing.id, input) : createMerchant(input);
     setSubmitting(false);
+    // A username/password failure from the store is shown on its field; the other values stay as typed.
+    const field = !result.ok ? credentialFieldOf(result.code) : null;
+    if (!result.ok && field) {
+      setErrors((er) => ({ ...er, [field]: result.error }));
+      return setCredentialAttempt((n) => n + 1);
+    }
     if (!reportResult(result, existing ? 'تم حفظ بيانات التاجر' : 'تم إنشاء التاجر — حدّد الآن مناطق التوصيل والأسعار')) return;
     onClose();
     // Spec §3: after registering a merchant, Admin configures its zones & pricing.
@@ -90,17 +99,14 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
           error={errors.location}
           onChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((er) => ({ ...er, location: '' })); }}
         />
-        <div className="rounded-xl border border-dashed border-sand-dark/50 bg-sand-light/20 p-4 md:col-span-2">
-          <p className="mb-3 text-sm font-bold text-ink">بيانات الدخول (تجريبية)</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="اسم المستخدم" required error={errors.username}>
-              <Input value={form.username} onChange={(e) => set('username', e.target.value)} dir="ltr" autoComplete="off" aria-invalid={!!errors.username} />
-            </Field>
-            <Field label="كلمة المرور" required error={errors.password}>
-              <Input value={form.password} onChange={(e) => { set('password', e.target.value); setErrors((er) => ({ ...er, password: '' })); }} dir="auto" autoComplete="off" aria-invalid={!!errors.password} />
-            </Field>
-          </div>
-        </div>
+        <AccountCredentialsFields
+          idPrefix="merchant"
+          username={form.username}
+          password={form.password}
+          errors={{ username: errors.username, password: errors.password }}
+          focusAttempt={credentialAttempt}
+          onChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((er) => ({ ...er, ...(patch.username !== undefined ? { username: '' } : { password: '' }) })); }}
+        />
       </div>
     </Dialog>
   );

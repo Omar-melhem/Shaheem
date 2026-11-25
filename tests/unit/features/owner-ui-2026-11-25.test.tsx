@@ -182,9 +182,45 @@ describe('Create Merchant form: any non-empty password', () => {
     expect(dialog.textContent).not.toContain('6 أحرف');
     await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء التاجر' }));
     expect(within(dialog).getByText('كلمة المرور مطلوبة')).toBeInTheDocument();
-    const password = within(dialog).getByLabelText(/كلمة المرور/);
+    const password = within(dialog).getByLabelText(/^كلمة المرور/, { selector: 'input' });
     await userEvent.type(password, ' أ ');
     expect(password).toHaveValue(' أ ');
     expect(within(dialog).queryByText('كلمة المرور مطلوبة')).not.toBeInTheDocument();
+  });
+});
+
+describe('shared credentials: captain password like merchant, global unique usernames, inline errors', () => {
+  it('captain form: no «6 أحرف» hint, masked password, a one-letter password creates the account', async () => {
+    const { CaptainFormDialog } = await import('@/features/admin/captains/CaptainFormDialog');
+    const onClose = vi.fn();
+    inRouter(<CaptainFormDialog captain="new" onClose={onClose} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).not.toContain('6 أحرف');
+    await userEvent.type(within(dialog).getByLabelText(/الاسم الكامل/), 'كابتن جديد');
+    await userEvent.type(within(dialog).getByPlaceholderText('07XXXXXXXX'), '0795556677');
+    await userEvent.type(within(dialog).getByLabelText(/اسم المستخدم لتسجيل الدخول/), 'newcap');
+    const password = within(dialog).getByLabelText(/^كلمة المرور/, { selector: 'input' });
+    expect(password).toHaveAttribute('type', 'password');
+    await userEvent.type(password, 'a');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الكابتن' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(S().captains.some((c) => c.username === 'newcap' && c.password === 'a')).toBe(true);
+  });
+
+  it('a username owned by a merchant shows the inline duplicate error on the captain form, keeps the values and focuses the field', async () => {
+    const { CaptainFormDialog } = await import('@/features/admin/captains/CaptainFormDialog');
+    inRouter(<CaptainFormDialog captain="new" onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(/الاسم الكامل/), 'كابتن');
+    await userEvent.type(within(dialog).getByPlaceholderText('07XXXXXXXX'), '0795556677');
+    const username = within(dialog).getByLabelText(/اسم المستخدم لتسجيل الدخول/);
+    await userEvent.type(username, 'Merchant1');
+    await userEvent.type(within(dialog).getByLabelText(/^كلمة المرور/, { selector: 'input' }), 'x');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الكابتن' }));
+    expect(within(dialog).getByText('اسم المستخدم مستخدم مسبقاً. اختر اسم مستخدم آخر.')).toBeInTheDocument();
+    expect(within(dialog).queryByText('كلمة المرور مطلوبة')).not.toBeInTheDocument();
+    expect(username).toHaveValue('Merchant1');
+    expect(username).toHaveFocus();
+    expect(dialog.textContent).not.toContain('مطعم السنابل'); // never names the owner
   });
 });
