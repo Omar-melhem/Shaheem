@@ -14,8 +14,9 @@ import 'package:mobile_frontend/view/screens/home_screen/widget/pending_offers_s
 /// The Home destination (client revision D-A71; offers since Task 26;
 /// section widgets since Task 27).
 ///
-/// - **App bar** ([HomeAppBar]): greeting, wallet balance chip and the
-///   controlled availability switch with its notices. No Profile button,
+/// - **App bar** ([HomeAppBar]): first-name greeting, Home emblem and the
+///   controlled availability switch with its notices (D-A82: no wallet
+///   shortcut). No Profile button,
 ///   logo or patterned header.
 /// - **Body:** the active-order line when there is one or its check failed
 ///   ([HomeActiveOrderCard]), then [PendingOffersHeader] and the lazily
@@ -28,12 +29,7 @@ import 'package:mobile_frontend/view/screens/home_screen/widget/pending_offers_s
 /// re-reads them on resume; [HomeAvailabilityRationaleListener] shows the
 /// permission explanation.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, this.walletBalanceFils});
-
-  /// Total wallet balance in integer fils from the single authoritative
-  /// wallet source. Null (the default, as no wallet backend exists yet)
-  /// shows «—» and an "unavailable" label, never a zero amount.
-  final int? walletBalanceFils;
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +43,7 @@ class HomeScreen extends StatelessWidget {
             builder: (context, page) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                HomeAppBar(
-                  walletBalanceFils: walletBalanceFils,
-                  availableHeight: page.maxHeight,
-                ),
+                HomeAppBar(availableHeight: page.maxHeight),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {

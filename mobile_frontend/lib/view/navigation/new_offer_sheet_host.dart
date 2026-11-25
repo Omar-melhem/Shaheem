@@ -11,7 +11,6 @@ import 'package:mobile_frontend/view/navigation/current_order_navigation.dart';
 import 'package:mobile_frontend/view/navigation/new_order_offer_sheet.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
-import 'package:mobile_frontend/view/widget/order/app_order_offer_card.dart';
 import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 
 /// Why an offer cannot be accepted from the app even though it is shown.
@@ -81,7 +80,9 @@ String? offerAcceptBlockText(AppLocalizations l10n, OfferAcceptBlock block) =>
 ///   pushed only when the server's active order is this offer's order
 ///   ([CaptainOrderOffer.orderId]); otherwise a popup says it was accepted
 ///   but cannot be shown yet. Nothing is accepted twice, and no new sheet
-///   opens while this runs. A confirmed decline just closes the sheet.
+///   opens while this runs. The sheet has no decline action; if the
+///   offer is declined through the kept domain command, the confirmed
+///   decline just closes the sheet.
 /// - **An active order supersedes offers:** whenever the authoritative
 ///   active order is reported (acceptance or foreground recovery), an open
 ///   sheet is closed without an answer before navigation, so it never stays
@@ -363,17 +364,15 @@ class _LiveOfferSheet extends StatelessWidget {
         final live = state.offers.where((o) => o.id == _id).firstOrNull;
         final offer = live ?? initialOffer;
         final pending = state.pending;
-        final busy = pending != null && pending.offerId == _id
-            ? switch (pending.action) {
-                OfferAction.accept => AppOfferCardAction.accept,
-                OfferAction.decline => AppOfferCardAction.decline,
-              }
-            : null;
+        final accepting =
+            pending != null &&
+            pending.offerId == _id &&
+            pending.action == OfferAction.accept;
         final cardNotice = state.notices[_id];
         final loaded = state.status == PendingOffersStatus.loaded;
         final gone = loaded && live == null;
         // Another command (e.g. from Home), a refresh or a blocking notice
-        // keeps both answers off.
+        // keeps Accept off.
         final ready =
             loaded &&
             live != null &&
@@ -394,13 +393,15 @@ class _LiveOfferSheet extends StatelessWidget {
           canPop: pending == null,
           child: NewOrderOfferSheet(
             offer: offer,
-            busyAction: busy,
+            accepting: accepting,
             notice: notice,
             onAccept: ready && block == OfferAcceptBlock.none
                 ? () => unawaited(cubit.accept(_id))
                 : null,
-            onDecline: ready ? () => unawaited(cubit.decline(_id)) : null,
-            onLater: () => Navigator.of(context).maybePop(),
+            // A running command cannot be left by «لاحقاً» (as by Back).
+            onLater: pending == null
+                ? () => Navigator.of(context).maybePop()
+                : null,
           ),
         );
       },

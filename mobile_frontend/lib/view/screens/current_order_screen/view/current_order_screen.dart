@@ -14,7 +14,6 @@ import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_delivery_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
-import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_verification_form.dart';
 import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 import 'package:mobile_frontend/view/widget/status/app_status_message.dart';
 import 'package:mobile_frontend/view/widget/toast/app_toast.dart';
@@ -31,7 +30,7 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 /// - unknown status → an explanation and no action.
 ///
 /// One page for every stage (no route per stage, no new tab). The page
-/// owns only presentation effects: the PIN form, the completion
+/// owns only presentation effects: the completion
 /// confirmation, the Google Maps launch outcome and — once per confirmed
 /// completion — a success toast and the switch to «طلباتي». History and
 /// wallet are re-read by their own owners in the shell.
@@ -215,9 +214,7 @@ class _CurrentOrderScreenState extends State<CurrentOrderScreen> {
                 state: state,
                 onRetryLocation: cubit.retryLocation,
                 onRefresh: cubit.load,
-                onConfirmPickup: () => unawaited(
-                  showPickupVerificationForm(context, orderId: order.orderId),
-                ),
+                onConfirmPickup: () => unawaited(cubit.confirmPickup()),
                 onOpenNavigation: () =>
                     unawaited(_openNavigation(state.pickup)),
                 onCheckStatus: () => unawaited(cubit.checkCommandStatus()),

@@ -11,11 +11,18 @@ sealed class RatingResult {
   const RatingResult();
 }
 
-/// The server answered (possibly "no ratings yet").
+/// The server answered with a valid rating (possibly "no ratings yet").
 final class RatingLoaded extends RatingResult {
   const RatingLoaded(this.rating);
 
   final CaptainRating rating;
+}
+
+/// The server answered with values that cannot be shown honestly (a
+/// negative or incoherent count, or an average that is not finite or lies
+/// outside 0..5). Shown as "unavailable"; never clamped or rescaled.
+final class RatingInvalid extends RatingResult {
+  const RatingInvalid();
 }
 
 /// No rating backend is connected; nothing was read.
@@ -33,7 +40,8 @@ final class RatingFailure extends RatingResult {
   const RatingFailure();
 }
 
-/// Reads the captain's rating (D-A77).
+/// Reads the captain's rating (D-A77) and validates it
+/// ([CaptainRating.isValid]) before the UI may show it.
 class GetCaptainRating {
   const GetCaptainRating(
     this._repository, {
@@ -47,7 +55,8 @@ class GetCaptainRating {
 
   Future<RatingResult> call() async {
     try {
-      return RatingLoaded(await _repository.getRating().timeout(timeout));
+      final rating = await _repository.getRating().timeout(timeout);
+      return rating.isValid ? RatingLoaded(rating) : const RatingInvalid();
     } on CaptainAccountBackendNotConfiguredException {
       return const RatingNotConfigured();
     } on CaptainAccountNetworkUnavailableException {

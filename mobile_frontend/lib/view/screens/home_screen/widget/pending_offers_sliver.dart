@@ -28,23 +28,21 @@ class PendingOffersSliver extends StatelessWidget {
           final offer = state.offers[index];
           final notice = state.notices[offer.id];
           final pending = state.pending;
-          final busy = pending != null && pending.offerId == offer.id
-              ? switch (pending.action) {
-                  OfferAction.accept => AppOfferCardAction.accept,
-                  OfferAction.decline => AppOfferCardAction.decline,
-                }
-              : null;
+          // Only this offer's accept shows a spinner; any other running
+          // command (another offer, or a decline started outside the UI)
+          // disables Accept through `enabled` below.
+          final accepting =
+              pending != null &&
+              pending.offerId == offer.id &&
+              pending.action == OfferAction.accept;
           // Another card's command, or a notice that needs a refresh,
           // keeps this card's actions off.
           final enabled = pending == null && !(notice?.blocksActions ?? false);
           return AppOrderOfferCard(
             key: ValueKey(offer.id),
             offer: offer,
-            busyAction: busy,
+            accepting: accepting,
             onAccept: enabled ? () => unawaited(cubit.accept(offer.id)) : null,
-            onDecline: enabled
-                ? () => unawaited(cubit.decline(offer.id))
-                : null,
             notice: switch (notice) {
               OfferCardNotice.noLongerAvailable => l10n.offerNoLongerAvailable,
               OfferCardNotice.refused => l10n.offerRefused,

@@ -5,13 +5,16 @@
 
 import 'package:mobile_frontend/demo/demo_state.dart';
 import 'package:mobile_frontend/domain/entities/active_order.dart';
+import 'package:mobile_frontend/domain/entities/captain_account.dart';
 import 'package:mobile_frontend/domain/entities/captain_availability.dart';
 import 'package:mobile_frontend/domain/entities/declined_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
 import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 import 'package:mobile_frontend/domain/entities/wallet.dart';
+import 'package:mobile_frontend/domain/errors/captain_account_exceptions.dart';
 import 'package:mobile_frontend/domain/repositories/active_order_repository.dart';
 import 'package:mobile_frontend/domain/repositories/availability_permission_gateway.dart';
+import 'package:mobile_frontend/domain/repositories/captain_account_repository.dart';
 import 'package:mobile_frontend/domain/repositories/captain_availability_repository.dart';
 import 'package:mobile_frontend/domain/repositories/order_history_repository.dart';
 import 'package:mobile_frontend/domain/repositories/order_offer_repository.dart';
@@ -63,8 +66,8 @@ class DemoOrderHistoryRepository implements OrderHistoryRepository {
   }) async => CompletedDeliveriesPage(items: _state.completedDeliveries);
 }
 
-/// The workflow commands against the demo "server" (PIN, start, complete,
-/// outcome). Production uses the real contract once it exists.
+/// The workflow commands against the demo "server" (pickup, start,
+/// complete, outcome). Production uses the real contract once it exists.
 class DemoOrderWorkflowRepository implements OrderWorkflowRepository {
   const DemoOrderWorkflowRepository(this._state);
 
@@ -72,10 +75,9 @@ class DemoOrderWorkflowRepository implements OrderWorkflowRepository {
 
   @override
   Future<ActiveOrder> confirmPickup(
-    OrderCommandTarget target,
-    PickupProof proof, {
+    OrderCommandTarget target, {
     required String operationKey,
-  }) async => _state.confirmPickup(target, proof);
+  }) async => _state.confirmPickup(target);
 
   @override
   Future<ActiveOrder> startDelivery(
@@ -147,4 +149,28 @@ class DemoPermissionGateway implements AvailabilityPermissionGateway {
 
   @override
   Future<bool> openSettings() async => false;
+}
+
+/// The demo captain's rating from `captain.json` (fictional, 5-star
+/// scale). It returns the fixture values unchanged: validation is the real
+/// `GetCaptainRating`'s job, so an invalid fixture shows "unavailable".
+///
+/// Account deletion is **not** simulated: it reports "not configured"
+/// exactly like production, so the demo never pretends an account was
+/// deleted or a request was sent.
+class DemoCaptainAccountRepository implements CaptainAccountRepository {
+  const DemoCaptainAccountRepository(this._state);
+
+  final DemoState _state;
+
+  @override
+  Future<CaptainRating> getRating() async => CaptainRating(
+    ratingsCount: _state.fixtures.ratingsCount,
+    average: _state.fixtures.ratingAverage,
+  );
+
+  @override
+  Future<AccountDeletionStatus> requestAccountDeletion() async {
+    throw const CaptainAccountBackendNotConfiguredException();
+  }
 }

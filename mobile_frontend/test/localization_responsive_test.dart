@@ -1,4 +1,5 @@
-// Tests for the app-wide foundations: Arabic-first localization and the
+// Tests for the app-wide foundations: Arabic-first localization (Arabic
+// default, English as the alternative) and the
 // central responsive breakpoints.
 
 import 'package:flutter/material.dart';
@@ -14,8 +15,11 @@ import 'test_app.dart';
 
 void main() {
   group('localization', () {
-    test('Arabic is the only supported locale', () {
-      expect(AppLocalizations.supportedLocales, [const Locale('ar')]);
+    test('Arabic and English are the only supported locales', () {
+      expect(AppLocalizations.supportedLocales, [
+        const Locale('ar'),
+        const Locale('en'),
+      ]);
     });
 
     testWidgets('app runs in Arabic, RTL, with Arabic strings', (tester) async {

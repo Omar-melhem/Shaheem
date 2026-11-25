@@ -3,15 +3,22 @@
 
 /// The captain's rating from an explicit server read model (D-A77).
 ///
-/// The scale and aggregation are an open owner/contract question (D-P37):
-/// [scaleMax] is whatever the server states, or null when it states none —
-/// the UI never assumes a 5-star scale. "No ratings yet" ([hasRatings]
-/// false) is a confirmed answer, distinct from "unknown" (a failed or
-/// unconfigured read, which never produces this object). Never a
-/// fabricated perfect rating.
+/// The scale is **fixed at 0..[scale] (5 stars)** by owner decision; who
+/// rates captains and how the server aggregates ratings are still open
+/// (D-P37) and nothing here assumes them. The object carries the server's
+/// values unchanged: it never clamps, rounds or rescales them. Whether
+/// they may be shown is [isValid]; the use case turns an invalid answer
+/// into an "unavailable" outcome instead of displaying it.
+///
+/// "No ratings yet" ([hasRatings] false, a count of 0 without an average)
+/// is a confirmed answer, distinct from "unknown" (a failed, unconfigured
+/// or invalid read, which never reaches the UI as a value) and never shown
+/// as a zero score. Never a fabricated perfect rating.
 class CaptainRating {
-  const CaptainRating({required this.ratingsCount, this.average, this.scaleMax})
-    : assert(ratingsCount >= 0, 'ratingsCount cannot be negative');
+  const CaptainRating({required this.ratingsCount, this.average});
+
+  /// The top of the rating scale (5 stars).
+  static const double scale = 5;
 
   /// How many ratings the server aggregated.
   final int ratingsCount;
@@ -19,10 +26,18 @@ class CaptainRating {
   /// The server's aggregated value; null when there are no ratings.
   final double? average;
 
-  /// The top of the scale, only when the server states it.
-  final double? scaleMax;
+  /// Whether the answer is coherent and inside the scale:
+  /// - the count is not negative;
+  /// - a count of 0 comes without an average ("no ratings yet");
+  /// - a positive count comes with a finite average within 0..[scale].
+  bool get isValid {
+    if (ratingsCount < 0) return false;
+    final value = average;
+    if (ratingsCount == 0) return value == null;
+    return value != null && value.isFinite && value >= 0 && value <= scale;
+  }
 
-  /// Whether there is a value to show.
+  /// Whether there is a value to show (only meaningful when [isValid]).
   bool get hasRatings => ratingsCount > 0 && average != null;
 }
 

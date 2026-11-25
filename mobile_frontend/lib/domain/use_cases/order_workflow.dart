@@ -11,12 +11,6 @@ import 'package:mobile_frontend/domain/repositories/order_workflow_repository.da
 
 /// Why the server refused a workflow command.
 enum OrderCommandRejection {
-  /// Wrong pickup PIN (attempts may remain).
-  incorrectPin,
-
-  /// No PIN attempts left: Admin intervention (D-A67).
-  pinLocked,
-
   /// The order is no longer in a stage/assignment that allows the command.
   stateConflict,
 }
@@ -35,12 +29,11 @@ final class OrderCommandSucceeded<T> extends OrderCommandResult<T> {
   final T value;
 }
 
-/// The server refused it. [remainingAttempts] only when the server said so.
+/// The server refused it.
 final class OrderCommandRejected<T> extends OrderCommandResult<T> {
-  const OrderCommandRejected(this.reason, {this.remainingAttempts});
+  const OrderCommandRejected(this.reason);
 
   final OrderCommandRejection reason;
-  final int? remainingAttempts;
 }
 
 /// No workflow backend is connected: nothing was sent.
@@ -66,13 +59,6 @@ Future<OrderCommandResult<T>> _command<T>(
 ) async {
   try {
     return OrderCommandSucceeded(await send().timeout(timeout));
-  } on PickupCodeIncorrectException catch (e) {
-    return OrderCommandRejected(
-      OrderCommandRejection.incorrectPin,
-      remainingAttempts: e.remainingAttempts,
-    );
-  } on PickupCodeLockedException {
-    return const OrderCommandRejected(OrderCommandRejection.pinLocked);
   } on OrderStateConflictException {
     return const OrderCommandRejected(OrderCommandRejection.stateConflict);
   } on OrderWorkflowNotConfiguredException {
@@ -101,8 +87,9 @@ String secureOperationKey() {
   ).join();
 }
 
-/// Submits the pickup proof (today the four-digit merchant PIN). The proof
-/// is passed through untouched: correctness is the server's decision.
+/// Confirms the pickup («تم الاستلام») without any verification code. The
+/// order advances to `picked_up` only on the server's confirmation; a
+/// timeout or lost answer is [OrderCommandUnconfirmed], never a pickup.
 class ConfirmPickup {
   const ConfirmPickup(
     this._repository, {
@@ -113,11 +100,10 @@ class ConfirmPickup {
   final Duration timeout;
 
   Future<OrderCommandResult<ActiveOrder>> call(
-    OrderCommandTarget target,
-    PickupProof proof, {
+    OrderCommandTarget target, {
     required String operationKey,
   }) => _command(
-    () => _repository.confirmPickup(target, proof, operationKey: operationKey),
+    () => _repository.confirmPickup(target, operationKey: operationKey),
     timeout,
   );
 }

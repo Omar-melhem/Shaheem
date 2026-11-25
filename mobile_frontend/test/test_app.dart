@@ -34,3 +34,26 @@ void setScreenSize(WidgetTester tester, double width, double height) {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 }
+
+/// Taps the Login submit button the way a captain can: an error toast from
+/// the previous attempt is a floating SnackBar at the bottom of the screen
+/// and may cover the button (the logo's decoded height decides where the
+/// button lands), so it is first closed through its own close button. The
+/// button is then scrolled into view and must be hit-testable, so a
+/// covered or unreachable button fails here instead of the tap silently
+/// landing on another widget.
+Future<void> tapLoginSubmit(WidgetTester tester) async {
+  final toast = find.byType(SnackBar);
+  if (toast.evaluate().isNotEmpty) {
+    await tester.tap(
+      find.descendant(of: toast, matching: find.byTooltip(l10n.close)),
+    );
+    await tester.pumpAndSettle();
+    expect(toast, findsNothing);
+  }
+  final button = find.widgetWithText(FilledButton, l10n.loginButton);
+  await tester.ensureVisible(button);
+  await tester.pumpAndSettle();
+  expect(button.hitTestable(), findsOneWidget);
+  await tester.tap(button);
+}

@@ -1,5 +1,17 @@
 # SHAHM Flutter — Routing and Startup
 
+**2026-11-24 amendment (D-A82/D-A83), implemented 2026-11-24** (sub-route `RoutesString.completedOrderDetailsPath` = `completed/:orderId` under `/order-history`, built with `RoutesString.completedOrderDetails(id)`; pushed inside the branch so Back keeps the list; the page reads only the session's record and never fetches): remove
+Home wallet input/selector/navigation and the balance read that served
+only its chip. Keep the Wallet tab and session-safe completion invalidation.
+Each own completed-history item gains a protected read-only detail route,
+registered via existing `RoutesString`/router conventions; Back returns to
+My Orders with its list intact. The exact path is implementation work.
+Reuse complete session-owned history data; otherwise one on-demand lookup
+has explicit unavailable/not-found/error states. Never prefetch every row,
+poll details, expose a different order or change startup redirects/four tabs.
+The route table and load-trigger rows below describe pre-migration source;
+the new detail page is an approved missing capability until implemented.
+
 **Current target (client revision 2026-11-20, D-A70–D-A73, D-A77, D-A78):** four tab branches (Home, My Orders, Wallet, My Account), Current Order as a protected standalone page shared with recovery, Settings/Terms/About from My Account, and no Notifications route. Implementation status: `../project/PROJECT_STATUS.md` §0.
 
 Routes, the redirect policy, the startup sequence and the main navigation

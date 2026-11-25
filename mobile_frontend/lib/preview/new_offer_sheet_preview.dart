@@ -116,7 +116,6 @@ Future<void> showPreviewOfferSheet(BuildContext context, OrderOfferKind kind) {
         offer: offer,
         notice: offerAcceptBlockText(sheetContext.l10n, block),
         onAccept: block == OfferAcceptBlock.none ? close : null,
-        onDecline: close,
         onLater: close,
       );
     },

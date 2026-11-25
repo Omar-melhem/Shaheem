@@ -25,9 +25,9 @@ import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/navigation/app_nav_bar.dart';
-import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/cubit/wallet_cubit.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/view/wallet_screen.dart';
+import 'package:mobile_frontend/view/screens/wallet_screen/widget/wallet_balance_card.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/widget/wallet_debit_card.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/widget/wallet_metric_cards.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
@@ -289,14 +289,14 @@ void main() {
         return cubit;
       }
 
-      test('loadBalance reads only the balance; ensureLoaded then reads '
-          'only the statistics', () async {
+      test('invalidate before Wallet read anything reads only the balance; '
+          'ensureLoaded then reads only the statistics', () async {
         final repo = FakeWalletRepository(
           overview: overview(),
           statistics: const CaptainDeliveryStatistics(deliveredCount: 2),
         );
         final cubit = owned(repo, () => 'a');
-        await cubit.loadBalance();
+        await cubit.invalidate();
         expect((repo.calls, repo.statisticsCalls), (1, 0));
         expect(cubit.state.balanceFils, 4000);
         await cubit.ensureLoaded();
@@ -305,17 +305,35 @@ void main() {
         expect((repo.calls, repo.statisticsCalls), (1, 1));
       });
 
-      test('overlapping triggers send one read', () async {
+      test('overlapping first-show triggers send one read', () async {
         final repo = FakeWalletRepository(overview: overview())
           ..pending = Completer<WalletOverview>();
         final cubit = owned(repo, () => 'a');
-        final first = cubit.loadBalance();
-        unawaited(cubit.loadBalance());
+        final first = cubit.ensureLoaded();
+        unawaited(cubit.ensureLoaded());
         unawaited(cubit.ensureLoaded());
         repo.pending!.complete(overview());
         await first;
         expect(repo.calls, 1);
       });
+
+      test(
+        'an invalidation during a read gets exactly one follow-up',
+        () async {
+          final repo = FakeWalletRepository(overview: overview())
+            ..pending = Completer<WalletOverview>();
+          final cubit = owned(repo, () => 'a');
+          final first = cubit.ensureLoaded();
+          unawaited(cubit.invalidate());
+          unawaited(cubit.invalidate());
+          final pending = repo.pending!;
+          repo.pending = null;
+          pending.complete(overview());
+          await first;
+          await pumpEventQueue();
+          expect(repo.calls, 2);
+        },
+      );
 
       for (final (label, fils) in [
         ('zero', 0),
@@ -325,7 +343,7 @@ void main() {
         test('$label is kept exactly as returned', () async {
           final repo = FakeWalletRepository(overview: overview(balance: fils));
           final cubit = owned(repo, () => 'a');
-          await cubit.loadBalance();
+          await cubit.invalidate();
           expect(cubit.state.balanceFils, fils);
         });
       }
@@ -336,7 +354,7 @@ void main() {
         );
         final cubit = owned(repo, () => 'a');
         expect(cubit.state.balanceFils, isNull);
-        await cubit.loadBalance();
+        await cubit.invalidate();
         expect(cubit.state.status, WalletStatus.failure);
         expect(cubit.state.balanceFils, isNull);
       });
@@ -347,7 +365,7 @@ void main() {
         final repo = FakeWalletRepository(overview: overview(balance: 4000))
           ..pending = Completer<WalletOverview>();
         final cubit = owned(repo, () => owner);
-        final stale = cubit.loadBalance();
+        final stale = cubit.invalidate();
 
         owner = 'b';
         final oldAnswer = repo.pending!;
@@ -366,7 +384,7 @@ void main() {
         Object? owner = 'a';
         final repo = FakeWalletRepository(overview: overview());
         final cubit = owned(repo, () => owner);
-        return cubit.loadBalance().then((_) {
+        return cubit.invalidate().then((_) {
           expect(cubit.state.balanceFils, 4000);
           owner = 'b';
           repo.pending = Completer<WalletOverview>();
@@ -380,7 +398,7 @@ void main() {
         Object? owner = 'a';
         final repo = FakeWalletRepository(overview: overview());
         final cubit = owned(repo, () => owner);
-        await cubit.loadBalance();
+        await cubit.invalidate();
         owner = null;
         await cubit.syncSession();
         expect(cubit.state.status, WalletStatus.noSession);
@@ -391,7 +409,7 @@ void main() {
       test('the same owner re-emitted does not reset or re-read', () async {
         final repo = FakeWalletRepository(overview: overview());
         final cubit = owned(repo, () => 'a');
-        await cubit.loadBalance();
+        await cubit.invalidate();
         await cubit.syncSession();
         expect(cubit.state.balanceFils, 4000);
         expect(repo.calls, 1);
@@ -694,21 +712,15 @@ void main() {
       expect(MainNavDestination.values.length, 4);
     });
 
-    testWidgets('Home balance chip (shared balance) → the Wallet tab; the bar '
-        'tab → the same Wallet; never two Wallet pages', (tester) async {
+    testWidgets('D-A82: Home reads no wallet data; the Wallet tab reads it '
+        'on first show and re-show; never two Wallet pages', (tester) async {
       await launch(tester);
-      // R02: the shell read the balance once; Home never reads statistics.
-      expect(
-        find.bySemanticsLabel(l10n.walletBalanceSemantics(formatJodFils(4000))),
-        findsOneWidget,
-      );
-      expect(repo.calls, 1);
+      expect(repo.calls, 0);
       expect(repo.statisticsCalls, 0);
-      await tester.tap(find.byType(WalletBalanceChip));
+      await tester.tap(tab(MainNavDestination.wallet));
       await tester.pumpAndSettle();
       expect(branch(tester), MainNavDestination.wallet.index);
       final first = tester.state(find.byType(WalletScreen));
-      // Wallet's first show reads only what was still unread.
       expect(repo.calls, 1);
       expect(repo.statisticsCalls, 1);
 
@@ -722,8 +734,9 @@ void main() {
       expect(repo.statisticsCalls, 2);
     });
 
-    testWidgets('R02: a statistics failure on Wallet leaves the Home chip '
-        'and the Wallet balance in agreement', (tester) async {
+    testWidgets('a statistics failure on Wallet keeps the balance', (
+      tester,
+    ) async {
       await launch(tester);
       repo.statisticsError = const WalletServiceUnavailableException();
       await tester.tap(tab(MainNavDestination.wallet));
@@ -733,15 +746,9 @@ void main() {
       );
       expect(cubit.state.statisticsStatus, WalletStatus.failure);
       expect(cubit.state.balanceFils, 4000);
-      await tester.tap(tab(MainNavDestination.home));
-      await tester.pumpAndSettle();
-      expect(
-        find.bySemanticsLabel(l10n.walletBalanceSemantics(formatJodFils(4000))),
-        findsOneWidget,
-      );
     });
 
-    testWidgets('R02: an unreadable wallet shows «—» on Home, never zero', (
+    testWidgets('an unreadable wallet shows «—» on Wallet, never zero', (
       tester,
     ) async {
       repo = FakeWalletRepository(
@@ -755,16 +762,24 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(l10n.walletBalanceUnknownValue), findsOneWidget);
+      expect(find.text(l10n.walletBalanceUnknownValue), findsNothing);
+      await tester.tap(tab(MainNavDestination.wallet));
+      await tester.pumpAndSettle();
       expect(
-        find.bySemanticsLabel(l10n.walletBalanceUnavailableSemantics),
+        find.descendant(
+          of: find.byType(WalletBalanceCard),
+          matching: find.text(l10n.walletBalanceUnknownValue),
+        ),
         findsOneWidget,
       );
+      expect(find.textContaining('0.000'), findsNothing);
     });
 
-    testWidgets('R02: sign-out closes the shared source with the shell and '
-        'reads nothing more', (tester) async {
+    testWidgets('sign-out closes the shell-scoped source and reads nothing '
+        'more', (tester) async {
       await launch(tester);
+      await tester.tap(tab(MainNavDestination.wallet));
+      await tester.pumpAndSettle();
       expect(repo.calls, 1);
       final session = BlocProvider.of<AppSessionCubit>(
         tester.element(find.byType(AppNavBar)),
@@ -870,68 +885,4 @@ void main() {
       }
     });
   });
-
-  group('Home app bar sizes (real font)', () {
-    for (final width in [320.0, 375.0, 450.0]) {
-      for (final scale in [1.0, 2.0, 3.0]) {
-        for (final fils in [null, -12345678]) {
-          testWidgets('$width px × $scale, balance $fils: chip reachable, '
-              'amount not clipped', (tester) async {
-            setScreenSize(tester, width, 800);
-            tester.platformDispatcher.textScaleFactorTestValue = scale;
-            addTearDown(
-              tester.platformDispatcher.clearTextScaleFactorTestValue,
-            );
-            await tester.pumpWidget(
-              testApp(
-                Scaffold(
-                  body: Column(
-                    children: [
-                      Builder(
-                        builder: (context) => _HomeBarHarness(fils: fils),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-            await tester.pump();
-            expect(tester.takeException(), isNull);
-            final screen = Offset.zero & Size(width, 800);
-            final chip = tester.getRect(find.byType(WalletBalanceChip));
-            expect(screen.contains(chip.topLeft), isTrue);
-            expect(
-              screen.contains(chip.bottomRight - const Offset(1, 1)),
-              isTrue,
-            );
-            for (final p in tester.renderObjectList<RenderParagraph>(
-              find.descendant(
-                of: find.byType(WalletBalanceChip),
-                matching: find.byType(RichText),
-              ),
-            )) {
-              expect(p.didExceedMaxLines, isFalse);
-              expect(p.size.width, lessThanOrEqualTo(chip.width));
-            }
-          });
-        }
-      }
-    }
-  });
-}
-
-/// The Home AppBar's balance chip on its own (the full bar, with the
-/// availability Cubit, is covered by `home_screen_test.dart`).
-class _HomeBarHarness extends StatelessWidget {
-  const _HomeBarHarness({required this.fils});
-
-  final int? fils;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(16),
-    child: Wrap(
-      children: [WalletBalanceChip(balanceFils: fils, onPressed: () {})],
-    ),
-  );
 }

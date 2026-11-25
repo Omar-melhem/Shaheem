@@ -1,10 +1,10 @@
-// State management for the Profile rating card (D-A77).
+// State management for the Profile rating (D-A77).
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_frontend/domain/entities/captain_account.dart';
 import 'package:mobile_frontend/domain/use_cases/captain_account.dart';
 
-/// What the rating card can show.
+/// What the Profile rating can show.
 enum ProfileRatingStatus {
   initial,
   loading,
@@ -14,6 +14,11 @@ enum ProfileRatingStatus {
 
   /// No rating backend is connected; nothing was read («غير متوفر»).
   notConfigured,
+
+  /// The server's values were invalid (out of 0..5 or incoherent); shown
+  /// as «غير متوفر», never clamped (no Retry: the same answer would
+  /// return).
+  invalid,
   noInternet,
   failure,
 
@@ -22,7 +27,7 @@ enum ProfileRatingStatus {
   loaded,
 }
 
-/// The rating card's state: the server's last answer, never a stand-in.
+/// The rating's state: the server's last valid answer, never a stand-in.
 class ProfileRatingState {
   const ProfileRatingState({
     this.status = ProfileRatingStatus.initial,
@@ -91,6 +96,9 @@ class ProfileRatingCubit extends Cubit<ProfileRatingState> {
       RatingLoaded(:final rating) => ProfileRatingState(
         status: ProfileRatingStatus.loaded,
         rating: rating,
+      ),
+      RatingInvalid() => const ProfileRatingState(
+        status: ProfileRatingStatus.invalid,
       ),
       RatingNotConfigured() => const ProfileRatingState(
         status: ProfileRatingStatus.notConfigured,

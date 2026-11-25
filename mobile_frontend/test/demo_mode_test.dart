@@ -21,8 +21,13 @@ import 'package:mobile_frontend/demo/model/demo_fixtures.dart';
 import 'package:mobile_frontend/demo/repo/demo_auth_repository.dart';
 import 'package:mobile_frontend/demo/repo/demo_repositories.dart';
 import 'package:mobile_frontend/demo/widget/demo_strip.dart';
+import 'package:mobile_frontend/domain/entities/order_workflow.dart';
+import 'package:mobile_frontend/domain/errors/order_workflow_exceptions.dart';
+import 'package:mobile_frontend/domain/entities/active_order.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
 import 'package:mobile_frontend/domain/errors/auth_exceptions.dart';
+import 'package:mobile_frontend/domain/errors/captain_account_exceptions.dart';
+import 'package:mobile_frontend/domain/use_cases/captain_account.dart';
 import 'package:mobile_frontend/domain/errors/order_offer_exceptions.dart';
 import 'package:mobile_frontend/domain/use_cases/get_wallet.dart';
 import 'package:mobile_frontend/main.dart';
@@ -32,22 +37,20 @@ import 'package:mobile_frontend/view/navigation/app_nav_bar.dart';
 import 'package:mobile_frontend/view/navigation/new_order_offer_sheet.dart';
 import 'package:mobile_frontend/view/screens/authentication/view/login_screen.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
+import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
-import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_app_bar.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/widget/declined_offer_tile.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/cubit/wallet_cubit.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/view/wallet_screen.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/widget/wallet_balance_card.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/widget/wallet_debit_card.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/view/current_order_screen.dart';
-import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_delivery_view.dart';
-import 'package:mobile_frontend/view/screens/current_order_screen/widget/customer_contact_card.dart';
-import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_verification_form.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/widget/completed_delivery_tile.dart';
 
 import 'fakes.dart';
@@ -141,8 +144,8 @@ void main() {
       expect(find.text(l10n.demoShowNewOffer), findsNothing);
     });
 
-    testWidgets('the normal app\'s Home keeps «—» with the production '
-        'wallet placeholder (no demo amount)', (tester) async {
+    testWidgets('the normal app\'s Home shows no wallet amount (D-A82) and '
+        'no demo strip', (tester) async {
       await tester.pumpWidget(
         MainApp(
           connectivityService: FakeInternetConnectionService(),
@@ -151,19 +154,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(HomeScreen), findsOneWidget);
-      expect(
-        tester
-            .widget<WalletBalanceChip>(find.byType(WalletBalanceChip))
-            .balanceFils,
-        isNull,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(WalletBalanceChip),
-          matching: find.text(l10n.walletBalanceUnknownValue),
-        ),
-        findsOneWidget,
-      );
+      // D-A82: Home shows the emblem and no balance at all.
+      expect(find.byKey(HomeAppBar.logoKey), findsOneWidget);
+      expect(find.text(l10n.walletBalanceUnknownValue), findsNothing);
       expect(find.byType(DemoStrip), findsNothing);
     });
   });
@@ -171,7 +164,7 @@ void main() {
   group('fixtures', () {
     test('all seven files load through the asset bundle and agree', () {
       final f = DemoFixtures.parse(fixtureTexts);
-      expect(f.username, 'demo_captain');
+      expect(f.username, 'demo_123');
       expect(f.accessToken, 'DEMO_ONLY_NOT_A_JWT_DO_NOT_SEND');
       expect(f.captainName, 'أحمد الشهم');
       expect(f.pendingOfferIds, ['demo-offer-101', 'demo-offer-102']);
@@ -288,9 +281,41 @@ void main() {
       expect(state.deliveryStatistics.earningsFils, isNull);
     });
 
+    test('demo workflow: pickup without any code, only for the assigned '
+        'order on its pickup leg; then Start Delivery and completion', () {
+      final state = newState()..signIn('demo_123', 'Demo1234!');
+      state.accept('demo-offer-101');
+      final order = state.activeOrder!;
+      final target = OrderCommandTarget(
+        orderId: order.orderId,
+        assignmentRef: order.assignmentRef,
+      );
+      // A stale assignment or another order is refused, as a server would.
+      expect(
+        () => state.confirmPickup(
+          OrderCommandTarget(orderId: order.orderId, assignmentRef: 'other'),
+        ),
+        throwsA(isA<OrderStateConflictException>()),
+      );
+      expect(
+        () => state.confirmPickup(const OrderCommandTarget(orderId: 'x')),
+        throwsA(isA<OrderStateConflictException>()),
+      );
+      expect(state.activeOrder!.status, order.status);
+      expect(state.confirmPickup(target).status, ActiveOrderStatus.pickedUp);
+      // Already picked up: a second pickup is a conflict.
+      expect(
+        () => state.confirmPickup(target),
+        throwsA(isA<OrderStateConflictException>()),
+      );
+      expect(state.startDelivery(target).status, ActiveOrderStatus.onTheWay);
+      expect(state.completeDelivery(target, 'k1').orderId, order.orderId);
+      expect(state.activeOrder, isNull);
+    });
+
     test('accept: eligible instant only, once, one active order; no hold, '
         'no debit (the wallet is untouched)', () {
-      final state = newState()..signIn('demo_captain', 'Demo1234!');
+      final state = newState()..signIn('demo_123', 'Demo1234!');
       final walletBefore = state.wallet;
       state.accept('demo-offer-101');
       expect(state.activeOrder!.orderId, 'demo-order-101');
@@ -309,8 +334,7 @@ void main() {
 
     test('expired offers leave the list and cannot be answered', () {
       var now = demoNow;
-      final state = newState(clock: () => now)
-        ..signIn('demo_captain', 'Demo1234!');
+      final state = newState(clock: () => now)..signIn('demo_123', 'Demo1234!');
       now = now.add(const Duration(seconds: 121));
       expect(state.eligibleOffers(), isEmpty);
       expect(
@@ -320,7 +344,7 @@ void main() {
     });
 
     test('scheduled sample is visual only; decline records history only', () {
-      final state = newState()..signIn('demo_captain', 'Demo1234!');
+      final state = newState()..signIn('demo_123', 'Demo1234!');
       expect(state.showScheduledSample(), 'demo-offer-201');
       expect(state.showScheduledSample(), isNull);
       final scheduled = state.eligibleOffers().last;
@@ -338,7 +362,7 @@ void main() {
 
     test('new offers: unique ids, at most three waiting; reset and sign-out '
         'restore the fixtures', () {
-      final state = newState()..signIn('demo_captain', 'Demo1234!');
+      final state = newState()..signIn('demo_123', 'Demo1234!');
       expect(state.injectOffer(), 'demo-new-offer-1');
       expect(state.injectOffer(), 'demo-new-offer-2');
       expect(state.injectOffer(), 'demo-new-offer-3');
@@ -360,7 +384,7 @@ void main() {
       final state = newState();
       expect(state.wallet.summary.balanceFils, 4000);
       final resets = state.resetCount;
-      state.signIn('demo_captain', 'Demo1234!');
+      state.signIn('demo_123', 'Demo1234!');
       expect(state.resetCount, resets + 1);
       final walletBefore = state.wallet;
       state.decline('demo-offer-101');
@@ -373,6 +397,24 @@ void main() {
       expect(state.resetCount, resets + 3);
     });
 
+    test('demo account: the fixture rating unchanged (5-star scale, valid); '
+        'account deletion is not configured, never faked', () async {
+      final repo = DemoCaptainAccountRepository(newState());
+      final rating = await repo.getRating();
+      expect((rating.average, rating.ratingsCount), (4.3, 27));
+      expect(rating.isValid, isTrue);
+      final read = await GetCaptainRating(repo).call();
+      expect(read, isA<RatingLoaded>());
+      await expectLater(
+        repo.requestAccountDeletion(),
+        throwsA(isA<CaptainAccountBackendNotConfiguredException>()),
+      );
+      expect(
+        await RequestAccountDeletion(repo).call(),
+        isA<AccountDeletionNotConfigured>(),
+      );
+    });
+
     test('demo auth: only the fixture credentials; the token stays in demo '
         'memory and is not part of the user', () async {
       final state = newState();
@@ -382,11 +424,12 @@ void main() {
         auth.signIn(username: 'wrong_demo', password: 'Demo1234!'),
         throwsA(isA<InvalidCredentialsException>()),
       );
-      await auth.signIn(username: 'demo_captain', password: 'Demo1234!');
+      await auth.signIn(username: 'demo_123', password: 'Demo1234!');
       final user = await auth.getCurrentUser();
       expect(user.id, 'demo-captain-001');
       expect(user.role, 'captain');
-      expect(user.phone, isNull);
+      // Fictional, non-assignable 070 number (Profile shows it).
+      expect(user.phone, '0700000100');
       await auth.clearSession();
       expect(await auth.hasStoredSession(), isFalse);
       await expectLater(
@@ -421,12 +464,12 @@ void main() {
 
     Future<void> signIn(
       WidgetTester tester, {
-      String user = 'demo_captain',
+      String user = 'demo_123',
       String password = 'Demo1234!',
     }) async {
       await tester.enterText(field(l10n.usernameLabel), user);
       await tester.enterText(field(l10n.passwordLabel), password);
-      await tester.tap(find.widgetWithText(FilledButton, l10n.loginButton));
+      await tapLoginSubmit(tester);
       await tester.pumpAndSettle();
     }
 
@@ -442,6 +485,17 @@ void main() {
 
     final sheet = find.byType(NewOrderOfferSheet);
 
+    /// Declines the offer in the open sheet through the kept domain command
+    /// (the sheet itself has no decline button any more).
+    Future<void> declineShownOffer(WidgetTester tester) async {
+      final id = tester.widget<NewOrderOfferSheet>(sheet).offer.id;
+      await tester
+          .element(find.byType(AppNavBar))
+          .read<PendingOffersCubit>()
+          .decline(id);
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('Login shows the badge; wrong credentials are refused; the '
         'fixture captain reaches the real Home with the real offers', (
       tester,
@@ -454,7 +508,8 @@ void main() {
       expect(find.text(l10n.loginInvalidCredentials), findsOneWidget);
       await signIn(tester);
       expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.text(l10n.homeGreeting('أحمد الشهم')), findsOneWidget);
+      // D-A82: the greeting shows the first name only.
+      expect(find.text(l10n.homeGreeting('أحمد')), findsOneWidget);
       expect(find.text('مطعم السنابل'), findsOneWidget);
       expect(find.text(l10n.demoBadge), findsOneWidget);
       expect(http.attempts, 0);
@@ -486,7 +541,7 @@ void main() {
     });
 
     // D-A81 through the demo "server": every step is simulated in memory.
-    testWidgets('accept → wrong PIN → demo PIN → delivery view with the '
+    testWidgets('accept → code-free «تم الاستلام» → delivery view with the '
         'optional phone → Start Delivery → completion → My Orders lists it '
         'and Wallet shows one more commission debit', (tester) async {
       setScreenSize(tester, 420, 2600);
@@ -500,29 +555,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ActiveOrderPickupView), findsOneWidget);
 
-      Future<void> enterPin(String pin) async {
-        await tester.tap(find.text(l10n.pickupConfirmAction));
-        await tester.pumpAndSettle();
-        await tester.enterText(
-          find.descendant(
-            of: find.byType(PickupVerificationForm),
-            matching: find.byType(EditableText),
-          ),
-          pin,
-        );
-        await tester.tap(
-          find.widgetWithText(AppButton, l10n.pickupVerificationSubmit),
-        );
-        await tester.pumpAndSettle();
-      }
-
-      await enterPin('9999');
-      expect(find.text(l10n.pickupPinIncorrectRemaining(2)), findsOneWidget);
-      await tester.tap(find.text(l10n.cancel));
+      // No code field anywhere: one tap confirms through the demo server.
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text(l10n.pickupConfirmAction));
       await tester.pumpAndSettle();
-      await enterPin('1234');
+      expect(find.byType(TextField), findsNothing);
       expect(find.byType(ActiveOrderDeliveryView), findsOneWidget);
-      expect(find.byType(CustomerContactCard), findsOneWidget);
+      expect(find.text(l10n.orderDetailCustomerPhone), findsOneWidget);
+      expect(find.text(l10n.orderDetailCustomerName), findsOneWidget);
       await tester.tap(find.text(l10n.startDeliveryAction));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.completeDeliveryAction));
@@ -560,9 +600,7 @@ void main() {
 
     testWidgets('decline while Order History stays open: the new record '
         'appears first at once, no navigation; «لاحقاً» adds nothing; reset '
-        'restores the fixture history in place; the wallet is unchanged', (
-      tester,
-    ) async {
+        'restores the fixture history in place', (tester) async {
       // Tall viewport: My Orders now lists the completed deliveries above
       // the declined offers (D-A81), and both sections are built lazily.
       setScreenSize(tester, 420, 2600);
@@ -570,11 +608,6 @@ void main() {
       await signIn(tester);
       await tapTab(tester, MainNavDestination.orderHistory);
       expect(historyMerchants(tester), ['مقهى اللوز']);
-      final walletTotal = tester
-          .widget<WalletBalanceChip>(
-            find.byType(WalletBalanceChip, skipOffstage: false),
-          )
-          .balanceFils;
 
       await tester.tap(find.text(l10n.demoShowNewOffer));
       await tester.pumpAndSettle();
@@ -591,8 +624,8 @@ void main() {
         find.descendant(of: sheet, matching: find.textContaining('%')),
         findsNothing,
       );
-      await tester.tap(find.text(l10n.offerDeclineFull));
-      await tester.pumpAndSettle();
+      expect(find.text('رفض الطلب'), findsNothing);
+      await declineShownOffer(tester);
       expect(sheet, findsNothing);
       expect(branch(tester), MainNavDestination.orderHistory.index);
       // Observed before any tab re-entry: exactly one new row, newest first.
@@ -606,15 +639,6 @@ void main() {
       expect(sheet, findsNothing);
       expect(find.byType(DeclinedOfferTile), findsNWidgets(2));
 
-      expect(
-        tester
-            .widget<WalletBalanceChip>(
-              find.byType(WalletBalanceChip, skipOffstage: false),
-            )
-            .balanceFils,
-        walletTotal,
-      );
-
       // Reset while the tab is visible: the fixture history returns.
       await tester.tap(find.text(l10n.demoTools));
       await tester.pumpAndSettle();
@@ -625,19 +649,22 @@ void main() {
       expect(http.attempts, 0);
     });
 
-    testWidgets('a decline from the Home card shows when My Orders is '
-        'opened; the wallet shows the last 7 days of debits only and the '
-        'lifetime count', (tester) async {
+    testWidgets('a decline of the offer shown over Home (neither the Home '
+        'card nor the sheet has a decline button) shows when My Orders is '
+        'opened; the wallet '
+        'shows the last 7 days of debits only and the lifetime count', (
+      tester,
+    ) async {
       // Tall viewport: My Orders now lists the completed deliveries above
       // the declined offers (D-A81), and both sections are built lazily.
       setScreenSize(tester, 420, 2600);
       await launch(tester);
       await signIn(tester);
-      final decline = find.widgetWithText(AppButton, l10n.offerDecline).first;
-      await tester.ensureVisible(decline);
+      expect(find.text('رفض الطلب'), findsNothing);
+      await tester.tap(find.text(l10n.demoShowNewOffer));
       await tester.pumpAndSettle();
-      await tester.tap(decline);
-      await tester.pumpAndSettle();
+      expect(find.text('رفض الطلب'), findsNothing);
+      await declineShownOffer(tester);
       expect(branch(tester), MainNavDestination.home.index);
       await tapTab(tester, MainNavDestination.orderHistory);
       expect(find.byType(DeclinedOfferTile), findsNWidgets(2));
@@ -658,24 +685,14 @@ void main() {
       expect(find.text(l10n.walletEarningsUnavailable), findsOneWidget);
     });
 
-    testWidgets('Home shows the same balance as Wallet (JOD, three decimals); '
-        'the chip opens Wallet; sign-out and a fresh sign-in re-read it', (
-      tester,
-    ) async {
-      final expected = WalletBalanceChip.visibleText(l10n, 4000);
-      expect(expected, contains('4.000'));
-      final chip = find.byType(WalletBalanceChip);
+    testWidgets('D-A82: Home shows the emblem and no wallet shortcut; the '
+        'Wallet tab shows the demo balance; sign-out and a fresh sign-in '
+        're-read it there', (tester) async {
       await launch(tester);
       await signIn(tester);
-      expect(tester.widget<WalletBalanceChip>(chip).balanceFils, 4000);
-      expect(
-        find.descendant(of: chip, matching: find.text(expected)),
-        findsOneWidget,
-      );
-
-      await tester.tap(chip);
-      await tester.pumpAndSettle();
-      expect(branch(tester), MainNavDestination.wallet.index);
+      expect(find.byKey(HomeAppBar.logoKey), findsOneWidget);
+      expect(find.textContaining('4.000'), findsNothing);
+      await tapTab(tester, MainNavDestination.wallet);
       final walletState = tester
           .element(find.byType(WalletScreen))
           .read<WalletCubit>()
@@ -684,20 +701,26 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(WalletBalanceCard),
-          matching: find.text(expected),
+          matching: find.textContaining('4.000'),
         ),
         findsOneWidget,
       );
       await tapTab(tester, MainNavDestination.home);
-
       await tester.tap(find.text(l10n.demoTools));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.demoSignOut));
       await tester.pumpAndSettle();
       expect(find.byType(LoginScreen), findsOneWidget);
-      expect(find.byType(WalletBalanceChip), findsNothing);
       await signIn(tester);
-      expect(tester.widget<WalletBalanceChip>(chip).balanceFils, 4000);
+      await tapTab(tester, MainNavDestination.wallet);
+      expect(
+        tester
+            .element(find.byType(WalletScreen))
+            .read<WalletCubit>()
+            .state
+            .balanceFils,
+        4000,
+      );
     });
 
     testWidgets('a pre-assigned order blocks a second acceptance; it carries '

@@ -5,7 +5,7 @@
   "created_files": [
     {
       "path": "lib/demo/demo_app.dart",
-      "sha256": "41b4b8e86963b1c406f0300bb416a78d211164be9185108b246c3139584f09b9"
+      "sha256": "3080ec8a0a5d8a3a9dbb4708a2451a6396ff74695ba4a2f2d67ab1d263857b1b"
     },
     {
       "path": "lib/demo/demo_mode.dart",
@@ -13,11 +13,11 @@
     },
     {
       "path": "lib/demo/demo_state.dart",
-      "sha256": "c51016f54c68f65f857e90b766256f4dbda368e449ee9920a420b82c448a43d1"
+      "sha256": "13076897e780aa9f2ebbdf21e8edf1f1d7da4bf3376c763e3151202c7a63de76"
     },
     {
       "path": "lib/demo/model/demo_fixtures.dart",
-      "sha256": "305cf5503278db0a377d3571fa1880c68e5914bd1281b7867c156cc1fd49cf24"
+      "sha256": "83b520e74dc22324a76d1167d365cd4f3bb8971e3cc577c82919a3ee7bfc5b04"
     },
     {
       "path": "lib/demo/repo/demo_auth_repository.dart",
@@ -25,7 +25,7 @@
     },
     {
       "path": "lib/demo/repo/demo_repositories.dart",
-      "sha256": "c107b0f9ee3166229667ebf94d070430e80d530309b30e4025f57418333aa5f4"
+      "sha256": "df330c04946197e824fc4a27d3f3b694a60618081a8f1b27fbff9f24fc622680"
     },
     {
       "path": "lib/demo/widget/demo_shell_bridge.dart",
@@ -37,7 +37,7 @@
     },
     {
       "path": "test/demo_mode_test.dart",
-      "sha256": "b681df1ab9c44ad5eec97cee3ba6076128c2e6889c83a7e019b5d6619008662b"
+      "sha256": "826d53549bf8b39428fff992cfd9882bf6d14515a8760503d930670de7e8fb86"
     },
     {
       "path": "tool/demo/README.md",
@@ -64,12 +64,12 @@
     },
     {
       "path": "assets/demo/fixtures/captain.json",
-      "sha256": "608186d55059523979ab3227213a32a84092250fc445b9b18eea1f701afe8893",
+      "sha256": "e528c318b4b48ac4aa33ab0b76725d60d54c6b31354d8f1c24f87515eb2a98db",
       "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
     },
     {
       "path": "assets/demo/fixtures/current_order.json",
-      "sha256": "572aa2683c36e54bf50b0cde829428800b0c403677c5395febd5e0524c93bed9",
+      "sha256": "cf2bd70803b79b4c54ffceb66a46e200ab31029a4ef6293959d40ce62f5480dc",
       "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-22 for D-A81 (fictional pickup points, optional fictional phones)."
     },
     {
@@ -79,13 +79,13 @@
     },
     {
       "path": "assets/demo/fixtures/offers.json",
-      "sha256": "c3cb4a923e7472e00628d041a1fc35f25f074e6085042b57198028d36bd77980",
-      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-22 for D-A81 (fictional pickup points, optional fictional phones)."
+      "sha256": "db3e315c5fe13cc09f50df646caee251fa9ce0c773a2acb361a99a4853c10808",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-22 for D-A81 (fictional pickup points, optional fictional phones). Updated 2026-11-24 for D-A83 (fictional optional customer names/notes; history detail)."
     },
     {
       "path": "assets/demo/fixtures/order_history.json",
-      "sha256": "fdda549395993d3800b99ce3d78dd0f6d02454b434163fce0347802766861065",
-      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates)."
+      "sha256": "599ab0b2dad75d1cf9c0e838ac54a67f56685e007357a7f9d45b06bc1fb3ae7a",
+      "note": "Owner-placed copy of 37_SHAHM_DEMO_JSON_FIXTURES.zip (identical hashes); archived then deleted Updated 2026-11-20 for the client revision (see updates). Updated 2026-11-24 for D-A83 (fictional optional customer names/notes; history detail)."
     },
     {
       "path": "assets/demo/fixtures/wallet.json",
@@ -196,11 +196,19 @@
       "kind": "exact",
       "original": "  \"@declinedOfferOutcome\": {\"description\": \"Outcome line of a declined-offer record (Task 36).\"}\n}\n",
       "installed": "  \"@declinedOfferOutcome\": {\"description\": \"Outcome line of a declined-offer record (Task 36).\"},\n  \"demoBadge\": \"وضع تجريبي — بيانات وهمية\",\n  \"@demoBadge\": {\"description\": \"Debug demo (Task 37) badge shown on every screen.\"},\n  \"demoShowNewOffer\": \"إظهار طلب جديد\",\n  \"@demoShowNewOffer\": {\"description\": \"Debug demo (Task 37): adds a fictional new instant offer.\"},\n  \"demoTools\": \"أدوات العرض\",\n  \"@demoTools\": {\"description\": \"Debug demo (Task 37): shows the demo tools.\"},\n  \"demoToolsHide\": \"إخفاء الأدوات\",\n  \"@demoToolsHide\": {\"description\": \"Debug demo (Task 37): hides the demo tools.\"},\n  \"demoScenarioNone\": \"بدون طلب حالي\",\n  \"@demoScenarioNone\": {\"description\": \"Debug demo (Task 37): no active order scenario.\"},\n  \"demoScenarioAssigned\": \"طلب مسند مسبقاً\",\n  \"@demoScenarioAssigned\": {\"description\": \"Debug demo (Task 37): fictional pre-assigned active order scenario.\"},\n  \"demoShowScheduled\": \"عرض مؤجل (للعرض فقط)\",\n  \"@demoShowScheduled\": {\"description\": \"Debug demo (Task 37): lists the visual-only scheduled sample offer.\"},\n  \"demoReset\": \"إعادة ضبط بيانات العرض\",\n  \"@demoReset\": {\"description\": \"Debug demo (Task 37): restores the original fixtures.\"},\n  \"demoSignOut\": \"تسجيل الخروج من العرض\",\n  \"@demoSignOut\": {\"description\": \"Debug demo (Task 37): signs the demo captain out and clears demo data.\"},\n  \"demoFixturesError\": \"تعذّر تحميل بيانات العرض التجريبي.\",\n  \"@demoFixturesError\": {\"description\": \"Debug demo (Task 37): the fixture files could not be read.\"}\n}\n"
+    },
+    {
+      "file": "lib/helper/translation/app_en.arb",
+      "id": "arb-en-demo-keys",
+      "kind": "exact",
+      "original": "  \"declinedOfferOutcome\": \"You declined this offer\"\n}\n",
+      "installed": "  \"declinedOfferOutcome\": \"You declined this offer\",\n  \"demoBadge\": \"Demo mode — fictional data\",\n  \"demoShowNewOffer\": \"Show a new order\",\n  \"demoTools\": \"Demo tools\",\n  \"demoToolsHide\": \"Hide tools\",\n  \"demoScenarioNone\": \"No current order\",\n  \"demoScenarioAssigned\": \"Pre-assigned order\",\n  \"demoShowScheduled\": \"Scheduled offer (display only)\",\n  \"demoReset\": \"Reset demo data\",\n  \"demoSignOut\": \"Sign out of the demo\",\n  \"demoFixturesError\": \"Couldn't load the demo data.\"\n}\n"
     }
   ],
   "regenerated": [
     "lib/helper/translation/generated/app_localizations.dart",
-    "lib/helper/translation/generated/app_localizations_ar.dart"
+    "lib/helper/translation/generated/app_localizations_ar.dart",
+    "lib/helper/translation/generated/app_localizations_en.dart"
   ],
   "baseline_sha256": {
     "CLAUDE.md": "f89d3c70b0c96d187911f81c8a0a3e3db63e83c16c870932220059f28e5ebae6",
@@ -242,6 +250,26 @@
       "task": "Current Order (D-A81)",
       "date": "2026-11-22",
       "summary": "Added DemoOrderWorkflowRepository and the demo server's PIN/start/complete/outcome simulation (one completion = one completed delivery + one commission debit, same key = same receipt), completed-delivery history from order_history.json, fictional pickup points and optional fictional 070 phones in offers.json/current_order.json. Re-hashed only: lib/demo/demo_app.dart, lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, lib/demo/widget/demo_shell_bridge.dart, test/demo_mode_test.dart, tool/demo/README.md, assets/demo/fixtures/current_order.json, assets/demo/fixtures/offers.json. No marked region changed (main/router regions untouched). Baseline hashes and restore texts unchanged; removal leaves the real stage UI/ports with production not-configured behavior."
+    },
+    {
+      "task": "Home and order details (D-A82, D-A83)",
+      "date": "2026-11-24",
+      "summary": "Demo carries optional customer name, phone and delivery notes plus the full fee from fixture seeds into the active order, stage transitions and completed history (demo-order-done-1 has fictional details; others have none). Tests updated for the single-action Home card, no Home wallet chip and first-name greeting, and for the owner's demo username in auth.json. Re-hashed only: lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, test/demo_mode_test.dart, assets/demo/fixtures/offers.json, assets/demo/fixtures/order_history.json. assets/demo/fixtures/auth.json was changed by the owner and is deliberately NOT re-hashed (it is archived before deletion). No marked region changed."
+    },
+    {
+      "task": "New offer, Profile and language",
+      "date": "2026-11-24",
+      "summary": "Sheet decline removed (demo tests decline through the kept PendingOffersCubit.decline). Profile: captain.json gained a fictional phone and a fictional 5-star rating (4.3, 27 ratings); DemoCaptainAccountRepository serves that rating unchanged (validated by the real GetCaptainRating) and reports account deletion as not configured (no fake deletion). English: app_en.arb (a production file, not created by the demo) carries English demo keys at its end, removed by the new exact edit arb-en-demo-keys; app_localizations_en.dart added to regenerated. Re-hashed only: lib/demo/demo_app.dart, lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, test/demo_mode_test.dart, assets/demo/fixtures/captain.json. assets/demo/fixtures/auth.json still deliberately not re-hashed (owner change). No marked region changed; tool/demo/README.md not edited (Markdown excluded by this task)."
+    },
+    {
+      "task": "Login test repair",
+      "date": "2026-11-24",
+      "summary": "signIn in test/demo_mode_test.dart now uses the shared tapLoginSubmit (closes a covering error toast, asserts the button is hit-testable). Re-hashed only: test/demo_mode_test.dart. No region, fixture or demo source changed."
+    },
+    {
+      "task": "Code-free pickup confirmation",
+      "date": "2026-11-25",
+      "summary": "Pickup verification codes removed: the demo server confirms pickup without a code (assignment and pickup-leg checks kept; attempt counter and lockout removed); current_order.json no longer has pickup_pin/demo_pin_only; demo tests updated. Re-hashed only: lib/demo/demo_state.dart, lib/demo/model/demo_fixtures.dart, lib/demo/repo/demo_repositories.dart, test/demo_mode_test.dart, assets/demo/fixtures/current_order.json. tool/demo/README.md still mentions the demo PIN and was not edited (Markdown excluded by this task). No marked region changed."
     }
   ]
 }

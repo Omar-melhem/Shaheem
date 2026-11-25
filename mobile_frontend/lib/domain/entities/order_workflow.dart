@@ -1,26 +1,7 @@
-// Domain types of the active-delivery workflow: pickup proof, command
-// targets, completion receipts, outcomes and the completed-delivery history.
+// Domain types of the active-delivery workflow: command targets, completion
+// receipts, outcomes and the completed-delivery history.
 
 import 'package:mobile_frontend/domain/entities/active_order.dart';
-
-/// What the captain submits to prove the merchant handed the order over.
-///
-/// The verification method may change later (D-A81), so it is a small
-/// sealed type behind the `ConfirmPickup` use case. Only the current method
-/// exists; no speculative alternatives are modelled.
-sealed class PickupProof {
-  const PickupProof();
-}
-
-/// The order-specific four-digit merchant PIN (D-A67): exactly four ASCII
-/// digits, leading zeros kept. Only its syntax is known to the app; whether
-/// it is correct is decided by the server alone. No `toString` override.
-final class PickupPinProof extends PickupProof {
-  PickupPinProof(this.digits)
-    : assert(RegExp(r'^\d{4}$').hasMatch(digits), 'four ASCII digits');
-
-  final String digits;
-}
 
 /// Which order (and assignment) a command is for. Built from the last
 /// authoritative read, never typed by the user.
@@ -84,8 +65,10 @@ final class OrderOutcomeUnresolved extends OrderOutcome {
   const OrderOutcomeUnresolved();
 }
 
-/// One completed delivery of this captain, as the server records it.
-/// Read-only history; never created on the phone.
+/// One completed delivery of this captain, as the server records it: the
+/// **historical snapshot** of that order (D-A83), never today's customer or
+/// merchant data and never a copy of the current active order. Read-only;
+/// never created on the phone. No `toString` override.
 class CompletedDelivery {
   const CompletedDelivery({
     required this.orderId,
@@ -93,6 +76,9 @@ class CompletedDelivery {
     this.merchantName,
     this.deliveryAreaName,
     this.deliveryFeeFils,
+    this.customerName,
+    this.customerPhone,
+    this.deliveryNotes,
   });
 
   final String orderId;
@@ -105,6 +91,15 @@ class CompletedDelivery {
 
   /// Full delivery fee in integer fils, when the contract returns it.
   final int? deliveryFeeFils;
+
+  /// Optional customer name recorded for this order (D-A83).
+  final String? customerName;
+
+  /// Optional customer phone recorded for this order (D-A83).
+  final String? customerPhone;
+
+  /// Optional delivery notes recorded for this order (D-A83).
+  final String? deliveryNotes;
 }
 
 /// One page of completed deliveries, newest first as the server sorts them.

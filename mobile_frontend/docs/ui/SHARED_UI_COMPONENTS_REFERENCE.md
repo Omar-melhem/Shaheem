@@ -1,5 +1,14 @@
 # SHAHM Flutter — Shared UI Components Reference
 
+**2026-11-24 revision (D-A82/D-A83), implemented 2026-11-24** — `HomeAppBar({required double availableHeight})` (no balance; `logoKey`, `logoHeight` 44); `AppOrderOfferCard({required offer, required onAccept, busyAction, notice})` (no `onDecline`; `AppOfferCardAction.decline` only disables Accept while the sheet's decline runs); new shared `OrderDeliveryDetails({required deliveryAreaName, required deliveryFeeFils, customerName, customerPhone, deliveryNotes})` with two consumers (`ActiveOrderDeliveryView`, `CompletedOrderDetailsScreen`); `CompletedDeliveryTile({required delivery, required onOpen})`; **deleted:** `WalletBalanceChip`, `CustomerContactCard`. Original target text:
+remove Home wallet inputs/chip; add `AppImages.homeLogo` and a first-name
+greeting; make Home's shared offer card accept-only, migrating all card
+callers and deleting card-only rejection API. The separate offer sheet
+retains Decline. Extract a shared details presentation only for its actual
+active/history consumers. The old signatures below are inspected current
+source, not permission to retain the removed Home control. Update them to
+the actual tested signatures during implementation.
+
 **Important scope:** this file documents the previously verified public widget API. Approved 2026-11-14 replacements are described below as **migration targets**, not as changes already made to Flutter source. Do not perpetuate obsolete colors, font or Profile tab in new code.
 
 Reference for the shared typography, text widgets, UI tools, loading
@@ -776,7 +785,14 @@ MainNavigationBar({required int selectedIndex,
   not fit; text scale capped at 2 inside the bar. With the real font all
   four labels fit whole at 320/375/450 px and scales 1–3 (tested).
 
-### 3.13 Home AppBar (`HomeAppBar`, `lib/view/screens/home_screen/widget/`, D-A71)
+### 3.13 Home AppBar (`HomeAppBar`, `lib/view/screens/home_screen/widget/`, D-A71 → D-A82)
+
+**D-A82 (implemented 2026-11-24):** removed `walletBalanceFils` from Home and the bar, its chip
+and exclusive wiring/read. Keep `availableHeight` sizing, availability and
+Home header semantics; first-name greeting and the registered Home emblem
+replace the previous greeting/chip row. Preserve the full Profile name.
+
+**Pre-migration source (historical presentation; not the new target):**
 
 `HomeAppBar({required int? walletBalanceFils})` — a content-sized app bar
 placed above the Home body (Material `AppBar` needs a fixed height, which
@@ -884,6 +900,13 @@ repositories, routing or remembered state.
   320/375/450 px × text scale 1, 2 and 3 with the real font.
 
 ### 3.16 `AppOrderOfferCard` (`lib/view/widget/order/`, Task 26; colors D-A69)
+
+**D-A82 implemented 2026-11-24:** one full-width Accept
+button. Remove `onDecline` and the card-only decline visual/busy state,
+migrating every caller/test; the final small busy API is chosen during
+implementation. Do not remove `PendingOffersCubit`/repository decline
+commands or the separate new-offer sheet. The signature/rendering below
+are the pre-migration contract, not the current design target.
 
 > **2026-11-20 (D-A69):** white card with a light `AppColor.divider` outline and a restrained shadow; dark-neutral detail icons; the full fee «أجرة التوصيل» in red bold; «قبول» = AppButton's default theme red (pressed/disabled states) with a check icon; «رفض» = neutral outline (`inputOutline`), dark label, close icon. The forest/sand wording below is the historical Task 33 look.
 

@@ -1,4 +1,5 @@
-// D-A81: the Current Order workflow — pickup PIN, separate Start Delivery,
+// D-A81: the Current Order workflow — code-free pickup confirmation,
+// separate Start Delivery,
 // completion, reconciliation of unknown outcomes, optional customer phone,
 // the Google Maps launcher, and the history/wallet refresh after a
 // confirmed completion. Everything runs on test-only repositories; nothing
@@ -24,17 +25,14 @@ import 'package:mobile_frontend/domain/use_cases/order_workflow.dart';
 import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/helper/navigation/pickup_navigation_launcher.dart';
 import 'package:mobile_frontend/main.dart';
-import 'package:mobile_frontend/util/validators/validation_error.dart';
-import 'package:mobile_frontend/util/validators/validators.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/view/current_order_screen.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_delivery_view.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/active_order_pickup_view.dart';
-import 'package:mobile_frontend/view/screens/current_order_screen/widget/customer_contact_card.dart';
-import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_verification_form.dart';
+import 'package:mobile_frontend/view/widget/order/order_delivery_details.dart';
+import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/widget/completed_delivery_tile.dart';
-import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 
@@ -56,6 +54,9 @@ ActiveOrder order({
   pickupLocation: testPickup,
   deliveryAreaName: area,
   customerPhone: phone,
+  customerName: 'سارة',
+  deliveryNotes: 'الطابق الثالث',
+  deliveryFeeFils: 3000,
 );
 
 ActiveOrder advanced(ActiveOrder o, ActiveOrderStatus status) => ActiveOrder(
@@ -66,16 +67,17 @@ ActiveOrder advanced(ActiveOrder o, ActiveOrderStatus status) => ActiveOrder(
   pickupLocation: o.pickupLocation,
   deliveryAreaName: o.deliveryAreaName,
   customerPhone: o.customerPhone,
+  customerName: o.customerName,
+  deliveryNotes: o.deliveryNotes,
+  deliveryFeeFils: o.deliveryFeeFils,
 );
 
-/// A server-like workflow over [orders] (test data only). The expected PIN
-/// lives here, in the fake "server", never in the app.
+/// A server-like workflow over [orders] (test data only). Pickup takes no
+/// code: like a server, it validates the assignment and the stage only.
 class FakeWorkflow implements OrderWorkflowRepository {
   FakeWorkflow(this.orders);
 
   final FakeActiveOrderRepository orders;
-  String serverPin = '0123';
-  int attemptsLeft = 3;
 
   /// When set, every command waits on it (a command in flight).
   Completer<void>? gate;
@@ -83,7 +85,6 @@ class FakeWorkflow implements OrderWorkflowRepository {
   /// When set, the next command throws it instead.
   Object? error;
 
-  final pins = <String>[];
   final keys = <String>[];
   int pickupCalls = 0;
   int startCalls = 0;
@@ -103,19 +104,18 @@ class FakeWorkflow implements OrderWorkflowRepository {
 
   @override
   Future<ActiveOrder> confirmPickup(
-    OrderCommandTarget target,
-    PickupProof proof, {
+    OrderCommandTarget target, {
     required String operationKey,
   }) async {
     pickupCalls++;
     keys.add(operationKey);
-    pins.add((proof as PickupPinProof).digits);
     await _wait();
-    if (attemptsLeft <= 0) throw const PickupCodeLockedException();
-    if (proof.digits != serverPin) {
-      attemptsLeft--;
-      if (attemptsLeft == 0) throw const PickupCodeLockedException();
-      throw PickupCodeIncorrectException(remainingAttempts: attemptsLeft);
+    final current = orders.order;
+    if (current == null ||
+        current.orderId != target.orderId ||
+        current.assignmentRef != target.assignmentRef ||
+        current.leg != ActiveOrderLeg.pickup) {
+      throw const OrderStateConflictException();
     }
     final next = advanced(orders.order!, ActiveOrderStatus.pickedUp);
     orders.order = next;
@@ -180,19 +180,6 @@ CurrentOrderCubit buildCubit(
 CurrentOrderActive active(CurrentOrderCubit c) => c.state as CurrentOrderActive;
 
 void main() {
-  group('pickup PIN syntax (D-A81)', () {
-    test('four digits, leading zero kept, Arabic digits normalized', () {
-      expect(Validators.normalizePickupPin(' ٠١٢٣ '), '0123');
-      expect(Validators.normalizePickupPin('۰۹۸۷'), '0987');
-      expect(Validators.pickupPin('0123'), isNull);
-      expect(Validators.pickupPin('٠١٢٣'), isNull);
-      expect(Validators.pickupPin(''), ValidationError.pickupPinRequired);
-      for (final bad in ['123', '12345', '12a4', '12 4']) {
-        expect(Validators.pickupPin(bad), ValidationError.pickupPinFormat);
-      }
-    });
-  });
-
   group('optional customer phone (D-A81)', () {
     test('null, empty and blank are absent; a value is trimmed', () {
       expect(order().contactPhone, isNull);
@@ -211,42 +198,71 @@ void main() {
       workflow = FakeWorkflow(orders);
     });
 
-    test(
-      'malformed PIN sends nothing; Arabic digits are sent as Latin',
-      () async {
-        final cubit = buildCubit(orders, workflow);
-        await cubit.load();
-        await cubit.confirmPickup('12');
-        expect(workflow.pickupCalls, 0);
-        await cubit.confirmPickup('٠١٢٣');
-        expect(workflow.pins, ['0123']);
-        expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
-        expect(active(cubit).canShowMap, isFalse);
-        expect(active(cubit).command, isNull);
-      },
-    );
-
-    test('wrong PIN: server error with the remaining attempts; each attempt '
-        'has its own key; locked blocks further submissions', () async {
+    test('«تم الاستلام» sends one code-free command; the stage becomes '
+        'picked_up only from the server answer', () async {
       final cubit = buildCubit(orders, workflow);
       await cubit.load();
-      await cubit.confirmPickup('9999');
-      expect(active(cubit).command!.error, OrderCommandError.incorrectPin);
-      expect(active(cubit).command!.remainingAttempts, 2);
       expect(active(cubit).order.status, ActiveOrderStatus.accepted);
-      await cubit.confirmPickup('9998');
-      await cubit.confirmPickup('9997');
-      expect(active(cubit).command!.error, OrderCommandError.pinLocked);
-      expect(workflow.keys.toSet().length, 3);
-      await cubit.confirmPickup('0123');
-      expect(workflow.pickupCalls, 3);
-      // Closing/reopening the form does not reset the server lock.
-      cubit.clearCommandFeedback();
-      expect(active(cubit).command!.error, OrderCommandError.pinLocked);
+      await cubit.confirmPickup();
+      expect(workflow.pickupCalls, 1);
+      expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+      expect(active(cubit).canShowMap, isFalse);
+      expect(active(cubit).command, isNull);
+      // Picked up: pickup cannot be sent again.
+      await cubit.confirmPickup();
+      expect(workflow.pickupCalls, 1);
     });
 
-    test('timeout is unconfirmed, not a wrong code; the action stays blocked '
-        'until a fresh read, which never advances the stage locally', () async {
+    test('rapid pickup taps send one command', () async {
+      final cubit = buildCubit(orders, workflow);
+      await cubit.load();
+      workflow.gate = Completer<void>();
+      final first = cubit.confirmPickup();
+      expect(active(cubit).isSending, isTrue);
+      unawaited(cubit.confirmPickup());
+      unawaited(cubit.confirmPickup());
+      workflow.gate!.complete();
+      await first;
+      expect(workflow.pickupCalls, 1);
+      expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+    });
+
+    for (final (label, error, expected) in [
+      (
+        'offline',
+        const OrderWorkflowNetworkUnavailableException() as Object,
+        OrderCommandError.noInternet,
+      ),
+      (
+        'not configured',
+        const OrderWorkflowNotConfiguredException(),
+        OrderCommandError.notConfigured,
+      ),
+      (
+        'state conflict',
+        const OrderStateConflictException(),
+        OrderCommandError.stateConflict,
+      ),
+    ]) {
+      test('pickup failure ($label): its own error, the stage stays, and a '
+          'new tap may send again', () async {
+        final cubit = buildCubit(orders, workflow);
+        await cubit.load();
+        workflow.error = error;
+        await cubit.confirmPickup();
+        await pumpEventQueue();
+        expect(active(cubit).order.status, ActiveOrderStatus.accepted);
+        if (expected != OrderCommandError.stateConflict) {
+          expect(active(cubit).command!.error, expected);
+        }
+        await cubit.confirmPickup();
+        expect(workflow.pickupCalls, 2);
+        expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+      });
+    }
+
+    test('timeout is unconfirmed, never a pickup; the action stays blocked '
+        'until a fresh read, and the retry reuses the same key', () async {
       final cubit = buildCubit(
         orders,
         workflow,
@@ -254,16 +270,72 @@ void main() {
       );
       await cubit.load();
       workflow.gate = Completer<void>();
-      await cubit.confirmPickup('0123');
+      await cubit.confirmPickup();
       expect(active(cubit).command!.error, OrderCommandError.unconfirmed);
-      expect(workflow.attemptsLeft, 3);
       expect(active(cubit).order.status, ActiveOrderStatus.accepted);
-      await cubit.confirmPickup('0123');
+      await cubit.confirmPickup(); // blocked until reconciled
       expect(workflow.pickupCalls, 1);
 
       await cubit.checkCommandStatus();
       expect(active(cubit).command, isNull);
       expect(active(cubit).order.status, ActiveOrderStatus.accepted);
+      workflow.gate = null;
+      await cubit.confirmPickup();
+      expect(workflow.pickupCalls, 2);
+      expect(workflow.keys[1], workflow.keys[0]);
+      expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+    });
+
+    test('unconfirmed pickup that the server applied: the fresh read shows '
+        'picked_up (the server decides, not the timeout)', () async {
+      final cubit = buildCubit(
+        orders,
+        workflow,
+        timeout: const Duration(milliseconds: 20),
+      );
+      await cubit.load();
+      workflow.gate = Completer<void>();
+      final pending = cubit.confirmPickup();
+      await pending;
+      expect(active(cubit).command!.error, OrderCommandError.unconfirmed);
+      workflow.gate!.complete(); // the server applies it late
+      await pumpEventQueue();
+      expect(active(cubit).order.status, ActiveOrderStatus.accepted);
+      await cubit.checkCommandStatus();
+      expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+      expect(active(cubit).command, isNull);
+    });
+
+    test('a pickup answer for a stale assignment is dropped', () async {
+      final cubit = buildCubit(orders, workflow);
+      await cubit.load();
+      workflow.gate = Completer<void>();
+      final pending = cubit.confirmPickup();
+      // The server reassigned the order meanwhile; a fresh read shows it.
+      orders.order = order(assignment: 'a-2');
+      await cubit.load();
+      expect(active(cubit).order.assignmentRef, 'a-2');
+      workflow.gate!.complete();
+      await pending;
+      // The fake server refused the old assignment; nothing advanced.
+      expect(active(cubit).order.assignmentRef, 'a-2');
+      expect(active(cubit).order.status, ActiveOrderStatus.accepted);
+    });
+
+    test('full flow: code-free pickup → Start Delivery → completion', () async {
+      final cubit = buildCubit(orders, workflow);
+      await cubit.load();
+      await cubit.completeDelivery();
+      await cubit.startDelivery();
+      expect((workflow.startCalls, workflow.completeCalls), (0, 0));
+      await cubit.confirmPickup();
+      expect(active(cubit).order.status, ActiveOrderStatus.pickedUp);
+      await cubit.completeDelivery();
+      expect(workflow.completeCalls, 0);
+      await cubit.startDelivery();
+      expect(active(cubit).order.status, ActiveOrderStatus.onTheWay);
+      await cubit.completeDelivery();
+      expect(cubit.state, isA<CurrentOrderDelivered>());
     });
 
     test('Start Delivery is separate and only from picked_up; completion '
@@ -353,7 +425,7 @@ void main() {
       final cubit = buildCubit(orders, workflow);
       await cubit.load();
       workflow.gate = Completer<void>();
-      final pending = cubit.confirmPickup('0123');
+      final pending = cubit.confirmPickup();
       orders.order = order(assignment: 'a-2');
       // A fresh read shows the new assignment while the old answer waits.
       workflow.gate!.complete();
@@ -451,56 +523,39 @@ void main() {
       wallet = _Wallet();
     });
 
-    Future<void> enterPin(WidgetTester tester, String pin) async {
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(PickupVerificationForm),
-          matching: find.byType(EditableText),
-        ),
-        pin,
-      );
-      // At large text the popup body scrolls (AppPopup layout contract).
-      final submit = find.widgetWithText(
-        AppButton,
-        l10n.pickupVerificationSubmit,
-      );
-      await tester.tap(submit);
+    Future<void> tapPickup(WidgetTester tester) async {
+      await tester.tap(find.text(l10n.pickupConfirmAction));
       await tester.pumpAndSettle();
     }
 
-    testWidgets('pickup leg: shared AppButton opens the PIN form; cancel and '
-        'a malformed PIN send nothing; wrong PIN shows the server answer; '
-        'the right one shows the delivery view without a map', (tester) async {
+    testWidgets('pickup leg: «تم الاستلام» confirms directly — no code field '
+        'or form — and the server-confirmed pickup shows the delivery view '
+        'without a map', (tester) async {
       await launch(tester);
       expect(find.byType(CurrentOrderScreen), findsOneWidget);
       expect(find.byType(ActiveOrderPickupView), findsOneWidget);
       expect(find.text(l10n.openInGoogleMaps), findsOneWidget);
       expect(find.text(l10n.completeDeliveryAction), findsNothing);
 
-      await tester.tap(find.text(l10n.pickupConfirmAction));
-      await tester.pumpAndSettle();
-      expect(find.byType(PickupVerificationForm), findsOneWidget);
-      await tester.tap(find.text(l10n.cancel));
-      await tester.pumpAndSettle();
-      expect(find.byType(PickupVerificationForm), findsNothing);
-      expect(workflow.pickupCalls, 0);
-
-      await tester.tap(find.text(l10n.pickupConfirmAction));
-      await tester.pumpAndSettle();
-      await enterPin(tester, '12');
-      expect(find.text(l10n.pickupPinFormat), findsOneWidget);
-      expect(workflow.pickupCalls, 0);
-
-      await enterPin(tester, '9999');
-      expect(find.text(l10n.pickupPinIncorrectRemaining(2)), findsOneWidget);
-      expect(find.byType(PickupVerificationForm), findsOneWidget);
-
-      await enterPin(tester, '0123');
-      expect(find.byType(PickupVerificationForm), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      await tapPickup(tester);
+      expect(workflow.pickupCalls, 1);
+      expect(find.byType(AppPopup), findsNothing);
+      expect(find.byType(TextField), findsNothing);
       expect(find.byType(ActiveOrderDeliveryView), findsOneWidget);
       expect(find.byKey(ActiveOrderPickupView.mapAreaKey), findsNothing);
       expect(find.text('الدوار السابع'), findsOneWidget);
-      expect(find.byType(CustomerContactCard), findsOneWidget);
+      expect(find.byType(OrderDeliveryDetails), findsOneWidget);
+      expect(find.text(l10n.orderDetailCustomerPhone), findsOneWidget);
+      // D-A83 details survive the server's stage change (picked_up).
+      expect(find.text('سارة'), findsOneWidget);
+      expect(find.text('الطابق الثالث'), findsOneWidget);
+      expect(
+        find.text(
+          '${ltrIsolate(formatJodFils(3000))} ${l10n.walletCurrencySymbol}',
+        ),
+        findsOneWidget,
+      );
       expect(find.text(l10n.startDeliveryAction), findsOneWidget);
       expect(find.text(l10n.completeDeliveryAction), findsNothing);
     });
@@ -510,13 +565,25 @@ void main() {
           'start and completion still work', (tester) async {
         orders.order = order(status: ActiveOrderStatus.pickedUp, phone: phone);
         await launch(tester);
-        expect(find.byType(CustomerContactCard), findsNothing);
-        expect(find.text(l10n.customerPhoneHeading), findsNothing);
+        expect(find.byType(OrderDeliveryDetails), findsOneWidget);
+        expect(find.text(l10n.orderDetailCustomerPhone), findsNothing);
         await tester.tap(find.text(l10n.startDeliveryAction));
         await tester.pumpAndSettle();
         expect(find.text(l10n.completeDeliveryAction), findsOneWidget);
       });
     }
+
+    testWidgets('offline pickup: the message shows under «تم الاستلام», '
+        'the stage stays and a new tap succeeds', (tester) async {
+      await launch(tester);
+      workflow.error = const OrderWorkflowNetworkUnavailableException();
+      await tapPickup(tester);
+      expect(find.text(l10n.orderCommandNoInternet), findsOneWidget);
+      expect(find.byType(ActiveOrderPickupView), findsOneWidget);
+      await tapPickup(tester);
+      expect(workflow.pickupCalls, 2);
+      expect(find.byType(ActiveOrderDeliveryView), findsOneWidget);
+    });
 
     testWidgets('confirmed completion from a page above the shell: one '
         'command, success, My Orders opens once and the completed list and '
@@ -595,9 +662,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.pickupConfirmAction));
-      await tester.pumpAndSettle();
-      await enterPin(tester, '0123');
+      await tapPickup(tester);
       expect(find.text(l10n.orderCommandNotConfigured), findsOneWidget);
       final cubit = BlocProvider.of<CurrentOrderCubit>(
         tester.element(find.byType(CurrentOrderScreen)),
@@ -613,10 +678,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await launch(tester);
       expect(tester.takeException(), isNull);
-      await tester.tap(find.text(l10n.pickupConfirmAction));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      await enterPin(tester, '0123');
+      await tapPickup(tester);
       expect(tester.takeException(), isNull);
       expect(find.text(l10n.startDeliveryAction), findsOneWidget);
     });

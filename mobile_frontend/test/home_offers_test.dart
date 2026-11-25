@@ -359,17 +359,15 @@ void main() {
       WidgetTester tester,
       CaptainOrderOffer o, {
       VoidCallback? onAccept,
-      VoidCallback? onDecline,
       bool disabled = false,
-      AppOfferCardAction? busy,
+      bool busy = false,
       String? notice,
       TextDirection? direction,
     }) {
       Widget card = AppOrderOfferCard(
         offer: o,
         onAccept: disabled ? null : (onAccept ?? () {}),
-        onDecline: disabled ? null : (onDecline ?? () {}),
-        busyAction: busy,
+        accepting: busy,
         notice: notice,
       );
       if (direction != null) {
@@ -412,16 +410,11 @@ void main() {
       expect(find.textContaining(l10n.offerPickupUnknown), findsOneWidget);
     });
 
-    testWidgets('«قبول» is the filled red primary with a check icon; '
-        '«رفض» is a neutral outline with a close icon (D-A69)', (tester) async {
+    testWidgets('one full-width «قبول»: the filled red primary with a '
+        'check icon; no rejection control (D-A82)', (tester) async {
       await pumpCard(tester, offer(1));
-      final decline = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, l10n.offerDecline),
-      );
-      final scheme = AppTheme.light.colorScheme;
-      expect(decline.backgroundColor, scheme.surface);
-      expect(decline.foregroundColor, AppColor.textPrimary);
-      expect(decline.border, const BorderSide(color: AppColor.inputOutline));
+      expect(find.byType(AppButton), findsOneWidget);
+      expect(find.text('رفض الطلب'), findsNothing);
       final accept = tester.widget<AppButton>(
         find.widgetWithText(AppButton, l10n.offerAccept),
       );
@@ -429,6 +422,7 @@ void main() {
       // disabled states), so no per-call colors are passed.
       expect(accept.backgroundColor, isNull);
       expect(accept.foregroundColor, isNull);
+      expect(accept.expand, isTrue);
       final acceptMaterial = tester.widget<Material>(
         find
             .descendant(
@@ -439,59 +433,57 @@ void main() {
       );
       expect(acceptMaterial.color, AppColor.primary);
       expect((accept.icon! as Icon).icon, Icons.check_circle_outline);
-      expect((decline.icon! as Icon).icon, Icons.close);
+      // Full card width (inside the 16 px card padding).
+      final card = tester.getSize(find.byType(AppOrderOfferCard)).width;
+      expect(
+        tester.getSize(find.widgetWithText(AppButton, l10n.offerAccept)).width,
+        card - 32,
+      );
+      final scheme = AppTheme.light.colorScheme;
       double contrast(Color a, Color b) {
         final la = a.computeLuminance(), lb = b.computeLuminance();
         return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
       }
 
-      expect(contrast(AppColor.textPrimary, scheme.surface), greaterThan(4.5));
       expect(contrast(scheme.onPrimary, scheme.primary), greaterThan(4.5));
     });
 
-    testWidgets('taps reach the callbacks; null disables', (tester) async {
-      var accepts = 0, declines = 0;
-      await pumpCard(
-        tester,
-        offer(1),
-        onAccept: () => accepts++,
-        onDecline: () => declines++,
-      );
+    testWidgets('a tap reaches the callback; null disables', (tester) async {
+      var accepts = 0;
+      await pumpCard(tester, offer(1), onAccept: () => accepts++);
       await tester.tap(find.text(l10n.offerAccept));
-      await tester.tap(find.text(l10n.offerDecline));
-      expect((accepts, declines), (1, 1));
+      expect(accepts, 1);
       await pumpCard(tester, offer(1), disabled: true);
-      for (final b in tester.widgetList<AppButton>(find.byType(AppButton))) {
-        expect(b.onPressed, isNull);
-      }
+      expect(
+        tester.widget<AppButton>(find.byType(AppButton)).onPressed,
+        isNull,
+      );
     });
 
-    testWidgets('busy accept: spinner on «قبول», «رفض» disabled, taps do '
-        'nothing', (tester) async {
-      var declines = 0;
-      await pumpCard(
-        tester,
-        offer(1),
-        onDecline: () => declines++,
-        busy: AppOfferCardAction.accept,
-      );
-      final accept = tester.widget<AppButton>(
-        find.ancestor(
-          of: find.byType(CircularProgressIndicator),
-          matching: find.byType(AppButton),
-        ),
-      );
+    testWidgets('busy accept: spinner on «قبول», taps do nothing', (
+      tester,
+    ) async {
+      var accepts = 0;
+      await pumpCard(tester, offer(1), onAccept: () => accepts++, busy: true);
+      final accept = tester.widget<AppButton>(find.byType(AppButton));
       expect(accept.isLoading, isTrue);
-      final decline = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, l10n.offerDecline),
-      );
-      expect(decline.onPressed, isNull);
-      await tester.tap(find.text(l10n.offerDecline), warnIfMissed: false);
-      expect(declines, 0);
+      await tester.tap(find.byType(AppButton), warnIfMissed: false);
+      expect(accepts, 0);
+    });
+
+    testWidgets('another running command (caller passes a null onAccept) '
+        'keeps «قبول» disabled without a spinner', (tester) async {
+      var accepts = 0;
+      await pumpCard(tester, offer(1), disabled: true);
+      final accept = tester.widget<AppButton>(find.byType(AppButton));
+      expect(accept.isLoading, isFalse);
+      expect(accept.onPressed, isNull);
+      await tester.tap(find.byType(AppButton), warnIfMissed: false);
+      expect(accepts, 0);
     });
 
     testWidgets('semantics: one summary with merchant, pickup, area and fee; '
-        'buttons named', (tester) async {
+        'the button named', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpCard(tester, offer(1, merchant: 'مطعم السنابل'));
       expect(
@@ -506,23 +498,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel(l10n.offerAccept), findsOneWidget);
-      expect(find.bySemanticsLabel(l10n.offerDecline), findsOneWidget);
       semantics.dispose();
     });
-
-    for (final direction in TextDirection.values) {
-      testWidgets('$direction: accept at the start, decline at the end', (
-        tester,
-      ) async {
-        await pumpCard(tester, offer(1), direction: direction);
-        final accept = tester.getCenter(find.text(l10n.offerAccept)).dx;
-        final decline = tester.getCenter(find.text(l10n.offerDecline)).dx;
-        expect(
-          direction == TextDirection.rtl ? accept > decline : accept < decline,
-          isTrue,
-        );
-      });
-    }
   });
 
   group('Home section', () {
@@ -743,12 +720,12 @@ void main() {
       final repo = FakeOfferRepository()
         ..commandError = const OrderOfferNoLongerAvailableException();
       await pumpHome(tester, repository: repo);
-      final decline = find.descendant(
+      final accept = find.descendant(
         of: find.byKey(const ValueKey('offer-1')),
-        matching: find.text(l10n.offerDecline),
+        matching: find.text(l10n.offerAccept),
       );
-      await tester.ensureVisible(decline);
-      await tester.tap(decline);
+      await tester.ensureVisible(accept);
+      await tester.tap(accept);
       await tester.pumpAndSettle();
       expect(find.text(l10n.offerNoLongerAvailable), findsOneWidget);
       final buttons = tester.widgetList<AppButton>(
@@ -794,13 +771,11 @@ void main() {
           )) {
             expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
           }
-          for (final b in [l10n.offerAccept, l10n.offerDecline]) {
-            final button = find.descendant(
-              of: card,
-              matching: find.widgetWithText(AppButton, b),
-            );
-            expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
-          }
+          final button = find.descendant(
+            of: card,
+            matching: find.widgetWithText(AppButton, l10n.offerAccept),
+          );
+          expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
           expect(
             find.descendant(
               of: card,

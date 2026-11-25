@@ -1,5 +1,16 @@
 # SHAHM Flutter — State Management
 
+**2026-11-24 amendment (D-A82/D-A83), implemented in the client 2026-11-24:** Home no
+longer consumes wallet state; remove its exclusive balance input/selector
+and eager read. Keep one session-safe Wallet source and completion
+invalidation. Home greeting selects only first-name presentation from the
+existing session, without another user store/read. Current/history details
+extend typed read models; reuse a complete session-owned history item and
+introduce a detail read owner only if an actual on-demand lookup is needed.
+Preserve CurrentOrderCubit, commands, recovery, timeout/session guards and
+coalescing. The R02 chip-sharing descriptions below are pre-migration source,
+not a requirement to keep a Home chip or fetch a balance for its emblem.
+
 **Approved target through 2026-11-14.** Existing Cubits below describe historical implemented boundaries, not a connected Backend. See D-A53–D-A68 for final integration requirements.
 
 How state is managed in the Flutter app. Decisions referenced: D-A03, D-A11,
@@ -293,7 +304,7 @@ own Flutter-only resources and presentation side effects.
 | Availability and offers state, commands, stale-result and duplicate guards | `HomeAvailabilityCubit` (route-scoped), `PendingOffersCubit` (shell-scoped since Task 36, same instance) |
 | Initial load (once per mount), reload when Home is shown again (Task 28) and on app resume only while Home is visible (Task 29), listener disposal | `HomeLifecycleBridge` (`widget/`), the only `StatefulWidget`: it owns one `AppLifecycleListener` and no business state |
 | Permission explanation popup | `HomeAvailabilityRationaleListener` (`BlocListener` + `showAppPopup`); the Cubit only exposes `pendingRationale` |
-| Section UI | `HomeGreeting`, `HomeAvailabilityCard` / `HomeAvailabilityNotice`, `PendingOffersHeader` / `PendingOffersSliver`, `HomeAppBar` / `WalletBalanceChip`, one per file in `widget/` |
+| Section UI | `HomeGreeting`, `HomeAvailabilityCard` / `HomeAvailabilityNotice`, `PendingOffersHeader` / `PendingOffersSliver`, `HomeAppBar` (D-A82: emblem, no wallet chip), one meaningful section per file in `widget/` |
 
 Rules:
 - **`StatefulWidget` is not forbidden.** Use it only when Flutter-local

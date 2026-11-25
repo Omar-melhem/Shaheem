@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
+import 'app_localizations_en.dart';
 
 // ignore_for_file: type=lint
 
@@ -92,7 +93,10 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('ar')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
+    Locale('en'),
+  ];
 
   /// App name; also the logo's semantic label and the window title.
   ///
@@ -274,23 +278,29 @@ abstract class AppLocalizations {
   /// **'رقم الهاتف غير متوفر'**
   String get profilePhoneUnavailable;
 
-  /// Profile (D-A77): rating card heading.
-  ///
-  /// In ar, this message translates to:
-  /// **'التقييم'**
-  String get profileRatingTitle;
-
   /// Profile (D-A77): rating is loading.
   ///
   /// In ar, this message translates to:
   /// **'جارٍ تحميل التقييم...'**
   String get profileRatingLoading;
 
-  /// Profile (D-A77): rating unknown (not configured, offline or failed); never a fabricated value.
+  /// Profile (D-A77): rating unknown (not configured, or invalid server values); never a fabricated or clamped value.
   ///
   /// In ar, this message translates to:
   /// **'التقييم غير متوفر'**
   String get profileRatingUnavailable;
+
+  /// Profile: the rating could not be read because the device is offline (Retry is offered).
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تعذّر تحميل التقييم.'**
+  String get profileRatingOffline;
+
+  /// Profile: the rating read failed or timed out (Retry is offered).
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل التقييم.'**
+  String get profileRatingFailed;
 
   /// Profile (D-A77): the server confirmed there are no ratings yet.
   ///
@@ -298,11 +308,11 @@ abstract class AppLocalizations {
   /// **'لا توجد تقييمات بعد'**
   String get profileRatingNone;
 
-  /// Profile (D-A77): rating value with the scale the server states (no assumed 5-star scale).
+  /// Profile: the exact rating value on the fixed 5-star scale, e.g. 4.3 / 5 (shown LTR-isolated).
   ///
   /// In ar, this message translates to:
-  /// **'{value} من {max}'**
-  String profileRatingOutOf(String value, String max);
+  /// **'{value} / {max}'**
+  String profileRatingValue(String value, String max);
 
   /// Profile (D-A77): how many ratings the server aggregated.
   ///
@@ -327,6 +337,24 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الإعدادات'**
   String get settingsTitle;
+
+  /// Settings: heading of the display-language choice (owner-requested Arabic/English feature).
+  ///
+  /// In ar, this message translates to:
+  /// **'اللغة'**
+  String get settingsLanguageSection;
+
+  /// Settings: the Arabic option, always written in Arabic (its own language).
+  ///
+  /// In ar, this message translates to:
+  /// **'العربية'**
+  String get languageArabic;
+
+  /// Settings: the English option, always written in English (its own language).
+  ///
+  /// In ar, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
 
   /// Settings section heading above account deletion.
   ///
@@ -447,6 +475,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تسجيل الدخول'**
   String get loginTitle;
+
+  /// Login: the company slogan shown under the logo (owner copy).
+  ///
+  /// In ar, this message translates to:
+  /// **'نوصلها بشهامة، ونحفظها بأمانة'**
+  String get companyWordmark;
 
   /// Login username field label.
   ///
@@ -628,7 +662,7 @@ abstract class AppLocalizations {
   /// **'خدمة تحديد الموقع غير متاحة بعد.'**
   String get locationNotConfigured;
 
-  /// Current Order pickup leg (D-A81): opens the pickup-verification form. Typing or confirming alone never marks pickup.
+  /// Current Order pickup leg (D-A81): sends the pickup confirmation directly, with no verification code. The order shows as picked up only after the server confirms.
   ///
   /// In ar, this message translates to:
   /// **'تم الاستلام'**
@@ -694,66 +728,6 @@ abstract class AppLocalizations {
   /// **'موقعك'**
   String get captainMarkerTitle;
 
-  /// Pickup-verification form title (D-A81).
-  ///
-  /// In ar, this message translates to:
-  /// **'تأكيد استلام الطلب'**
-  String get pickupVerificationTitle;
-
-  /// Pickup-verification form: the merchant gives the order-specific four-digit PIN after handover (D-A67).
-  ///
-  /// In ar, this message translates to:
-  /// **'اطلب من المطعم رمز الاستلام المكوّن من 4 أرقام وأدخله هنا.'**
-  String get pickupVerificationMessage;
-
-  /// Pickup PIN field label.
-  ///
-  /// In ar, this message translates to:
-  /// **'رمز الاستلام'**
-  String get pickupPinLabel;
-
-  /// Pickup PIN validation: empty.
-  ///
-  /// In ar, this message translates to:
-  /// **'أدخل رمز الاستلام.'**
-  String get pickupPinRequired;
-
-  /// Pickup PIN validation: not exactly four digits (syntax only; correctness is checked by the server).
-  ///
-  /// In ar, this message translates to:
-  /// **'رمز الاستلام يتكوّن من 4 أرقام.'**
-  String get pickupPinFormat;
-
-  /// Pickup-verification form submit action.
-  ///
-  /// In ar, this message translates to:
-  /// **'تأكيد الاستلام'**
-  String get pickupVerificationSubmit;
-
-  /// Pickup-verification form: the PIN was sent and the server answer is awaited.
-  ///
-  /// In ar, this message translates to:
-  /// **'جارٍ التحقق من الرمز…'**
-  String get pickupVerificationSending;
-
-  /// The server rejected the PIN and did not say how many attempts remain.
-  ///
-  /// In ar, this message translates to:
-  /// **'رمز الاستلام غير صحيح.'**
-  String get pickupPinIncorrect;
-
-  /// The server rejected the PIN and supplied the remaining attempts (never counted on the phone).
-  ///
-  /// In ar, this message translates to:
-  /// **'رمز الاستلام غير صحيح. {count, plural, =0{لم تتبقَّ محاولات} =1{تبقّت محاولة واحدة} =2{تبقّت محاولتان} few{تبقّت {count} محاولات} many{تبقّت {count} محاولة} other{تبقّت {count} محاولة}}.'**
-  String pickupPinIncorrectRemaining(int count);
-
-  /// No PIN attempts remain (server-enforced, three) — Admin intervention (D-A67).
-  ///
-  /// In ar, this message translates to:
-  /// **'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة لإكمال الاستلام.'**
-  String get pickupPinLocked;
-
   /// Delivery view (D-A81): heading above the destination area (an area, never an address).
   ///
   /// In ar, this message translates to:
@@ -766,17 +740,95 @@ abstract class AppLocalizations {
   /// **'منطقة التسليم غير متوفرة'**
   String get deliveryAreaUnavailable;
 
-  /// Delivery view: shown only when the merchant supplied a phone (optional, D-A81).
+  /// Home AppBar emblem (D-A82): decorative branding, announced once; it has no action.
+  ///
+  /// In ar, this message translates to:
+  /// **'شعار شهم'**
+  String get homeLogoSemantics;
+
+  /// Delivery leg and completed-order page (D-A83): heading of the merchant-supplied order details.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل الطلب'**
+  String get orderDetailsHeading;
+
+  /// Order details: optional customer name label (shown only when supplied).
+  ///
+  /// In ar, this message translates to:
+  /// **'اسم العميل'**
+  String get orderDetailCustomerName;
+
+  /// Order details: optional customer phone label (shown only when supplied; never required).
   ///
   /// In ar, this message translates to:
   /// **'رقم هاتف العميل'**
-  String get customerPhoneHeading;
+  String get orderDetailCustomerPhone;
 
-  /// Screen-reader sentence for the optional customer phone.
+  /// Order details: optional delivery notes label; distinct from the merchant pickup instructions.
   ///
   /// In ar, this message translates to:
-  /// **'رقم هاتف العميل: {phone}'**
-  String customerPhoneSemantics(String phone);
+  /// **'ملاحظات التوصيل'**
+  String get orderDetailDeliveryNotes;
+
+  /// Order details: the required full delivery fee was not sent; never shown as zero.
+  ///
+  /// In ar, this message translates to:
+  /// **'أجرة التوصيل غير متوفرة'**
+  String get orderDetailFeeUnavailable;
+
+  /// Order details: one screen-reader sentence per detail row; {label} is the localized label, {value} the server value or the unavailable text.
+  ///
+  /// In ar, this message translates to:
+  /// **'{label}: {value}'**
+  String orderDetailSemantics(String label, String value);
+
+  /// Completed-order page (D-A83) title.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل الطلب المكتمل'**
+  String get completedOrderTitle;
+
+  /// Completed-order page: the server order reference (LTR-isolated).
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الطلب: {orderId}'**
+  String completedOrderIdLine(String orderId);
+
+  /// Completed-order page: the merchant recorded for the order.
+  ///
+  /// In ar, this message translates to:
+  /// **'المطعم: {merchant}'**
+  String completedOrderMerchantLine(String merchant);
+
+  /// Completed-order page: the server's completion time (LTR-isolated local time).
+  ///
+  /// In ar, this message translates to:
+  /// **'وقت التسليم: {time}'**
+  String completedOrderDeliveredAtLine(String time);
+
+  /// Completed-order page: the record is not in this session's loaded history (direct link, signed out or not found); no other order is shown.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل هذا الطلب غير متاحة'**
+  String get completedOrderUnavailableTitle;
+
+  /// Completed-order page: advice when the record is unavailable (no per-order lookup contract exists yet).
+  ///
+  /// In ar, this message translates to:
+  /// **'افتح «طلباتي» لتحديث السجل ثم اختر الطلب مرة أخرى.'**
+  String get completedOrderUnavailableMessage;
+
+  /// Completed-order page: back to My Orders.
+  ///
+  /// In ar, this message translates to:
+  /// **'العودة إلى طلباتي'**
+  String get completedOrderBack;
+
+  /// Screen-reader hint of a completed-delivery row, which opens that order's details.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض تفاصيل الطلب'**
+  String get completedDeliveryOpenHint;
 
   /// Delivery view: where the order was collected; {merchant} is server data.
   ///
@@ -1144,18 +1196,6 @@ abstract class AppLocalizations {
   /// **'—'**
   String get walletBalanceUnknownValue;
 
-  /// Screen-reader text for the read-only total wallet balance in the Home app bar.
-  ///
-  /// In ar, this message translates to:
-  /// **'إجمالي رصيد المحفظة: {amount} دينار أردني'**
-  String walletBalanceSemantics(String amount);
-
-  /// Screen-reader text when the total wallet balance is not known (no wallet backend or session yet).
-  ///
-  /// In ar, this message translates to:
-  /// **'إجمالي رصيد المحفظة غير متوفر حالياً'**
-  String get walletBalanceUnavailableSemantics;
-
   /// Accessible name and label of the captain availability switch. Copy pending owner review (Task 24).
   ///
   /// In ar, this message translates to:
@@ -1360,12 +1400,6 @@ abstract class AppLocalizations {
   /// **'قبول'**
   String get offerAccept;
 
-  /// Red action of an order offer card: decline the offer for this captain only (never cancels the merchant's order) (Task 26).
-  ///
-  /// In ar, this message translates to:
-  /// **'رفض'**
-  String get offerDecline;
-
   /// Offer card and new-offer sheet (Task 26, R08): the merchant pickup line; {pickup} is server data or the unavailable text.
   ///
   /// In ar, this message translates to:
@@ -1436,12 +1470,6 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'المحفظة'**
   String get walletTitle;
-
-  /// Screen-reader hint of the Home app-bar balance chip, which opens Wallet (Task 34).
-  ///
-  /// In ar, this message translates to:
-  /// **'فتح المحفظة'**
-  String get walletOpenHint;
 
   /// Wallet balance card: total balance label (server value) (Task 34).
   ///
@@ -1620,17 +1648,17 @@ abstract class AppLocalizations {
     String note,
   );
 
-  /// Profile rating card (R08): screen-reader sentence without a count.
+  /// Profile rating (R08): screen-reader sentence for a rating state without a value (loading, none, unavailable, offline, failure).
   ///
   /// In ar, this message translates to:
   /// **'التقييم. {value}'**
   String profileRatingSemantics(String value);
 
-  /// Profile rating card (R08): screen-reader sentence with the localized ratings count.
+  /// Profile (R08): one screen-reader sentence for the rating value, the 5-star scale and the localized ratings count; the stars add no label.
   ///
   /// In ar, this message translates to:
-  /// **'التقييم. {value}. {count}'**
-  String profileRatingSemanticsWithCount(String value, String count);
+  /// **'التقييم {value} من {max}. {count}'**
+  String profileRatingSemanticsValue(String value, String max, String count);
 
   /// My Orders declined record (R08): outcome with the offer kind; {kind} is the localized instant/scheduled label.
   ///
@@ -1667,12 +1695,6 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'قبول الطلب'**
   String get offerAcceptFull;
-
-  /// Decline action of the offer sheet: this captain only, never cancels the merchant's order (Task 36).
-  ///
-  /// In ar, this message translates to:
-  /// **'رفض الطلب'**
-  String get offerDeclineFull;
 
   /// Closes the offer sheet without answering; the offer stays on Home (Task 36).
   ///
@@ -1818,7 +1840,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['ar'].contains(locale.languageCode);
+      <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -1829,6 +1851,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'ar':
       return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
   }
 
   throw FlutterError(

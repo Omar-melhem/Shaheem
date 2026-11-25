@@ -51,8 +51,9 @@ FLUTTER ENGINEERING
 - Signed-in bottom navigation (D-A70): four tabs in RTL order Home
   «الرئيسية», My Orders «طلباتي», Wallet «المحفظة», My Account «حسابي».
   No Notifications feed/tab/unread count (D-A72; operational order push
-  stays). Home AppBar holds greeting, availability switch and balance chip;
-  no Profile button. Current Order is a protected standalone page opened on
+  stays). Home AppBar (D-A82) holds the first-name greeting, availability
+  switch and `AppImages.homeLogo`; no wallet shortcut or Profile button.
+  Home cards have one full-width Accept; separate offer-sheet Decline stays. Current Order is a protected standalone page opened on
   confirmed acceptance and recovered on startup/foreground return (D-A73).
   Profile tab: name, phone, rating, Settings (account deletion), Terms,
   About (D-A77, D-A78). Device label شهم, web title SHAHM | شهم.
@@ -90,9 +91,11 @@ AUTH/API AND REALTIME
   operation uniqueness to prevent duplicate acceptance/debit/recharge.
 
 DELIVERY / DISPATCH
-- Merchants create orders with customer PHONE and destination AREA only;
-  no customer name, account, GPS point, map destination, goods value or
-  customer app. Merchant pickup coordinates are Admin-set within an enabled
+- Orders carry required destination AREA/full fee and optional customer
+  NAME, PHONE and DELIVERY NOTES (D-A83); no customer account, GPS point,
+  precise street address, map destination, goods value or customer app.
+  Render supplied details in the no-map delivery leg and each own completed
+  order detail page; keep historical snapshots and optional-row omission. Merchant pickup coordinates are Admin-set within an enabled
   database geofence; (0,0) is invalid, and invalid pickup blocks NEW orders,
   not display of existing active orders.
 - Admin's global Broadcast switch is the MAIN manual-dispatch control.
@@ -113,7 +116,8 @@ DELIVERY / DISPATCH
   physical handover, 3 wrong attempts then Admin, one-use, invalid on cancel;
   regenerate before-pickup reassignment. Stage sequence accepted →
   heading_to_pickup → picked_up → on_the_way → delivered. A separate
-  Start Delivery button is required after an external customer phone call.
+  Start Delivery button is retained after confirmed pickup. Phone is
+  optional and a call is never a prerequisite (D-A81/D-A83).
 - After pickup, only Admin may cancel/reassign; keep same order and audit
   handover. Admin marks pending settlement; only the completing replacement
   captain is debited on successful completion (no holds exist). Manual

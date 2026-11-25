@@ -17,6 +17,4 @@ String validationMessage(AppLocalizations l10n, ValidationError error) =>
       ValidationError.passwordRequired => l10n.passwordRequired,
       ValidationError.passwordLength => l10n.passwordLengthInvalid,
       ValidationError.invalidPhone => l10n.invalidPhone,
-      ValidationError.pickupPinRequired => l10n.pickupPinRequired,
-      ValidationError.pickupPinFormat => l10n.pickupPinFormat,
     };

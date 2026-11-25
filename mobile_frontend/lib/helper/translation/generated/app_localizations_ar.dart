@@ -109,20 +109,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profilePhoneUnavailable => 'رقم الهاتف غير متوفر';
 
   @override
-  String get profileRatingTitle => 'التقييم';
-
-  @override
   String get profileRatingLoading => 'جارٍ تحميل التقييم...';
 
   @override
   String get profileRatingUnavailable => 'التقييم غير متوفر';
 
   @override
+  String get profileRatingOffline =>
+      'لا يوجد اتصال بالإنترنت. تعذّر تحميل التقييم.';
+
+  @override
+  String get profileRatingFailed => 'تعذّر تحميل التقييم.';
+
+  @override
   String get profileRatingNone => 'لا توجد تقييمات بعد';
 
   @override
-  String profileRatingOutOf(String value, String max) {
-    return '$value من $max';
+  String profileRatingValue(String value, String max) {
+    return '$value / $max';
   }
 
   @override
@@ -148,6 +152,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsTitle => 'الإعدادات';
+
+  @override
+  String get settingsLanguageSection => 'اللغة';
+
+  @override
+  String get languageArabic => 'العربية';
+
+  @override
+  String get languageEnglish => 'English';
 
   @override
   String get settingsAccountSection => 'الحساب';
@@ -217,6 +230,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get loginTitle => 'تسجيل الدخول';
+
+  @override
+  String get companyWordmark => 'نوصلها بشهامة، ونحفظها بأمانة';
 
   @override
   String get usernameLabel => 'اسم المستخدم';
@@ -371,62 +387,64 @@ class AppLocalizationsAr extends AppLocalizations {
   String get captainMarkerTitle => 'موقعك';
 
   @override
-  String get pickupVerificationTitle => 'تأكيد استلام الطلب';
-
-  @override
-  String get pickupVerificationMessage =>
-      'اطلب من المطعم رمز الاستلام المكوّن من 4 أرقام وأدخله هنا.';
-
-  @override
-  String get pickupPinLabel => 'رمز الاستلام';
-
-  @override
-  String get pickupPinRequired => 'أدخل رمز الاستلام.';
-
-  @override
-  String get pickupPinFormat => 'رمز الاستلام يتكوّن من 4 أرقام.';
-
-  @override
-  String get pickupVerificationSubmit => 'تأكيد الاستلام';
-
-  @override
-  String get pickupVerificationSending => 'جارٍ التحقق من الرمز…';
-
-  @override
-  String get pickupPinIncorrect => 'رمز الاستلام غير صحيح.';
-
-  @override
-  String pickupPinIncorrectRemaining(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'تبقّت $count محاولة',
-      many: 'تبقّت $count محاولة',
-      few: 'تبقّت $count محاولات',
-      two: 'تبقّت محاولتان',
-      one: 'تبقّت محاولة واحدة',
-      zero: 'لم تتبقَّ محاولات',
-    );
-    return 'رمز الاستلام غير صحيح. $_temp0.';
-  }
-
-  @override
-  String get pickupPinLocked =>
-      'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة لإكمال الاستلام.';
-
-  @override
   String get deliveryDestinationHeading => 'منطقة التسليم';
 
   @override
   String get deliveryAreaUnavailable => 'منطقة التسليم غير متوفرة';
 
   @override
-  String get customerPhoneHeading => 'رقم هاتف العميل';
+  String get homeLogoSemantics => 'شعار شهم';
 
   @override
-  String customerPhoneSemantics(String phone) {
-    return 'رقم هاتف العميل: $phone';
+  String get orderDetailsHeading => 'تفاصيل الطلب';
+
+  @override
+  String get orderDetailCustomerName => 'اسم العميل';
+
+  @override
+  String get orderDetailCustomerPhone => 'رقم هاتف العميل';
+
+  @override
+  String get orderDetailDeliveryNotes => 'ملاحظات التوصيل';
+
+  @override
+  String get orderDetailFeeUnavailable => 'أجرة التوصيل غير متوفرة';
+
+  @override
+  String orderDetailSemantics(String label, String value) {
+    return '$label: $value';
   }
+
+  @override
+  String get completedOrderTitle => 'تفاصيل الطلب المكتمل';
+
+  @override
+  String completedOrderIdLine(String orderId) {
+    return 'رقم الطلب: $orderId';
+  }
+
+  @override
+  String completedOrderMerchantLine(String merchant) {
+    return 'المطعم: $merchant';
+  }
+
+  @override
+  String completedOrderDeliveredAtLine(String time) {
+    return 'وقت التسليم: $time';
+  }
+
+  @override
+  String get completedOrderUnavailableTitle => 'تفاصيل هذا الطلب غير متاحة';
+
+  @override
+  String get completedOrderUnavailableMessage =>
+      'افتح «طلباتي» لتحديث السجل ثم اختر الطلب مرة أخرى.';
+
+  @override
+  String get completedOrderBack => 'العودة إلى طلباتي';
+
+  @override
+  String get completedDeliveryOpenHint => 'عرض تفاصيل الطلب';
 
   @override
   String pickedUpFromLine(String merchant) {
@@ -642,15 +660,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walletBalanceUnknownValue => '—';
 
   @override
-  String walletBalanceSemantics(String amount) {
-    return 'إجمالي رصيد المحفظة: $amount دينار أردني';
-  }
-
-  @override
-  String get walletBalanceUnavailableSemantics =>
-      'إجمالي رصيد المحفظة غير متوفر حالياً';
-
-  @override
   String get availabilityToggleLabel => 'استقبال عروض الطلبات الجديدة';
 
   @override
@@ -770,9 +779,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get offerAccept => 'قبول';
 
   @override
-  String get offerDecline => 'رفض';
-
-  @override
   String offerPickupLine(String pickup) {
     return 'موقع المطعم: $pickup';
   }
@@ -818,9 +824,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get walletTitle => 'المحفظة';
-
-  @override
-  String get walletOpenHint => 'فتح المحفظة';
 
   @override
   String get walletTotalBalance => 'الرصيد';
@@ -940,8 +943,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String profileRatingSemanticsWithCount(String value, String count) {
-    return 'التقييم. $value. $count';
+  String profileRatingSemanticsValue(String value, String max, String count) {
+    return 'التقييم $value من $max. $count';
   }
 
   @override
@@ -965,9 +968,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get offerAcceptFull => 'قبول الطلب';
-
-  @override
-  String get offerDeclineFull => 'رفض الطلب';
 
   @override
   String get offerLater => 'لاحقاً';

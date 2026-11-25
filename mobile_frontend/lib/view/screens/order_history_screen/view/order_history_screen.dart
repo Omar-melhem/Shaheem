@@ -6,9 +6,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
+import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/completed_deliveries_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/declined_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/widget/completed_delivery_tile.dart';
@@ -178,6 +180,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         itemBuilder: (context, index) => CompletedDeliveryTile(
           key: ValueKey(items[index].orderId),
           delivery: items[index],
+          // That exact order's page inside this branch (Back keeps the
+          // list); the record comes from this session's history.
+          onOpen: () => context.push(
+            RoutesString.completedOrderDetails(items[index].orderId),
+          ),
         ),
       );
     }

@@ -89,8 +89,39 @@ location provider integration (D-A57); a device walkthrough.
 no issues; `flutter test` **1,056 passed**; demo dry run OK; `--apply`
 rehearsal on a full copy: removed, 1,027 tests passed afterwards, workflow
 UI/ports and placeholders intact; `flutter build ios --simulator --debug`
-succeeded. **No simulator/device walkthrough was performed**, no keyed map,
+succeeded; Gradle debug/release **manifest merge** succeeded (INTERNET,
+Maps query, label, empty key). `flutter build apk --debug` **fails** on a
+pre-existing toolchain gap: `permission_handler_android` 14.1.1 needs
+compileSdk 37, the project uses 36 with AGP 9.0.1 (upgrade task, not part
+of this change). **No simulator/device walkthrough was performed**, no keyed map,
 no live backend or database.
+
+### 0.3 Home and order-details revision (2026-11-24, D-A82/D-A83) — client implemented
+
+Uncommitted working tree on `e9b92d8`. Client code, test fakes and the
+debug demo only; no backend, endpoint, database write, device or simulator
+run.
+
+| Area | Implemented | Remaining (backend/owner) |
+|---|---|---|
+| Home wallet shortcut | **Removed**: `WalletBalanceChip` (file deleted), `walletBalanceFils` on `HomeScreen`/`HomeAppBar`, the router `BlocSelector`, the chip-only ARB keys. The shell `WalletCubit` is now **lazy** (its eager `loadBalance()` existed only for the chip and was deleted); Home causes no wallet read. Wallet tab, session tagging and completion invalidation unchanged | — |
+| Home emblem | `AppImages.homeLogo` added first, then `HomeAppBar` shows it at the logical end (height 44, `BoxFit.contain`, one localized label, no action). `AppImages.logo`/Login untouched | Visual check on a device |
+| Greeting | `HomeGreeting.firstName`: first non-empty whitespace token; generic greeting otherwise; Profile keeps the full name | — |
+| Home offer card | `AppOrderOfferCard` has one full-width Accept; `onDecline` removed; a sheet-started decline keeps Accept disabled. `NewOrderOfferSheet` Decline, `PendingOffersCubit.decline` and declined history unchanged | — |
+| Delivery details | `ActiveOrder` + `customerName`, `deliveryNotes`, `deliveryFeeFils` (+ `contactName`, `deliveryNote`); shared `OrderDeliveryDetails` (`view/widget/order/`) on the delivery leg; `CustomerContactCard` deleted (superseded) | Active-order contract fields |
+| Completed-order details | `CompletedDelivery` + `customerName`, `customerPhone`, `deliveryNotes`; tappable `CompletedDeliveryTile`; protected sub-route `/order-history/completed/:orderId` → `CompletedOrderDetailsScreen` reading the session's record (`CompletedDeliveriesState.recordFor`); explicit unavailable state; no per-row fetch | History detail contract, server ownership checks, snapshot persistence, retention/redaction (unspecified) |
+
+**Verification (2026-11-24T19:26Z):** `flutter gen-l10n` OK; `dart format`
+on changed Dart files: 0 changed; `flutter analyze`: 3 warnings, all
+unused imports in the owner's uncommitted `login_screen.dart`; `flutter
+test`: **1,048 passed, 2 failed** — `login_screen_test` "offline and backend
+failures…" and `demo_mode_test` "Login shows the badge…", both a second
+Login submit whose button is pushed below the 800×600 test viewport by the
+owner's uncommitted Login/logo changes (the Login test passes with HEAD's
+`login_screen.dart` on a scratch copy). Demo dry run OK. Owner fixes made
+only where they blocked required checks: a missing comma after the
+owner's new `companyWordmark` ARB key (plus its metadata line), and demo
+tests now use the owner's demo username from `auth.json`.
 
 ## 1. Implemented
 

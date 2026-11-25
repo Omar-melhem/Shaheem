@@ -11,7 +11,6 @@ import 'package:mobile_frontend/domain/repositories/order_offer_repository.dart'
 import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
 import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
-import 'package:mobile_frontend/theme/app_theme.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/pending_offers_sliver.dart';
@@ -127,21 +126,15 @@ void main() {
     Widget card(
       CaptainOrderOffer o, {
       VoidCallback? onAccept,
-      VoidCallback? onDecline,
-      AppOfferCardAction? busy,
-    }) => AppOrderOfferCard(
-      offer: o,
-      onAccept: onAccept,
-      onDecline: onDecline,
-      busyAction: busy,
-    );
+      bool busy = false,
+    }) => AppOrderOfferCard(offer: o, onAccept: onAccept, accepting: busy);
 
     for (final direction in TextDirection.values) {
       testWidgets('icons beside their texts at the logical start '
           '(${direction.name})', (tester) async {
         await pump(
           tester,
-          card(offer(1), onAccept: () {}, onDecline: () {}),
+          card(offer(1), onAccept: () {}),
           direction: direction,
         );
         expectIconBeside(
@@ -182,7 +175,7 @@ void main() {
     testWidgets('soft divider above the fee; fee unchanged (2.500 د.أ)', (
       tester,
     ) async {
-      await pump(tester, card(offer(1), onAccept: () {}, onDecline: () {}));
+      await pump(tester, card(offer(1), onAccept: () {}));
       expectSoftDivider(tester);
       final fee = find.textContaining('2.500');
       expect(fee, findsOneWidget);
@@ -215,7 +208,7 @@ void main() {
       tester,
     ) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, card(offer(1), onAccept: () {}, onDecline: () {}));
+      await pump(tester, card(offer(1), onAccept: () {}));
       expect(
         find.bySemanticsLabel(
           l10n.offerCardSemantics(
@@ -228,54 +221,29 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel(l10n.offerAccept), findsOneWidget);
-      expect(find.bySemanticsLabel(l10n.offerDecline), findsOneWidget);
       handle.dispose();
     });
 
-    testWidgets('buttons: taps, disabled and busy behave as before', (
-      tester,
-    ) async {
+    testWidgets('one Accept (D-A82): taps, disabled and busy', (tester) async {
       var accepted = 0;
-      var declined = 0;
-      await pump(
-        tester,
-        card(offer(1), onAccept: () => accepted++, onDecline: () => declined++),
-      );
+      await pump(tester, card(offer(1), onAccept: () => accepted++));
+      expect(find.byType(AppButton), findsOneWidget);
       await tester.tap(find.text(l10n.offerAccept));
-      await tester.tap(find.text(l10n.offerDecline));
-      expect((accepted, declined), (1, 1));
+      expect(accepted, 1);
 
-      // Busy: spinner, no taps reach either callback.
+      // Busy: spinner, no tap reaches the callback.
       await pump(
         tester,
-        card(
-          offer(1),
-          onAccept: () => accepted++,
-          onDecline: () => declined++,
-          busy: AppOfferCardAction.accept,
-        ),
+        card(offer(1), onAccept: () => accepted++, busy: true),
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      await tester.tap(find.text(l10n.offerDecline), warnIfMissed: false);
-      expect((accepted, declined), (1, 1));
+      await tester.tap(find.byType(AppButton), warnIfMissed: false);
+      expect(accepted, 1);
 
-      // Disabled: null callbacks.
+      // Disabled: null callback.
       await pump(tester, card(offer(1)));
       await tester.tap(find.text(l10n.offerAccept), warnIfMissed: false);
-      expect((accepted, declined), (1, 1));
-    });
-
-    testWidgets('«رفض» is a neutral outline while it can act; '
-        'disabled falls back to the shared disabled look', (tester) async {
-      AppButton decline() => tester.widget<AppButton>(
-        find.widgetWithText(AppButton, l10n.offerDecline),
-      );
-      final scheme = AppTheme.light.colorScheme;
-
-      await pump(tester, card(offer(1), onAccept: () {}, onDecline: () {}));
-      expect(decline().backgroundColor, scheme.surface);
-      expect(decline().foregroundColor, AppColor.textPrimary);
-      expect(decline().border, const BorderSide(color: AppColor.inputOutline));
+      expect(accepted, 1);
       // «قبول» keeps AppButton's default theme red (D-A69).
       expect(
         tester
@@ -283,42 +251,6 @@ void main() {
             .backgroundColor,
         isNull,
       );
-
-      // Its own command running: still outlined, with its spinner.
-      await pump(
-        tester,
-        card(
-          offer(1),
-          onAccept: () {},
-          onDecline: () {},
-          busy: AppOfferCardAction.decline,
-        ),
-      );
-      expect(decline().border, const BorderSide(color: AppColor.inputOutline));
-      expect(decline().isLoading, isTrue);
-
-      // «قبول» running, or no callback: disabled, no outline.
-      await pump(
-        tester,
-        card(
-          offer(1),
-          onAccept: () {},
-          onDecline: () {},
-          busy: AppOfferCardAction.accept,
-        ),
-      );
-      expect(decline().onPressed, isNull);
-      expect(decline().border, isNull);
-      await pump(tester, card(offer(1)));
-      expect(decline().border, isNull);
-
-      // Error text on the white surface stays readable (WCAG AA).
-      double contrast(Color a, Color b) {
-        final la = a.computeLuminance(), lb = b.computeLuminance();
-        return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
-      }
-
-      expect(contrast(scheme.error, scheme.surface), greaterThan(4.5));
     });
 
     for (final width in [320.0, 375.0, 450.0]) {
@@ -336,7 +268,6 @@ void main() {
               card(
                 offer(1, merchant: longMerchant, area: longArea, fee: 12345),
                 onAccept: () {},
-                onDecline: () {},
               ),
               direction: direction,
             );

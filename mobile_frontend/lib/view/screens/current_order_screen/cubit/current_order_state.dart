@@ -9,12 +9,6 @@ enum OrderWorkflowAction { confirmPickup, startDelivery, completeDelivery }
 /// Why the last command did not (knowingly) succeed. Each one has its own
 /// message; none of them advances the stage.
 enum OrderCommandError {
-  /// Server: wrong PIN (attempts may remain).
-  incorrectPin,
-
-  /// Server: no PIN attempts left (Admin intervention).
-  pinLocked,
-
   /// Server: the order changed; the authoritative order is being re-read.
   stateConflict,
 
@@ -35,26 +29,19 @@ enum OrderCommandError {
 }
 
 /// Feedback of the latest command for the shown order. While [sending] no
-/// other command may start. Never holds the PIN.
+/// other command may start.
 @immutable
 class OrderCommandFeedback {
   const OrderCommandFeedback.sending(this.action)
     : sending = true,
-      error = null,
-      remainingAttempts = null;
+      error = null;
 
-  const OrderCommandFeedback.failed(
-    this.action,
-    OrderCommandError this.error, {
-    this.remainingAttempts,
-  }) : sending = false;
+  const OrderCommandFeedback.failed(this.action, OrderCommandError this.error)
+    : sending = false;
 
   final OrderWorkflowAction action;
   final bool sending;
   final OrderCommandError? error;
-
-  /// PIN attempts left, only when the server said so.
-  final int? remainingAttempts;
 
   /// Whether the outcome is unknown and must be reconciled first.
   bool get needsReconciliation =>

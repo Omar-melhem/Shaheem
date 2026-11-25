@@ -1,5 +1,5 @@
 // Shared card for one order offer: merchant, pickup, delivery area, fee and
-// the accept / decline actions.
+// the single accept action (D-A82).
 
 import 'package:flutter/material.dart';
 import 'package:mobile_frontend/domain/entities/order_offer.dart';
@@ -8,22 +8,20 @@ import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
 
-/// Which of the card's actions is running.
-enum AppOfferCardAction { accept, decline }
-
 /// One order offer, presentation only.
 ///
 /// Shows the merchant name, the merchant pickup information (or a neutral
 /// "not available"), the customer delivery **area** and the delivery fee
-/// (the **full** fee, integer fils formatted as JOD, never a double), with
-/// «قبول» (the theme's filled red primary action with a check icon) and
-/// «رفض» (neutral outline, dark label, close icon) actions (D-A69; the
-/// new-offer sheet uses the same treatment).
+/// (the **full** fee, integer fils formatted as JOD, never a double), and
+/// **one** full-width «قبول» action (the theme's filled red primary with a
+/// check icon). The card has no rejection action (D-A82): an unanswered
+/// offer stays actionable until the server withdraws it. The new-offer
+/// sheet has no decline either (it offers only Accept and «لاحقاً»).
 ///
-/// It owns no state: the caller passes the offer, the callbacks (null
-/// disables an action), which action is [busyAction], and an optional
-/// [notice] line. A tap is an **intent**; the card never removes itself or
-/// changes its look until the caller passes new values.
+/// It owns no state: the caller passes the offer, the accept callback (null
+/// disables it), whether the accept is running ([accepting]), and an optional [notice]
+/// line. A tap is an **intent**; the card never removes itself or changes
+/// its look until the caller passes new values.
 ///
 /// Look (Task 33 layout, D-A69 colors): a white card with a light
 /// [AppColor.divider] outline and a restrained shadow; each detail starts
@@ -34,17 +32,16 @@ enum AppOfferCardAction { accept, decline }
 ///
 /// Full parent width, content height (it never has a fixed height); texts
 /// wrap instead of being truncated. One screen-reader summary for the
-/// offer, then the two buttons. Previews use this card with sample data;
+/// offer, then the button. Previews use this card with sample data;
 /// there is no second card implementation.
 class AppOrderOfferCard extends StatelessWidget {
-  /// Creates the card. [onAccept] and [onDecline] are required so every
-  /// caller decides; null disables that action.
+  /// Creates the card. [onAccept] is required so every caller decides;
+  /// null disables it.
   const AppOrderOfferCard({
     super.key,
     required this.offer,
     required this.onAccept,
-    required this.onDecline,
-    this.busyAction,
+    this.accepting = false,
     this.notice,
   });
 
@@ -55,12 +52,11 @@ class AppOrderOfferCard extends StatelessWidget {
   /// Accept intent; null disables «قبول».
   final VoidCallback? onAccept;
 
-  /// Decline intent (this captain only); null disables «رفض».
-  final VoidCallback? onDecline;
-
-  /// The action whose command is running: it shows a spinner and both
-  /// actions ignore taps. Null when nothing is running.
-  final AppOfferCardAction? busyAction;
+  /// Whether this offer's accept command is running: Accept then shows a
+  /// spinner and ignores taps (duplicate-tap protection). Any other
+  /// running command is the caller's to express by passing a null
+  /// [onAccept].
+  final bool accepting;
 
   /// Optional localized explanation under the details (e.g. "no longer
   /// available"). Null shows nothing; blank asserts.
@@ -87,11 +83,6 @@ class AppOrderOfferCard extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final busy = busyAction != null;
-    // «رفض» is outlined while it can be tapped or is the running action.
-    final declineActive = busy
-        ? busyAction == AppOfferCardAction.decline
-        : onDecline != null;
     final fee = formatJodFils(offer.deliveryFeeFils);
     final pickup = offer.pickupLabel?.trim().isNotEmpty ?? false
         ? offer.pickupLabel!
@@ -219,61 +210,23 @@ class AppOrderOfferCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: AppButton(
-                    label: l10n.offerAccept,
-                    icon: const Icon(Icons.check_circle_outline),
-                    expand: true,
-                    // Affirmative primary action: the theme's filled red (D-A69),
-
-                    // with its pressed and disabled states.
-                    isLoading: busyAction == AppOfferCardAction.accept,
-                    onPressed: busy
-                        ? _ignore(busyAction, AppOfferCardAction.accept)
-                        : onAccept,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    label: l10n.offerDecline,
-                    icon: const Icon(Icons.close),
-                    expand: true,
-
-                    // Neutral outline with an explicit «رفض» label and close
-
-                    // icon, distinct from the red Accept (D-A69). Disabled falls
-
-                    // back to the theme's disabled colors.
-                    backgroundColor: colors.surface,
-                    foregroundColor: AppColor.textPrimary,
-                    border: declineActive
-                        ? const BorderSide(color: AppColor.inputOutline)
-                        : null,
-                    isLoading: busyAction == AppOfferCardAction.decline,
-                    onPressed: busy
-                        ? _ignore(busyAction, AppOfferCardAction.decline)
-                        : onDecline,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 20),
+            // One full-width primary action: the theme's filled red (D-A69)
+            // with its pressed, disabled and loading states.
+            AppButton(
+              label: l10n.offerAccept,
+              icon: const Icon(Icons.check_circle_outline),
+              expand: true,
+              isLoading: accepting,
+              // While accepting: a no-op callback, so AppButton shows its
+              // spinner (not the disabled look) and ignores taps.
+              onPressed: accepting ? () {} : onAccept,
             ),
           ],
         ),
       ),
     );
   }
-
-  /// While busy: the running action keeps a no-op callback (AppButton
-  /// shows its spinner and ignores taps); the other one is disabled.
-  static VoidCallback? _ignore(
-    AppOfferCardAction? running,
-    AppOfferCardAction self,
-  ) => running == self ? () {} : null;
 }
 
 /// A decorative icon (no semantics: the card's summary already names

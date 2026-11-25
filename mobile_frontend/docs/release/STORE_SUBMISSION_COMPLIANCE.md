@@ -41,8 +41,17 @@ Google Play. Created by Task 14 (documentation only).
 > - Customer phone: shown only on the delivery leg when supplied; never in
 >   offers/push; include it in the data-safety declarations (P-02).
 > - Verified: `flutter build ios --simulator --debug` succeeded 2026-11-22
->   (compiles the `GoogleMaps` import and plist keys). No keyed build, no
->   tile/route rendering, no device run, no release build.
+>   (compiles the `GoogleMaps` import and plist keys). Gradle
+>   `:app:processReleaseMainManifest` (manifest merge only, no APK) shows
+>   `INTERNET`, the `google.navigation` query, label «شهم», an empty
+>   `com.google.android.geo.API_KEY`, and the plugin-merged
+>   `ACCESS_FINE/COARSE_LOCATION`, `FOREGROUND_SERVICE(_LOCATION)` and
+>   `ACCESS_NETWORK_STATE` (G-05/G-06 still apply). **`flutter build apk
+>   --debug` fails before this change set's code matters:**
+>   `permission_handler_android` 14.1.1 (unchanged in the lockfile) requires
+>   compileSdk 37, while the project compiles against 36 with Android Gradle
+>   Plugin 9.0.1 — a toolchain upgrade task. No keyed build, no tile/route
+>   rendering, no device run, no release build.
 
 ## 1. How to use this file
 

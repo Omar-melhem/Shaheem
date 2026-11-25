@@ -29,6 +29,7 @@ import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
 import 'package:mobile_frontend/view/screens/no_internet_screen/view/no_internet_screen.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/completed_deliveries_cubit.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/cubit/declined_offers_cubit.dart';
+import 'package:mobile_frontend/view/screens/order_history_screen/view/completed_order_details_screen.dart';
 import 'package:mobile_frontend/view/screens/order_history_screen/view/order_history_screen.dart';
 import 'package:mobile_frontend/view/screens/about_screen/view/about_screen.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/cubit/profile_rating_cubit.dart';
@@ -66,8 +67,9 @@ import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 /// [getEligibleOffers], [acceptOrderOffer] and [declineOrderOffer] build the
 /// shell-scoped `PendingOffersCubit` (shared by Home and the new-offer
 /// sheet, Task 36). [getWallet] and [getDeliveryStatistics] build the
-/// shell-scoped `WalletCubit` shared by Home's balance chip and the Wallet
-/// tab (balance and lifetime statistics, D-A71, D-A76, R02);
+/// shell-scoped, lazily created `WalletCubit` read by the Wallet tab
+/// (balance and lifetime statistics, D-A76; Home shows no balance since
+/// D-A82);
 /// [getCompletedDeliveries] the shell-scoped `CompletedDeliveriesCubit`
 /// (My Orders, refreshed after a confirmed completion, D-A81);
 /// [getDeclinedOffers] the shell-scoped `DeclinedOffersCubit` (read by
@@ -214,12 +216,12 @@ GoRouter createAppRouter({
                 () => sessionCubit.state is SessionAuthenticated,
               ),
             ),
-            // WalletCubit is shell-scoped since R02 (API-05): Home's balance
-            // chip and the Wallet tab select one snapshot. Creating the
-            // shell reads the balance once (never the statistics, which
-            // Wallet reads on its first show); sign-out closes it.
+            // WalletCubit stays shell-scoped (session-owner tagging and the
+            // completion invalidation below need it), but since D-A82 Home
+            // shows no balance, so it is created lazily and reads nothing
+            // until Wallet first shows (or a confirmed completion
+            // invalidates it). Sign-out closes it.
             BlocProvider(
-              lazy: false,
               create: (_) => WalletCubit(
                 getWallet,
                 getDeliveryStatistics,
@@ -228,7 +230,7 @@ GoRouter createAppRouter({
                   SessionAuthenticated(:final user) => user.id,
                   _ => null,
                 },
-              )..loadBalance(),
+              ),
             ),
             BlocProvider(
               create: (context) => PendingOffersCubit(
@@ -297,13 +299,9 @@ GoRouter createAppRouter({
                     availabilityPermissions,
                     () => sessionCubit.state is SessionAuthenticated,
                   ),
-                  // The balance chip selects the shell's single wallet
-                  // snapshot (R02, D-A71): the same value Wallet shows.
-                  child: BlocSelector<WalletCubit, WalletState, int?>(
-                    selector: (state) => state.balanceFils,
-                    builder: (context, balanceFils) =>
-                        HomeScreen(walletBalanceFils: balanceFils),
-                  ),
+                  // No wallet input since D-A82 (the Home shortcut was
+                  // removed; Wallet is its own tab).
+                  child: const HomeScreen(),
                 ),
               ),
             ],
@@ -312,10 +310,22 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: RoutesString.orderHistory,
-                // «طلباتي» (D-A70). Read-only (Task 36): the offers this
-                // captain declined, as the server records them, from the
-                // shell's DeclinedOffersCubit.
+                // «طلباتي» (D-A70): completed deliveries and declined offers
+                // from the shell's CompletedDeliveriesCubit and
+                // DeclinedOffersCubit (read-only).
                 builder: (context, state) => const OrderHistoryScreen(),
+                routes: [
+                  // One completed order (D-A83), pushed inside the branch so
+                  // Back returns to My Orders with its list kept. The page
+                  // reads that exact record from the session-owned cubit;
+                  // the path parameter is only a key, never order data.
+                  GoRoute(
+                    path: RoutesString.completedOrderDetailsPath,
+                    builder: (context, state) => CompletedOrderDetailsScreen(
+                      orderId: state.pathParameters['orderId'] ?? '',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -7,15 +7,14 @@ import 'package:mobile_frontend/domain/repositories/order_workflow_repository.da
 
 /// TEMPORARY — no workflow API contract exists yet (backend empty).
 ///
-/// Every command reports "not configured": nothing is sent, no PIN is
-/// checked, no stage advances and no delivery or debit is ever claimed.
+/// Every command reports "not configured": nothing is sent, no stage
+/// advances and no delivery or debit is ever claimed.
 class OrderWorkflowRepositoryPlaceholder implements OrderWorkflowRepository {
   const OrderWorkflowRepositoryPlaceholder();
 
   @override
   Future<ActiveOrder> confirmPickup(
-    OrderCommandTarget target,
-    PickupProof proof, {
+    OrderCommandTarget target, {
     required String operationKey,
   }) async => throw const OrderWorkflowNotConfiguredException();
 

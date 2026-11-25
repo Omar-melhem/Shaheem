@@ -2,7 +2,7 @@
 // and of the outcome lookup.
 
 /// Base type for workflow command failures that the server (or the
-/// transport) reports to the domain. Never carries a PIN.
+/// transport) reports to the domain.
 sealed class OrderWorkflowException implements Exception {
   const OrderWorkflowException();
 }
@@ -23,19 +23,6 @@ final class OrderWorkflowNetworkUnavailableException
 final class OrderWorkflowServiceUnavailableException
     extends OrderWorkflowException {
   const OrderWorkflowServiceUnavailableException();
-}
-
-/// The server rejected the PIN. [remainingAttempts] only when the server
-/// says how many are left (never counted on the phone).
-final class PickupCodeIncorrectException extends OrderWorkflowException {
-  const PickupCodeIncorrectException({this.remainingAttempts});
-
-  final int? remainingAttempts;
-}
-
-/// The server allows no more PIN attempts: Admin intervention (D-A67).
-final class PickupCodeLockedException extends OrderWorkflowException {
-  const PickupCodeLockedException();
 }
 
 /// The order is no longer in a state (or assignment) that allows this

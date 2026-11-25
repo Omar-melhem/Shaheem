@@ -304,6 +304,139 @@ remediation working tree, verified 2026-11-22 (results:
 
 ---
 
+## L-21 — Presentation changes must not rewrite identity or service ownership
+
+- **Prevention rule (D-A82, implemented 2026-11-24):** shorten the
+  Home greeting only, preserving full session/Profile names and whitespace
+  fallback. Register the distinct Home asset before use; preserve the
+  owner's main logo/Login edits. Removing a balance shortcut removes its
+  exclusive inputs/read, not the Wallet feature or completion invalidation.
+- Remove the actual secondary Home-card control and its dead API; do not
+  hide it or confuse declining an offer with cancelling the merchant order.
+  The separate offer-sheet decline path stays outside this removal.
+- **Verification pending:** implementation must exercise real callers,
+  absent-name input, layout and request counts. No new test result is claimed.
+
+## L-22 — Optional delivery details need a complete historical path
+
+- **Prevention rule (D-A83, implemented 2026-11-24):** name,
+  phone and delivery notes are optional; omit blank rows. Area and fee are
+  business-required; missing data stays unavailable, never invented/zero.
+  Delivery notes must not be copied from pickup instructions.
+- Propagate fields through model reconstruction, stage changes, mapping,
+  fakes and the historical read model. A non-tappable list tile is not an
+  implemented per-order detail page. Reuse the cohesive details UI across
+  its actual current/history consumers, keeping commands feature-owned.
+- Historical data comes from the own order record, not current profiles
+  or the active-order cache. No personal details in offers, pushes or logs;
+  no per-row prefetch/polling or invented retention period.
+- **Verification pending:** optional/absent combinations, correct-order
+  navigation, session clearing, RTL/large text, and complete data flow.
+
+## L-23 — Remove a consumer's reads with the consumer (D-A82)
+
+- **Scenario:** the shell created `WalletCubit` eagerly and called
+  `loadBalance()` only so Home's chip had a value. Removing the chip but
+  keeping that read would have fetched the wallet on every sign-in for no
+  screen.
+- **Fix:** the provider is lazy, `loadBalance()` was deleted (no other
+  production caller), and `syncSession()` reads nothing when nothing was
+  read yet. Wallet's first show, re-show and completion invalidation are
+  unchanged.
+- **Verification:** `wallet_test.dart` "D-A82: Home reads no wallet data…"
+  (0 reads until the Wallet tab), invalidation follow-up test.
+- **Rule:** when a UI consumer is removed, search for reads, eager
+  providers and session hooks that existed only for it.
+
+## L-24 — A page that never fetches must not wait forever (D-A83)
+
+- **Scenario (caught by a widget test):** the completed-order page showed a
+  spinner while the history Cubit was still `initial`. On a direct link
+  before My Orders ever opened, nothing would ever load, so it would spin
+  forever.
+- **Fix:** only an already-running list read shows loading; "not read yet",
+  not found and failure show the explicit unavailable state with Back to My
+  Orders. No per-order lookup was invented (no contract).
+- **Verification:** `order_details_test.dart` direct-link and
+  not-configured cases.
+- **Rule:** a screen that depends on another owner's read must define what
+  it shows when that read never starts.
+
+## L-25 — Run the required checks against owner work in progress honestly
+
+- **Observed 2026-11-24:** the owner's uncommitted ARB edit lacked a comma
+  (blocking `flutter gen-l10n`), the demo username changed in `auth.json`,
+  and two Login tests failed after the new Login layout.
+- **Handling:** only what blocked the required checks was changed (the
+  comma + metadata; demo tests use the new username).
+- **Correction (workflow mistake, 2026-11-24):** the two Login failures
+  were then reported, in two task reports, as "the button is pushed off the
+  800×600 viewport" and as "pre-existing". Both were wrong. The button was
+  on screen and covered by the error toast (L-26). The HEAD comparison only
+  showed the failure was new with the owner's logo, not why the tap missed.
+  The tests stayed failing across two tasks instead of being fixed.
+- **Rule:** never "fix" owner work silently; change the minimum that blocks
+  required checks, say so, and attribute remaining failures with evidence.
+  A diagnosis quotes the failing output (the hit-test warning names the
+  widget that received the tap); "off-screen" or "pre-existing" is written
+  only after the widget's rect, the viewport and a baseline run were
+  measured. A known failure is diagnosed in the task that finds it, not
+  carried as an attribution.
+
+## L-26 — A test tap must reach its widget: toasts cover, assets decode late
+
+- **Kind:** test defect (production behaviour was not changed).
+- **Symptom:** `login_screen_test` "offline and backend failures get their
+  own messages" and `demo_mode_test` "Login shows the badge…" failed in the
+  full run (each passed alone). flutter_test warned that the tap at
+  `Offset(400, 509)` "would not hit test" on the Login `FilledButton`; the
+  second failure message, or Home, never appeared.
+- **Root cause (measured):** the first failed sign-in shows the error
+  toast, a floating `SnackBar` occupying y 509–600 at 800×600. The test then
+  tapped the submit button again while the toast still covered it, so the
+  toast received the tap. Whether the button sat under the toast depended
+  on test order: the owner's new square logo (`shahm_main_logo.png`,
+  1254×1254, 180 px tall at width 180; HEAD's logo was 861×498, ≈104 px)
+  has a height of 0 until it is decoded. A fresh run measured the button at
+  y 318–366 (clear of the toast); after earlier tests had decoded the logo
+  it was centred at y 509 (under the toast).
+- **Fix:** `tapLoginSubmit` in `test/test_app.dart` acts like a captain:
+  closes a visible toast through its own close button, scrolls the button
+  into view, asserts it is hit-testable, then taps. Both tests use it. No
+  assertion, viewport or production widget was changed.
+- **Verification:** both test files pass together and each target test
+  passes alone; full `flutter test` (results in the task report).
+- **Rule:** before tapping a control a previous step may have covered
+  (toast, sheet, keyboard), close or wait for the cover and assert
+  `finder.hitTestable()`; treat the "would not hit test" warning as a
+  failure. Layout assertions must not depend on whether an asset happens
+  to be decoded yet.
+- **Open product observation (not a defect claim):** on short screens the
+  4-second error toast covers the Login button until closed; whether it
+  should sit above the form is an owner/design decision.
+
+## L-27 — Format only the files you changed, and keep the output
+
+- **Kind:** workflow mistake.
+- **Symptom:** earlier tasks ran `dart format lib`, and `dart format lib test`,
+  with the output discarded (`>/dev/null`). This touched files outside each
+  task's scope, including ones with uncommitted owner edits.
+- **Root cause:** using the whole directory as a shortcut for "the files I
+  edited", and suppressing the list of changed files.
+- **Correction and review (2026-11-24):** every modified Dart file was
+  compared with `dart format` applied to its HEAD version. None differs from
+  HEAD by formatting only, and every HEAD version was already format-clean.
+  Generated localizations match a fresh `flutter gen-l10n` byte for byte.
+  Because the output was discarded, it cannot be established whether
+  unformatted owner edits were reformatted, so nothing was reverted.
+- **Rule:** run `dart format <exact files changed in this task>` and keep
+  its output in the log. Never format `lib`/`test` wholesale in a working
+  tree that holds owner changes. Never format generated files.
+- **Verification:** this repair formatted only `test/test_app.dart`,
+  `test/login_screen_test.dart`, `test/demo_mode_test.dart` and
+  `lib/view/screens/authentication/view/login_screen.dart` (results in the
+  task report).
+
 ## Recommendations recorded without code change
 
 | Item | Decision and rationale |

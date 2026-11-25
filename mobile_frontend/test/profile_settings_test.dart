@@ -30,6 +30,8 @@ import 'package:mobile_frontend/view/screens/about_screen/view/about_screen.dart
 import 'package:mobile_frontend/view/screens/authentication/view/login_screen.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/cubit/profile_rating_cubit.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/view/profile_screen.dart';
+import 'package:mobile_frontend/view/screens/profile_screen/widget/profile_rating_stars.dart';
+import 'package:mobile_frontend/view/screens/profile_screen/widget/profile_summary_section.dart';
 import 'package:mobile_frontend/view/screens/settings_screen/view/settings_screen.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
@@ -186,11 +188,7 @@ void main() {
             find.byKey(MainNavigationBar.itemKey(d));
 
         setUp(() {
-          account.rating = const CaptainRating(
-            ratingsCount: 4,
-            average: 4.5,
-            scaleMax: 5,
-          );
+          account.rating = const CaptainRating(ratingsCount: 4, average: 4.5);
         });
 
         testWidgets('first show reads once; rebuilds read nothing', (
@@ -253,26 +251,33 @@ void main() {
         expect(account.ratingCalls, 1);
       });
 
-      testWidgets('offline: unavailable with Retry that reads again', (
-        tester,
-      ) async {
+      testWidgets('offline: its own message with Retry that reads again; '
+          'the identity stays visible', (tester) async {
         account.ratingError = const CaptainAccountNetworkUnavailableException();
         await launchProfile(tester);
-        expect(find.text(l10n.profileRatingUnavailable), findsOneWidget);
-        account.rating = const CaptainRating(
-          ratingsCount: 12,
-          average: 4.25,
-          scaleMax: 5,
-        );
+        expect(find.text(l10n.profileRatingOffline), findsOneWidget);
+        expect(find.text('أحمد الشهم'), findsOneWidget);
+        expect(find.text(ltrIsolate('0791234567')), findsOneWidget);
+        expect(find.byKey(ProfileRatingStars.rowKey), findsNothing);
+        account.rating = const CaptainRating(ratingsCount: 12, average: 4.25);
         await tester.tap(find.text(l10n.retry));
         await tester.pumpAndSettle();
         expect(
-          find.text(
-            l10n.profileRatingOutOf(ltrIsolate('4.3'), ltrIsolate('5')),
-          ),
+          find.text(ltrIsolate(l10n.profileRatingValue('4.25', '5'))),
           findsOneWidget,
         );
         expect(find.text(l10n.profileRatingCount(12)), findsOneWidget);
+        expect(find.text(l10n.retry), findsNothing);
+      });
+
+      testWidgets('failure: its own message with Retry; identity visible', (
+        tester,
+      ) async {
+        account.ratingError = StateError('server failed');
+        await launchProfile(tester);
+        expect(find.text(l10n.profileRatingFailed), findsOneWidget);
+        expect(find.text(l10n.retry), findsOneWidget);
+        expect(find.text('أحمد الشهم'), findsOneWidget);
       });
 
       testWidgets('confirmed no ratings is distinct from unknown', (
@@ -284,13 +289,114 @@ void main() {
         expect(find.text(l10n.profileRatingUnavailable), findsNothing);
       });
 
-      testWidgets('no scale stated: the value alone, never «من 5»', (
+      testWidgets('one centered section: name, then phone, then the stars '
+          'and «4.3 / 5»', (tester) async {
+        account.rating = const CaptainRating(ratingsCount: 27, average: 4.3);
+        await launchProfile(tester);
+        final section = find.byKey(ProfileSummarySection.sectionKey);
+        expect(section, findsOneWidget);
+        final name = tester.getRect(find.text('أحمد الشهم'));
+        final phone = tester.getRect(find.text(ltrIsolate('0791234567')));
+        final stars = tester.getRect(find.byKey(ProfileRatingStars.rowKey));
+        final value = tester.getRect(
+          find.text(ltrIsolate(l10n.profileRatingValue('4.3', '5'))),
+        );
+        expect(name.bottom, lessThanOrEqualTo(phone.top));
+        expect(phone.bottom, lessThanOrEqualTo(stars.top));
+        expect(stars.bottom, lessThanOrEqualTo(value.top));
+        final center = tester.getRect(section).center.dx;
+        for (final r in [name, phone, stars, value]) {
+          expect(r.center.dx, moreOrLessEquals(center, epsilon: 1));
+        }
+        expect(find.text(l10n.profileRatingCount(27)), findsOneWidget);
+      });
+
+      testWidgets('one localized semantics sentence; the stars add no label', (
         tester,
       ) async {
-        account.rating = const CaptainRating(ratingsCount: 3, average: 87);
+        final handle = tester.ensureSemantics();
+        account.rating = const CaptainRating(ratingsCount: 27, average: 4.3);
         await launchProfile(tester);
-        expect(find.text(ltrIsolate('87')), findsOneWidget);
-        expect(find.textContaining('من'), findsNothing);
+        final sentence = l10n.profileRatingSemanticsValue(
+          '4.3',
+          '5',
+          l10n.profileRatingCount(27),
+        );
+        expect(find.bySemanticsLabel(sentence), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp(r'^\u2066?4\.3 / 5')),
+          findsNothing,
+        );
+        final starsNode = tester.getSemantics(
+          find.byKey(ProfileRatingStars.rowKey),
+        );
+        expect(starsNode.label, sentence);
+        handle.dispose();
+      });
+
+      for (final (average, count, text, fills) in [
+        (0.0, 3, '0', [0.0, 0.0, 0.0, 0.0, 0.0]),
+        (4.3, 27, '4.3', [1.0, 1.0, 1.0, 1.0, 0.3]),
+        (2.75, 4, '2.75', [1.0, 1.0, 0.75, 0.0, 0.0]),
+        (4.999, 9, '4.99', [1.0, 1.0, 1.0, 1.0, 0.999]),
+        (5.0, 2, '5', [1.0, 1.0, 1.0, 1.0, 1.0]),
+      ]) {
+        testWidgets('valid $average: exact fill per star and «$text / 5», '
+            'never rounded up', (tester) async {
+          account.rating = CaptainRating(ratingsCount: count, average: average);
+          await launchProfile(tester);
+          expect(
+            find.text(ltrIsolate(l10n.profileRatingValue(text, '5'))),
+            findsOneWidget,
+          );
+          expect(find.byKey(ProfileRatingStars.rowKey), findsOneWidget);
+          for (var i = 0; i < 5; i++) {
+            expect(
+              ProfileRatingStars.fillOf(average, i),
+              moreOrLessEquals(fills[i], epsilon: 1e-9),
+              reason: 'star $i',
+            );
+          }
+        });
+      }
+
+      for (final (label, rating) in [
+        ('above 5', const CaptainRating(ratingsCount: 3, average: 87)),
+        ('negative', const CaptainRating(ratingsCount: 3, average: -0.5)),
+        ('NaN', const CaptainRating(ratingsCount: 3, average: double.nan)),
+        (
+          'infinite',
+          const CaptainRating(ratingsCount: 3, average: double.infinity),
+        ),
+        ('negative count', const CaptainRating(ratingsCount: -1)),
+        (
+          'count 0 with an average',
+          const CaptainRating(ratingsCount: 0, average: 4),
+        ),
+        ('count without an average', const CaptainRating(ratingsCount: 5)),
+      ]) {
+        testWidgets('invalid ($label): «التقييم غير متوفر», no stars, no '
+            'value, no clamping', (tester) async {
+          account.rating = rating;
+          await launchProfile(tester);
+          expect(find.text(l10n.profileRatingUnavailable), findsOneWidget);
+          expect(find.byKey(ProfileRatingStars.rowKey), findsNothing);
+          expect(find.textContaining('/ 5'), findsNothing);
+          expect(find.text(l10n.retry), findsNothing);
+          expect(find.text('أحمد الشهم'), findsOneWidget);
+        });
+      }
+
+      test('GetCaptainRating validates: invalid values never load', () async {
+        final repo = FakeCaptainAccountRepository()
+          ..rating = const CaptainRating(ratingsCount: 2, average: 5.01);
+        expect(await GetCaptainRating(repo).call(), isA<RatingInvalid>());
+        repo.rating = const CaptainRating(ratingsCount: 2, average: 5);
+        final ok = await GetCaptainRating(repo).call();
+        expect(ok, isA<RatingLoaded>());
+        expect((ok as RatingLoaded).rating.average, 5);
+        repo.rating = const CaptainRating(ratingsCount: 0);
+        expect(await GetCaptainRating(repo).call(), isA<RatingLoaded>());
       });
     });
 
@@ -357,11 +463,7 @@ void main() {
         setScreenSize(tester, 320, 640);
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-        account.rating = const CaptainRating(
-          ratingsCount: 1200,
-          average: 4.8,
-          scaleMax: 5,
-        );
+        account.rating = const CaptainRating(ratingsCount: 1200, average: 4.8);
         await openSettings(tester);
         expect(tester.takeException(), isNull);
         await tester.tap(find.byType(BackButton));

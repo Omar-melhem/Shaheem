@@ -16,6 +16,10 @@ import 'package:mobile_frontend/view/screens/authentication/widget/login_failure
 import 'package:mobile_frontend/view/screens/authentication/widget/login_form.dart';
 import 'package:mobile_frontend/view/screens/authentication/widget/login_terms_action.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
+import 'package:mobile_frontend/view/widget/text/body_text1.dart';
+
+import 'package:mobile_frontend/view/widget/text/headline2.dart';
+
 import 'package:mobile_frontend/view/widget/toast/app_toast.dart';
 
 /// Username/password sign-in.
@@ -96,24 +100,28 @@ class LoginScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Center(
-                        child: Image.asset(
-                          AppImages.logo,
-                          width: 180,
-                          fit: BoxFit.contain,
-                          semanticLabel: l10n.appName,
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              AppImages.logo,
+                              width: 180,
+                              fit: BoxFit.contain,
+                              semanticLabel: l10n.appName,
+                            ),
+                            SizedBox(width: 8),
+                            BodyText1(
+                              title: l10n.companyWordmark,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
                       Semantics(
                         header: true,
-                        child: Text(
-                          l10n.loginTitle,
+                        child: Headline2(
+                          title: l10n.loginTitle,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: AppColor.textPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
                         ),
                       ),
                       const SizedBox(height: 32),

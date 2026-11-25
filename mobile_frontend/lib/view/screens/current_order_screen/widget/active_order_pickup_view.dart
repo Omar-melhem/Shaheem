@@ -46,7 +46,7 @@ class ActiveOrderPickupView extends StatelessWidget {
   /// Looks the order up again (it may have gained coordinates).
   final VoidCallback onRefresh;
 
-  /// Opens the pickup-verification form.
+  /// Sends the pickup confirmation directly (no verification code).
   final VoidCallback onConfirmPickup;
 
   /// Opens Google Maps navigation to the merchant.
@@ -71,9 +71,8 @@ class ActiveOrderPickupView extends StatelessWidget {
     final pickupCommand = command?.action == OrderWorkflowAction.confirmPickup
         ? command
         : null;
-    final blocked =
-        pickupCommand?.error == OrderCommandError.pinLocked ||
-        (pickupCommand?.needsReconciliation ?? false);
+    // An unknown outcome blocks a resend until it is reconciled.
+    final blocked = pickupCommand?.needsReconciliation ?? false;
 
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
@@ -87,17 +86,20 @@ class ActiveOrderPickupView extends StatelessWidget {
               children: [
                 _PickupCard(state: state),
                 const SizedBox(height: 12),
+                // One tap sends the command; while it is being sent the
+                // button shows its spinner and ignores taps (the Cubit
+                // also refuses a second command).
                 AppButton(
                   label: l10n.pickupConfirmAction,
                   icon: const Icon(PhosphorIconsRegular.package),
                   isLoading: state.isSending,
                   onPressed: blocked ? null : onConfirmPickup,
                 ),
-                // A locked PIN or an unknown outcome stays visible here
-                // after the form closes.
-                if (blocked)
+                // The pickup outcome (not sent, rejected, unknown) stays
+                // visible under the button; unknown adds the status check.
+                if (pickupCommand != null)
                   OrderCommandNotice(
-                    feedback: pickupCommand!,
+                    feedback: pickupCommand,
                     onCheckStatus: onCheckStatus,
                   ),
                 const SizedBox(height: 4),

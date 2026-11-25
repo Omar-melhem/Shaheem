@@ -17,7 +17,9 @@
       "status": "eligible",
       "demo_pickup_latitude": 31.97,
       "demo_pickup_longitude": 35.902,
-      "demo_customer_phone": "0700000101"
+      "demo_customer_phone": "0700000101",
+      "demo_customer_name": "سارة (اسم تجريبي)",
+      "demo_delivery_notes": "الطابق الثالث، الجرس معطّل — بيانات تجريبية"
     },
     {
       "id": "demo-offer-102",
@@ -67,7 +69,9 @@
     "status": "eligible",
     "demo_pickup_latitude": 31.978,
     "demo_pickup_longitude": 35.878,
-    "demo_customer_phone": "0700000777"
+    "demo_customer_phone": "0700000777",
+    "demo_customer_name": "خالد (اسم تجريبي)",
+    "demo_delivery_notes": "الرجاء الاتصال عند الوصول — بيانات تجريبية"
   },
   "unavailable_offer_scenario": {
     "id": "demo-expired-offer",
@@ -80,5 +84,5 @@
     "commission_fils": 400,
     "captain_net_fils": 1600
   },
-  "demo_contact_note": "Fictional pickup points in Amman and fictional, non-assignable 070 phone numbers. demo-offer-102 deliberately has no customer phone (D-A81: the phone is optional)."
+  "demo_contact_note": "Fictional pickup points in Amman, fictional customer names/notes and fictional, non-assignable 070 phone numbers. demo-offer-102 and the pre-assigned scenario deliberately have no customer name, phone or notes (D-A81/D-A83: optional)."
 }

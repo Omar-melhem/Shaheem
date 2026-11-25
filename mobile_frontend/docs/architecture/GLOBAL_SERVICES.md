@@ -1,5 +1,16 @@
 # SHAHM Flutter — Global Services and App-Level State
 
+**Focused amendment (2026-11-24, D-A82/D-A83; client implemented 2026-11-24):** the Home
+emblem/greeting adds no service/request; remove the Home-only wallet read
+when its consumer is removed. Preserve Wallet's existing authoritative
+owner and confirmed-completion invalidation. Active/completed order read
+contracts need optional customer name/phone/delivery notes and required
+area/full fee. Reuse already-loaded complete history data; any detail read
+is on demand and session-guarded, not per-row or periodic. Customer data
+must not enter push, public offer, diagnostics or analytics payloads. Exact
+transport schemas and retention rules remain unspecified; no adapter or
+new endpoint was implemented by the documentation task.
+
 **Note:** existing Cubits and repository method names below describe the 2026-11-11 Flutter snapshot. The authoritative new target is approved in D-A53–D-A58; no production integration has been implemented in the available source.
 
 The app-wide connectivity monitor, global banner, lifecycle handling, session

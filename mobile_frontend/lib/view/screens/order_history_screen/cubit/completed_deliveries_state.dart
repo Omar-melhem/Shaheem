@@ -27,6 +27,7 @@ class CompletedDeliveriesState {
     this.nextCursor,
     this.loadingMore = false,
     this.moreFailed = false,
+    this.known = const {},
   });
 
   final CompletedDeliveriesStatus status;
@@ -34,6 +35,17 @@ class CompletedDeliveriesState {
   final String? nextCursor;
   final bool loadingMore;
   final bool moreFailed;
+
+  /// Every record this session has received, by order id (D-A83). A
+  /// completed delivery is a historical snapshot, so a record stays
+  /// available to its detail page after a refresh or a page change; it is
+  /// cleared with the session (sign-out closes the shell, and the no-session
+  /// state empties it).
+  final Map<String, CompletedDelivery> known;
+
+  /// The exact record for [orderId] received in this session, or null.
+  /// Never another order's data and never the current active order.
+  CompletedDelivery? recordFor(String orderId) => known[orderId];
 
   /// Whether a read (first page or more) is running.
   bool get isBusy => status == CompletedDeliveriesStatus.loading || loadingMore;
@@ -57,5 +69,6 @@ class CompletedDeliveriesState {
     nextCursor: nextCursor,
     loadingMore: loadingMore ?? this.loadingMore,
     moreFailed: moreFailed ?? this.moreFailed,
+    known: known,
   );
 }

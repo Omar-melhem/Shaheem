@@ -1,5 +1,12 @@
 # SHAHM Flutter — Documentation Index
 
+**Latest focused owner revision: 2026-11-24 (D-A82/D-A83).** Read
+`decisions/ARCHITECTURAL_DECISIONS.md` §1.5, the updated Product Overview,
+Design System and `project/PROJECT_STATUS.md` §0.3 before implementing Home
+or customer/order history details. Docs record the approved target; Flutter
+source still has the old Home chip/two-button card and no completed-order
+detail page. Earlier instructions are superseded only in this stated scope.
+
 **Reconciled against the client revision of 2026-11-20 (D-A69–D-A79).** For current business rules use `project/PRODUCT_OVERVIEW.md`, and for decision resolution use `decisions/ARCHITECTURAL_DECISIONS.md` §1.2, §1.1 and §3. Older implementation snapshots are not production approvals. `project/PROJECT_STATUS.md` §0 records the current target versus what the code actually contains.
 
 This is the central documentation for the SHAHM Flutter app

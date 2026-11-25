@@ -20,6 +20,8 @@ import 'package:mobile_frontend/theme/app_color.dart';
 ///
 /// Not used: maps (the pickup map stays "unavailable"), location (the real
 /// "not configured" placeholder) and every production repository. The
+/// demo account repository serves the fictional rating only; account
+/// deletion stays "not configured". The
 /// connectivity monitor is the real one unless [connectivityService] is
 /// given (tests).
 class DemoApp extends StatefulWidget {
@@ -77,6 +79,7 @@ class _DemoAppState extends State<DemoApp> {
         walletRepository: DemoWalletRepository(state),
         orderHistoryRepository: DemoOrderHistoryRepository(state),
         orderWorkflowRepository: DemoOrderWorkflowRepository(state),
+        captainAccountRepository: DemoCaptainAccountRepository(state),
         demoAppOverlay: (context, child) =>
             DemoStrip(state: state, child: child!),
         demoShellBuilder: (context, child) =>

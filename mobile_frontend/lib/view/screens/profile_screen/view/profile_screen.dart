@@ -14,17 +14,17 @@ import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
 import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/profile_screen/cubit/profile_rating_cubit.dart';
-import 'package:mobile_frontend/view/screens/profile_screen/widget/profile_identity_card.dart';
-import 'package:mobile_frontend/view/screens/profile_screen/widget/profile_rating_card.dart';
+import 'package:mobile_frontend/view/screens/profile_screen/widget/profile_summary_section.dart';
 import 'package:mobile_frontend/view/widget/legal/terms_page_opener.dart';
 import 'package:mobile_frontend/view/widget/pop_up_screen/app_popup.dart';
 
 /// Root screen of the «حسابي» tab: a root tab, so it has no back button.
 ///
-/// - [ProfileIdentityCard]: name and phone from the session.
-/// - [ProfileRatingCard]: the rating from `ProfileRatingCubit` (provided
-///   by the route), loaded on the first show, on each re-show of the tab
-///   and on app resume while visible (R03).
+/// - [ProfileSummarySection]: one centered section with the name and phone
+///   from the session and the 5-star rating from `ProfileRatingCubit`
+///   (provided by the route), loaded on the first show, on each re-show of
+///   the tab and on app resume while visible (R03) — never on rebuilds or
+///   language changes.
 /// - Entries: Settings (`/settings`, with account deletion), Terms &
 ///   Conditions (the same in-app legal flow as Login, [legalPageLauncher])
 ///   and About (`/about`). There is no Wallet entry (D-A77): the Wallet is
@@ -138,9 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return ListView(
             padding: EdgeInsetsDirectional.fromSTEB(side, 16, end, 24),
             children: [
-              const ProfileIdentityCard(),
-              const SizedBox(height: 12),
-              const ProfileRatingCard(),
+              const ProfileSummarySection(),
               const SizedBox(height: 16),
               _MenuTile(
                 icon: Icons.settings_outlined,

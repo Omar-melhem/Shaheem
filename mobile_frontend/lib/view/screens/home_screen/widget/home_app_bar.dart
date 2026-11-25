@@ -1,23 +1,23 @@
-// Home AppBar: greeting, wallet balance and availability (D-A71).
+// Home AppBar: greeting, Home emblem and availability (D-A71, D-A82).
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/helper/translation/l10n_extension.dart';
 import 'package:mobile_frontend/theme/app_color.dart';
+import 'package:mobile_frontend/util/images.dart';
 import 'package:mobile_frontend/util/responsive/app_breakpoints.dart';
-import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/home_availability_bar.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/home_greeting.dart';
-import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
 
-/// The Home AppBar (client revision, D-A71), following the hierarchy of the
-/// client's reference image without its logo or patterned header:
+/// The Home AppBar (D-A71, revised by D-A82):
 ///
-/// 1. **First row:** the personalized greeting ([HomeGreeting]) at the
-///    reading start, and the wallet balance chip ([WalletBalanceChip],
-///    opening the Wallet tab) at the end. When both don't fit (narrow
-///    screen, long name, large text) the chip moves under the greeting
-///    instead of being dropped or truncated.
+/// 1. **First row:** the greeting with the captain's first name
+///    ([HomeGreeting]) at the reading start, and the owner-provided emblem
+///    ([AppImages.homeLogo]) at the logical end. The emblem is decorative
+///    branding with no action: the former wallet shortcut was removed
+///    (D-A82; Wallet is its own tab). It has bounded size and `BoxFit.contain`,
+///    so the whole emblem shows without stretching or clipping, and it
+///    reads no data. On a narrow screen or at large text the emblem moves
+///    under the greeting instead of squeezing it.
 /// 2. **Second row:** the controlled availability switch and its status,
 ///    with any notice underneath ([HomeAvailabilityBar]).
 ///
@@ -34,15 +34,7 @@ import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_c
 /// never overflows. White surface, light bottom
 /// divider, and the top safe area applied here once.
 class HomeAppBar extends StatelessWidget {
-  const HomeAppBar({
-    super.key,
-    required this.walletBalanceFils,
-    required this.availableHeight,
-  });
-
-  /// Total wallet balance in integer fils from the single authoritative
-  /// wallet source (the same value the Wallet tab shows). Null shows «—».
-  final int? walletBalanceFils;
+  const HomeAppBar({super.key, required this.availableHeight});
 
   /// The height the Home page actually has for the bar and the body (the
   /// Scaffold body's constraint, which already excludes the navigation bar
@@ -57,17 +49,25 @@ class HomeAppBar extends StatelessWidget {
   /// Key of the bar's surface, for tests.
   static const Key surfaceKey = Key('home-app-bar');
 
+  /// Key of the Home emblem, for tests.
+  static const Key logoKey = Key('home-app-bar-logo');
+
+  /// Height of the Home emblem; its width follows the asset's aspect ratio.
+  static const double logoHeight = 44;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     // The same side padding as the body, so the bar and the offer cards
     // share one content edge.
     final side = AppBreakpoints.screenPadding(context);
-    final chip = WalletBalanceChip(
-      balanceFils: walletBalanceFils,
-      // The same canonical route as the Wallet tab: switches to that
-      // branch instead of stacking a second Wallet page.
-      onPressed: () => context.go(RoutesString.wallet),
+    // One announcement for the emblem (no duplicate text label).
+    final logo = Image.asset(
+      AppImages.homeLogo,
+      key: logoKey,
+      height: logoHeight,
+      fit: BoxFit.contain,
+      semanticLabel: l10n.homeLogoSemantics,
     );
 
     return Material(
@@ -93,14 +93,14 @@ class HomeAppBar extends StatelessWidget {
                     label: l10n.homeTitle,
                     child: const SizedBox.shrink(),
                   ),
-                  // A Wrap keeps the greeting first and moves the chip to
+                  // A Wrap keeps the greeting first and moves the emblem to
                   // its own run when they cannot share one line.
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 12,
                     runSpacing: 8,
-                    children: [const HomeGreeting(), chip],
+                    children: [const HomeGreeting(), logo],
                   ),
                   const SizedBox(height: 8),
                   const HomeAvailabilityBar(),

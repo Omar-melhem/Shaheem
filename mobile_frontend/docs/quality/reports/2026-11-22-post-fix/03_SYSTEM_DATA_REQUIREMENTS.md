@@ -1,5 +1,10 @@
 # 03 — System Data Requirements (revised, post-remediation)
 
+**Amendment 2026-11-24 (D-A82/D-A83), client implemented 2026-11-24:** §9b and the new
+field rows now describe the implemented client model/UI; wire DTOs and
+server contracts are still missing. Root baseline reports/hashes remain unchanged.
+Earlier D-A81 status overrides still apply except where §9b extends them.
+
 **Authority and provenance.** Revised 2026-11-22 (R10) from the final
 remediation working tree on `cefad0a`. It supersedes the baseline
 [`../../../03_SYSTEM_DATA_REQUIREMENTS.md`](../../../03_SYSTEM_DATA_REQUIREMENTS.md)
@@ -177,6 +182,11 @@ Every ID appears exactly once here and once in Table B (§3).
 | DATA-PUSH-01 | Push token | proposed `pushToken` | out | opaque FCM/APNs token | — | approved target, contract missing |
 | DATA-PUSH-02 | Platform | proposed `platform` | out | enum android / ios | — | same |
 | DATA-PUSH-03 | Device session | proposed `deviceSessionRef` | server | → DATA-AUTH-05 | — | only if the contract ties tokens to sessions |
+| DATA-ORD-22 | Optional customer name | `customerName` | in | nullable String; blank omitted | domain-only (2026-11-24) | optional (D-A83) |
+| DATA-ORD-23 | Optional delivery notes | `deliveryNotes` | in | nullable String; distinct from pickup instructions | domain-only (2026-11-24) | optional (D-A83) |
+| DATA-DELIV-07 | Historical customer name | `customerName` | in | nullable String from the order record | domain-only (2026-11-24) | optional (D-A83) |
+| DATA-DELIV-08 | Historical customer phone | `customerPhone` | in | nullable String from the order record | domain-only (2026-11-24) | optional (D-A83) |
+| DATA-DELIV-09 | Historical delivery notes | `deliveryNotes` | in | nullable String from the order record | domain-only (2026-11-24) | optional (D-A83) |
 | DATA-ORD-21 | Assignment reference | `ActiveOrder.assignmentRef`, `OrderCommandTarget.assignmentRef` | in → out | opaque string | nullable (until the contract defines it) | required for stale-command protection (D-A81) |
 | DATA-CMD-05 | Pickup proof: entered PIN | `PickupPinProof.digits` | out | exactly 4 ASCII digits after Arabic-digit normalization, leading zeros kept | required to send | required; **never returned, stored or logged** |
 | DATA-CMD-06 | PIN attempts remaining | `PickupCodeIncorrectException.remainingAttempts` | in | int 0..2 | nullable (shown only when supplied) | server-counted (3, D-A67) |
@@ -320,6 +330,11 @@ Every ID appears exactly once here and once in Table B (§3).
 | DATA-PUSH-01 | — | Device | none | P | approved-unimplemented | token per device/session | system | device identifier; deleted on sign-out / deletion |
 | DATA-PUSH-02 | — | Device | none | P | approved-unimplemented | column | — | — |
 | DATA-PUSH-03 | — | Server | none | P | unresolved | FK if supported | — | — |
+| DATA-ORD-22 | Null/blank => omit | Merchant order | delivery-details section | P/S (order fact/snapshot) | domain-only | optional order-level name; no customer account | assigned captain; own history under D-A83 | personal; retention/redaction open |
+| DATA-ORD-23 | Null/blank => omit; not pickup notes | Merchant order | delivery-details section | P/S | domain-only | optional delivery note | same | may contain personal data; no logs/push |
+| DATA-DELIV-07 | Null/blank => omit | Historical order record | own completed-order detail page | S/read model | domain-only | preserves supplied order name | own delivery record only | retention/redaction open |
+| DATA-DELIV-08 | Null/blank => omit | Historical order record | same | S/read model | domain-only | supplied historical phone | own delivery record only | sensitive; retention/redaction open |
+| DATA-DELIV-09 | Null/blank => omit; wrap long text | Historical order record | same | S/read model | domain-only | supplied historical delivery notes | own delivery record only | no logs/push |
 | DATA-ORD-21 | Opaque; compared, never parsed | Server | `CurrentOrderCubit` stale-answer guard | P | domain-only | assignment id (FK of the active assignment) | assigned captain | — |
 | DATA-CMD-05 | Syntax only on the phone (`Validators.pickupPin`) | Captain (from the merchant) | PIN form → `CurrentOrderCubit.confirmPickup` | — (local controller only, cleared/disposed) | domain-only | compared with the hashed DATA-ORD-13 server-side | captain submits | secret; never in state, logs or analytics |
 | DATA-CMD-06 | Never computed on the phone | Server | PIN form message | E | domain-only | derived from DATA-ORD-14 | — | — |
@@ -513,6 +528,32 @@ codes and attempts; start and complete commands with idempotency;
 completion receipt; outcome lookup; completed-delivery list with paging;
 the Routes access design; FCM/SignalR invalidation events for stage
 changes.
+
+## 9b. D-A82/D-A83 amendment (2026-11-24, client implemented 2026-11-24)
+
+| Existing field | Approved target / actual implementation boundary |
+|---|---|
+| DATA-USER-02 | Home renders first non-empty display-name token only; full session/Profile name retained, no new API field/read required |
+| DATA-WAL-01 | Wallet balance remains; Home chip, its input/selector and the eager shell read were **removed** (lazy `WalletCubit`). R02 remains the historical source-sharing fix |
+| DATA-CMD-02 | Remove Home-card rejection control only; separate sheet decline and existing server/history command stay |
+| DATA-ORD-08/09 | Business-required area/full fee in delivery details: `ActiveOrder.deliveryAreaName`, **`ActiveOrder.deliveryFeeFils` (added)**. Unknown displays unavailable, an explicit 0 shows 0 |
+| DATA-ORD-12 | Optional phone in active delivery and the authorized own historical record; never prerequisite for Start Delivery or completion |
+| DATA-ORD-22/23 | `ActiveOrder.customerName` / `deliveryNotes` (+ `contactName`, `deliveryNote`) **domain-only**, carried through stage reads and the demo; wire mapping missing |
+| DATA-DELIV-01..06 | Completed list + **protected per-order page** `/order-history/completed/:orderId` reading the session's record (`recordFor`); no per-row fetch; list contract still missing |
+| DATA-DELIV-07..09 | `CompletedDelivery.customerName` / `customerPhone` / `deliveryNotes` **domain-only**, from the order's own history record (demo copies the order snapshot at completion); retention/redaction unspecified |
+
+The new details heading/labels and image semantics are localized UI, not
+database fields. No customer coordinates, precise address, account or
+public-offer/push personal data is introduced. The same cohesive details
+presentation serves active and historical views; commands stay active-only.
+Reuse a complete session-owned list record where available; otherwise a
+detail read is on demand, with explicit unavailable/not-found/error states,
+never N per-row fetches or polling. Exact transport/authorization/retention
+contracts remain to specify. No real backend write is claimed.
+
+The two field tables include five new atomic IDs, once per table. Earlier
+125-ID counts belong to their audit snapshot; recompute a current count
+from the tables instead of treating that snapshot count as a live total.
 
 ## 9. Integration backlog (bounded tasks)
 

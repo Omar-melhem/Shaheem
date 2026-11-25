@@ -11,15 +11,16 @@ part 'wallet_state.dart';
 /// independently — the lifetime delivery statistics.
 ///
 /// **Scope (R02, API-05):** one instance per authenticated main shell,
-/// shared by the Home balance chip and the Wallet tab, so both always show
-/// the same snapshot. A second balance owner (a Home-only Cubit or cache)
-/// is not allowed: two owners can disagree after a debit. It closes with
-/// the shell on sign-out.
+/// read by the Wallet tab (Home has shown no balance since D-A82). It is
+/// created lazily, so nothing is read until Wallet first shows or a
+/// confirmed completion invalidates it. A second balance owner (another
+/// Cubit or cache) is not allowed: two owners can disagree after a debit.
+/// It closes with the shell on sign-out.
 ///
 /// **Load triggers** (each one explicit, no polling, no build-time loads):
-/// - shell creation: [loadBalance] once (balance and debits only);
-/// - Wallet first shown: [ensureLoaded] reads whatever is still unread
-///   (usually only the statistics, so Home never causes a statistics read);
+/// - Wallet first shown: [ensureLoaded] reads whatever is still unread;
+/// - confirmed delivery completion: [invalidate] (balance/debits, plus the
+///   statistics only if Wallet read them before);
 /// - Wallet re-shown after another tab, or its Retry: [load] (both reads);
 /// - statistics Retry: [retryStatistics];
 /// - session owner changed (account replacement): [syncSession].
@@ -76,12 +77,6 @@ class WalletCubit extends Cubit<WalletState> {
     await Future.wait([_loadWallet(), _loadStatistics()]);
   }
 
-  /// Reads only the balance and debits (the shell's creation trigger).
-  Future<void> loadBalance() async {
-    if (!_requireSession()) return;
-    await _loadWallet();
-  }
-
   /// Reads each of the two models that has not been read yet in this
   /// session (Wallet's first show). Nothing is read twice.
   Future<void> ensureLoaded() async {
@@ -98,10 +93,6 @@ class WalletCubit extends Cubit<WalletState> {
     await _loadStatistics();
   }
 
-  /// Applies a session change at once (called by the shell's session
-  /// listener): when the owner differs from the one the values were read
-  /// for, every value is cleared and, if someone is signed in, the balance
-  /// is read again for the new owner. Same owner: nothing happens.
   /// The server's wallet changed (a confirmed delivery completion appended
   /// one commission debit and advanced the lifetime statistics, D-A74):
   /// re-read the balance and debits, and the statistics only if Wallet has
@@ -124,10 +115,15 @@ class WalletCubit extends Cubit<WalletState> {
     await Future.wait(reads);
   }
 
+  /// Applies a session change at once (called by the shell's session
+  /// listener): when the owner differs from the one the values were read
+  /// for, every value is cleared and, if someone is signed in, the balance
+  /// is read again for the new owner. Same owner, or nothing read yet:
+  /// nothing happens (no read on Home's behalf, D-A82).
   Future<void> syncSession() async {
     if (isClosed) return;
     final owner = _sessionOwner();
-    if (owner == _dataOwner) return;
+    if (owner == _dataOwner || _dataOwner == null) return;
     if (owner == null) {
       _requireSession();
       return;

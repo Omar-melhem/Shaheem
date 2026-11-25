@@ -48,15 +48,20 @@ class CompletedDeliveriesCubit extends Cubit<CompletedDeliveriesState> {
         status: CompletedDeliveriesStatus.loaded,
         items: page.items,
         nextCursor: page.nextCursor,
+        known: _remember(page.items),
       ),
-      CompletedDeliveriesNotConfigured() => const CompletedDeliveriesState(
+      // A failed re-read keeps the records an open detail page relies on.
+      CompletedDeliveriesNotConfigured() => CompletedDeliveriesState(
         status: CompletedDeliveriesStatus.notConfigured,
+        known: state.known,
       ),
-      CompletedDeliveriesNoInternet() => const CompletedDeliveriesState(
+      CompletedDeliveriesNoInternet() => CompletedDeliveriesState(
         status: CompletedDeliveriesStatus.noInternet,
+        known: state.known,
       ),
-      CompletedDeliveriesFailure() => const CompletedDeliveriesState(
+      CompletedDeliveriesFailure() => CompletedDeliveriesState(
         status: CompletedDeliveriesStatus.failure,
+        known: state.known,
       ),
     });
     if (_staleWhileLoading) {
@@ -86,6 +91,7 @@ class CompletedDeliveriesCubit extends Cubit<CompletedDeliveriesState> {
         status: CompletedDeliveriesStatus.loaded,
         items: [...state.items, ...page.items],
         nextCursor: page.nextCursor,
+        known: _remember(page.items),
       ),
       _ => state._copyWith(loadingMore: false, moreFailed: true),
     });
@@ -102,6 +108,14 @@ class CompletedDeliveriesCubit extends Cubit<CompletedDeliveriesState> {
     }
     await load();
   }
+
+  /// [state.known] plus [items] (a newer server answer for the same order
+  /// replaces the older one).
+  Map<String, CompletedDelivery> _remember(List<CompletedDelivery> items) =>
+      Map.unmodifiable({
+        ...state.known,
+        for (final item in items) item.orderId: item,
+      });
 
   bool _requireSession() {
     if (_hasSession()) return true;

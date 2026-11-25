@@ -145,6 +145,13 @@ state vs lifecycle/presentation effects, with Home as the example).
   phone is optional and never blocks a stage. The app never checks a PIN or
   advances a stage itself; confirmed completion re-reads history/wallet and
   opens «طلباتي» once. Details: `docs/architecture/STATE_MANAGEMENT.md`.
+- **Home and order details (D-A82, D-A83):** Home shows the
+  `AppImages.homeLogo` emblem and the first name only — no wallet shortcut
+  and no Home wallet read; Home offer cards have one Accept (the new-offer
+  sheet keeps Decline). The delivery leg and each completed order's
+  read-only page (`/order-history/completed/:orderId`) use the shared
+  `OrderDeliveryDetails`: optional customer name/phone/notes, required
+  area and full fee (unknown = unavailable, never invented).
 - **No Notifications route or feed (D-A72).** Operational order push stays a
   hint to re-read offers/orders.
 - **Debug preview (temporary, D-A40):** the only unauthenticated way into the

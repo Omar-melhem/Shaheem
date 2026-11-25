@@ -71,9 +71,6 @@ class DemoState extends ChangeNotifier {
   /// At most this many demo-injected offers can wait for an answer.
   static const maxInjectedOffers = 3;
 
-  /// Wrong PIN attempts before Admin intervention (D-A67).
-  static const maxPinAttempts = 3;
-
   DemoSession? _session;
   late List<_LiveOffer> _offers;
   late List<DeclinedOfferRecord> _declined;
@@ -81,9 +78,6 @@ class DemoState extends ChangeNotifier {
   late CaptainAvailability _availability;
   ActiveOrder? _activeOrder;
   _ActiveMoney? _activeMoney;
-
-  /// PIN attempts the demo server still allows for the active order.
-  int _pinAttemptsLeft = maxPinAttempts;
 
   /// Completed deliveries, as the demo server records them.
   late List<CompletedDelivery> _completed;
@@ -128,6 +122,7 @@ class DemoState extends ChangeNotifier {
       user: AppUser(
         id: fixtures.captainId,
         displayName: fixtures.captainName,
+        phone: fixtures.captainPhone,
         role: fixtures.captainRole,
       ),
       accessToken: fixtures.accessToken,
@@ -161,7 +156,6 @@ class DemoState extends ChangeNotifier {
     _scenario = DemoOrderScenario.none;
     _activeOrder = null;
     _activeMoney = null;
-    _pinAttemptsLeft = maxPinAttempts;
     _completionsByKey.clear();
     _completedOrders.clear();
     _completed = [
@@ -172,6 +166,9 @@ class DemoState extends ChangeNotifier {
           merchantName: c.merchantName,
           deliveryAreaName: c.deliveryArea,
           deliveryFeeFils: c.deliveryFeeFils,
+          customerName: c.customerName,
+          customerPhone: c.customerPhone,
+          deliveryNotes: c.deliveryNotes,
         ),
     ];
     _availability = fixtures.initiallyAvailable
@@ -295,7 +292,6 @@ class DemoState extends ChangeNotifier {
   void _applyScenario(DemoOrderScenario scenario) {
     _scenario = scenario;
     final seed = fixtures.assignedScenario;
-    _pinAttemptsLeft = maxPinAttempts;
     switch (scenario) {
       case DemoOrderScenario.none:
         _activeOrder = null;
@@ -309,6 +305,9 @@ class DemoState extends ChangeNotifier {
           pickupLocation: seed.pickup,
           deliveryAreaName: seed.deliveryArea,
           customerPhone: seed.customerPhone,
+          customerName: seed.customerName,
+          deliveryNotes: seed.deliveryNotes,
+          deliveryFeeFils: seed.deliveryFeeFils,
         );
         _activeMoney = _ActiveMoney(
           feeFils: seed.deliveryFeeFils,
@@ -343,12 +342,14 @@ class DemoState extends ChangeNotifier {
       pickupLocation: live.seed.pickup,
       deliveryAreaName: offer.deliveryAreaName,
       customerPhone: live.seed.customerPhone,
+      customerName: live.seed.customerName,
+      deliveryNotes: live.seed.deliveryNotes,
+      deliveryFeeFils: offer.deliveryFeeFils,
     );
     _activeMoney = _ActiveMoney(
       feeFils: offer.deliveryFeeFils,
       commissionFils: live.seed.commissionFils,
     );
-    _pinAttemptsLeft = maxPinAttempts;
     _scenario = DemoOrderScenario.none;
     notifyListeners();
   }
@@ -394,24 +395,18 @@ class DemoState extends ChangeNotifier {
         pickupInstructions: order.pickupInstructions,
         deliveryAreaName: order.deliveryAreaName,
         customerPhone: order.customerPhone,
+        customerName: order.customerName,
+        deliveryNotes: order.deliveryNotes,
+        deliveryFeeFils: order.deliveryFeeFils,
       );
 
-  /// Simulated PIN check (demo server only): the fixture's demo PIN, three
-  /// wrong attempts then "locked" until a reset.
-  ActiveOrder confirmPickup(OrderCommandTarget target, PickupProof proof) {
+  /// Simulated pickup confirmation, without any code: only the assigned
+  /// active order on its pickup leg advances to `picked_up` (anything else
+  /// is a state conflict, as a real server would refuse).
+  ActiveOrder confirmPickup(OrderCommandTarget target) {
     final order = _target(target);
     if (order.leg != ActiveOrderLeg.pickup) {
       throw const OrderStateConflictException();
-    }
-    if (_pinAttemptsLeft <= 0) throw const PickupCodeLockedException();
-    final pin = switch (proof) {
-      PickupPinProof(:final digits) => digits,
-    };
-    if (pin != fixtures.pickupPin) {
-      _pinAttemptsLeft--;
-      notifyListeners();
-      if (_pinAttemptsLeft <= 0) throw const PickupCodeLockedException();
-      throw PickupCodeIncorrectException(remainingAttempts: _pinAttemptsLeft);
     }
     final next = _withStatus(order, ActiveOrderStatus.pickedUp);
     _activeOrder = next;
@@ -459,6 +454,10 @@ class DemoState extends ChangeNotifier {
         merchantName: order.restaurantName,
         deliveryAreaName: order.deliveryAreaName,
         deliveryFeeFils: money.feeFils,
+        // The order's own snapshot goes into history (D-A83).
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        deliveryNotes: order.deliveryNotes,
       ),
     );
     _wallet = WalletOverview(

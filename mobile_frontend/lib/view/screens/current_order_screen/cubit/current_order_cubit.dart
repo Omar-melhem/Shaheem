@@ -11,7 +11,6 @@ import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
 import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
 import 'package:mobile_frontend/domain/use_cases/get_pickup_route.dart';
 import 'package:mobile_frontend/domain/use_cases/order_workflow.dart';
-import 'package:mobile_frontend/util/validators/validators.dart';
 
 part 'current_order_state.dart';
 
@@ -256,8 +255,7 @@ class CurrentOrderCubit extends Cubit<CurrentOrderState> {
     final command = current.command;
     if (command != null &&
         command.action == action &&
-        (command.needsReconciliation ||
-            command.error == OrderCommandError.pinLocked)) {
+        command.needsReconciliation) {
       return null;
     }
     return current;
@@ -282,7 +280,7 @@ class CurrentOrderCubit extends Cubit<CurrentOrderState> {
     assignmentRef: order.assignmentRef,
   );
 
-  /// The key for a start/complete attempt: the kept key after an
+  /// The key for a pickup/start/complete attempt: the kept key after an
   /// unconfirmed attempt of the same action and order, otherwise a new one.
   String _keyFor(OrderWorkflowAction action, String orderId) {
     final kept = _retryKey;
@@ -294,58 +292,56 @@ class CurrentOrderCubit extends Cubit<CurrentOrderState> {
     return key;
   }
 
-  /// Submits the pickup PIN typed by the captain (D-A81). Only the syntax
-  /// is checked here (four digits after normalization); a malformed value
-  /// sends nothing. The PIN is not stored in any state.
-  Future<void> confirmPickup(String rawPin) async {
-    const action = OrderWorkflowAction.confirmPickup;
-    final active = _commandable(action, (s) => s.leg == ActiveOrderLeg.pickup);
-    if (active == null || Validators.pickupPin(rawPin) != null) return;
+  /// Confirms the pickup («تم الاستلام», D-A81) on the pickup leg. No
+  /// verification code is asked for or sent. The stage becomes `picked_up`
+  /// only from the server's confirmed answer; an unconfirmed attempt keeps
+  /// its operation key and blocks the action until reconciled.
+  Future<void> confirmPickup() {
     final useCase = _confirmPickup;
-    if (useCase == null) {
-      emit(_failed(active, action, OrderCommandError.notConfigured));
-      return;
-    }
-    final session = _session;
-    emit(
-      active.copyWith(
-        command: () => const OrderCommandFeedback.sending(action),
-      ),
+    return _sendStep(
+      OrderWorkflowAction.confirmPickup,
+      (s) => s.leg == ActiveOrderLeg.pickup,
+      useCase == null
+          ? null
+          : (target, key) => useCase(target, operationKey: key),
     );
-    // Every PIN submission is a new attempt with its own key: the server
-    // counts attempts; a repeat of a successful one is a state conflict.
-    final result = await useCase(
-      _target(active.order),
-      PickupPinProof(Validators.normalizePickupPin(rawPin)),
-      operationKey: _operationKey(),
-    );
-    final current = _stillShowing(session, active.order);
-    if (current == null) return;
-    _applyStepResult(current, action, result);
   }
 
   /// Starts the delivery (separate action after confirmed pickup, D-A81).
-  Future<void> startDelivery() => _sendStep(
-    OrderWorkflowAction.startDelivery,
-    ActiveOrderStatus.pickedUp,
-    _startDelivery,
-  );
+  Future<void> startDelivery() {
+    final useCase = _startDelivery;
+    return _sendStep(
+      OrderWorkflowAction.startDelivery,
+      (s) => s == ActiveOrderStatus.pickedUp,
+      useCase == null
+          ? null
+          : (target, key) => useCase(target, operationKey: key),
+    );
+  }
 
+  /// Sends one stage command that returns the authoritative order: only
+  /// when [allowed] matches the server-reported stage, one at a time, with
+  /// the kept key after an unconfirmed attempt. A null [send] (no use case
+  /// wired) reports "not configured" and sends nothing.
   Future<void> _sendStep(
     OrderWorkflowAction action,
-    ActiveOrderStatus requiredStatus,
-    StartDelivery? useCase,
+    bool Function(ActiveOrderStatus status) allowed,
+    Future<OrderCommandResult<ActiveOrder>> Function(
+      OrderCommandTarget target,
+      String operationKey,
+    )?
+    send,
   ) async {
-    final active = _commandable(action, (s) => s == requiredStatus);
+    final active = _commandable(action, allowed);
     if (active == null) return;
-    if (useCase == null) {
+    if (send == null) {
       emit(_failed(active, action, OrderCommandError.notConfigured));
       return;
     }
     final session = _session;
     final key = _keyFor(action, active.order.orderId);
     emit(active.copyWith(command: () => OrderCommandFeedback.sending(action)));
-    final result = await useCase(_target(active.order), operationKey: key);
+    final result = await send(_target(active.order), key);
     final current = _stillShowing(session, active.order);
     if (current == null) return;
     _applyStepResult(current, action, result);
@@ -361,16 +357,9 @@ class CurrentOrderCubit extends Cubit<CurrentOrderState> {
       case OrderCommandSucceeded(:final value):
         _retryKey = null;
         _showConfirmed(value);
-      case OrderCommandRejected(:final reason, :final remainingAttempts):
+      case OrderCommandRejected(:final reason):
         _retryKey = null;
-        emit(
-          _failed(
-            current,
-            action,
-            _rejection(reason),
-            remainingAttempts: remainingAttempts,
-          ),
-        );
+        emit(_failed(current, action, _rejection(reason)));
         if (reason == OrderCommandRejection.stateConflict) unawaited(load());
       case OrderCommandNotConfigured():
         _retryKey = null;
@@ -496,38 +485,15 @@ class CurrentOrderCubit extends Cubit<CurrentOrderState> {
     }
   }
 
-  /// Drops a finished command's message (the PIN form opening or closing),
-  /// except one that still blocks: unknown outcomes and a locked PIN.
-  void clearCommandFeedback() {
-    final current = state;
-    if (current is! CurrentOrderActive) return;
-    final command = current.command;
-    if (command == null ||
-        command.sending ||
-        command.needsReconciliation ||
-        command.error == OrderCommandError.pinLocked) {
-      return;
-    }
-    emit(current.copyWith(command: () => null));
-  }
-
   CurrentOrderActive _failed(
     CurrentOrderActive state,
     OrderWorkflowAction action,
-    OrderCommandError error, {
-    int? remainingAttempts,
-  }) => state.copyWith(
-    command: () => OrderCommandFeedback.failed(
-      action,
-      error,
-      remainingAttempts: remainingAttempts,
-    ),
-  );
+    OrderCommandError error,
+  ) =>
+      state.copyWith(command: () => OrderCommandFeedback.failed(action, error));
 
   static OrderCommandError _rejection(OrderCommandRejection reason) =>
       switch (reason) {
-        OrderCommandRejection.incorrectPin => OrderCommandError.incorrectPin,
-        OrderCommandRejection.pinLocked => OrderCommandError.pinLocked,
         OrderCommandRejection.stateConflict => OrderCommandError.stateConflict,
       };
 }

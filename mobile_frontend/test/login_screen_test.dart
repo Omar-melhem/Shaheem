@@ -60,7 +60,7 @@ void main() {
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
   Future<void> submit(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, l10n.loginButton));
+    await tapLoginSubmit(tester);
     await tester.pumpAndSettle();
   }
 

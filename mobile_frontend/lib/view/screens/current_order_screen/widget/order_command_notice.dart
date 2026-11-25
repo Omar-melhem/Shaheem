@@ -11,18 +11,12 @@ import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 /// The localized text for [feedback]'s error (null while sending).
 ///
 /// Each outcome says what is known: "not sent" only when nothing was sent,
-/// "unknown" after a timeout, and server rejections as such. Remaining PIN
-/// attempts appear only when the server supplied them.
+/// "unknown" after a timeout, and server rejections as such.
 String? orderCommandMessage(
   AppLocalizations l10n,
   OrderCommandFeedback feedback,
 ) => switch (feedback.error) {
   null => null,
-  OrderCommandError.incorrectPin => switch (feedback.remainingAttempts) {
-    final int left => l10n.pickupPinIncorrectRemaining(left),
-    null => l10n.pickupPinIncorrect,
-  },
-  OrderCommandError.pinLocked => l10n.pickupPinLocked,
   OrderCommandError.stateConflict => l10n.orderCommandStateConflict,
   OrderCommandError.notConfigured => l10n.orderCommandNotConfigured,
   OrderCommandError.noInternet => l10n.orderCommandNoInternet,

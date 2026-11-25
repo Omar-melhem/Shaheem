@@ -58,9 +58,10 @@ extension ActiveOrderStatusLeg on ActiveOrderStatus {
 /// reported; commands are only offered for it, and only the server's next
 /// answer changes it (never a tap, a timeout, opening Maps or GPS).
 ///
-/// Customer data is limited to the destination **area** and an optional
-/// phone the merchant may enter: no customer coordinates, address or route.
-/// No `toString` override, so the phone never reaches logs.
+/// Customer data is limited to what the merchant enters (D-A81, D-A83): the
+/// destination **area** (required), and optionally a customer name, a phone
+/// and delivery notes — never customer coordinates, a street address or a
+/// route. No `toString` override, so these details never reach logs.
 class ActiveOrder {
   const ActiveOrder({
     required this.orderId,
@@ -71,6 +72,9 @@ class ActiveOrder {
     this.pickupInstructions,
     this.deliveryAreaName,
     this.customerPhone,
+    this.customerName,
+    this.deliveryNotes,
+    this.deliveryFeeFils,
   });
 
   /// Backend identifier of the order.
@@ -111,11 +115,34 @@ class ActiveOrder {
 
   /// [customerPhone] trimmed, or null when it is null, empty or blank. A
   /// missing phone never blocks any stage.
-  String? get contactPhone {
-    final phone = customerPhone?.trim();
-    return phone == null || phone.isEmpty ? null : phone;
-  }
+  String? get contactPhone => presentText(customerPhone);
+
+  /// The customer name as received; **optional** (D-A83). Use
+  /// [contactName] for display.
+  final String? customerName;
+
+  /// [customerName] trimmed, or null when null, empty or blank.
+  String? get contactName => presentText(customerName);
+
+  /// The merchant's notes for the **delivery** (D-A83); optional. Distinct
+  /// from [pickupInstructions], which are about collecting the order.
+  final String? deliveryNotes;
+
+  /// [deliveryNotes] trimmed, or null when null, empty or blank.
+  String? get deliveryNote => presentText(deliveryNotes);
+
+  /// The full delivery fee in integer fils (business-required). Null only
+  /// when the server did not send it — shown as unavailable, never as 0.
+  /// An explicit 0 is a real value.
+  final int? deliveryFeeFils;
 
   /// Which leg of the journey this order is in.
   ActiveOrderLeg get leg => status.leg;
+}
+
+/// [value] trimmed, or null when it is null, empty or whitespace-only. Used
+/// for optional order texts, so a blank value is never shown as data.
+String? presentText(String? value) {
+  final text = value?.trim();
+  return text == null || text.isEmpty ? null : text;
 }

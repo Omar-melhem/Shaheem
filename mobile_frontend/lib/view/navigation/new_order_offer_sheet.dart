@@ -29,20 +29,23 @@ import 'package:mobile_frontend/view/widget/order/app_order_offer_card.dart';
 ///
 /// The details scroll; the actions stay visible under them (on a screen too
 /// short for both at the current text size, they scroll with the details,
-/// so nothing is clipped): «قبول الطلب»
-/// (the theme's filled red primary, check icon), «رفض الطلب» (neutral
-/// outline, close icon) and «لاحقاً» (D-A69). Like [AppOrderOfferCard], it owns no state: null
-/// callbacks disable an action, [busyAction] shows the running command
-/// (both answers then ignore taps), and [notice] is an optional localized
+/// so nothing is clipped): **one** full-width «قبول الطلب» (the theme's
+/// filled red primary, check icon) and «لاحقاً», which only closes the
+/// sheet — it is not an answer, so the offer stays on Home. There is no
+/// decline action here (owner change, superseding D-A69's decline button);
+/// the domain decline command and the declined-offers history are kept.
+///
+/// Like [AppOrderOfferCard], it owns no state: null callbacks disable an
+/// action, [accepting] shows the running accept (Accept then ignores taps
+/// and «لاحقاً» is disabled), and [notice] is an optional localized
 /// explanation. Whether accepting is allowed is the caller's decision.
 class NewOrderOfferSheet extends StatelessWidget {
   const NewOrderOfferSheet({
     super.key,
     required this.offer,
     required this.onAccept,
-    required this.onDecline,
     required this.onLater,
-    this.busyAction,
+    this.accepting = false,
     this.notice,
   });
 
@@ -52,15 +55,13 @@ class NewOrderOfferSheet extends StatelessWidget {
   /// Accept intent; null disables «قبول الطلب».
   final VoidCallback? onAccept;
 
-  /// Decline intent (this captain only); null disables «رفض الطلب».
-  final VoidCallback? onDecline;
-
   /// Closes the sheet without answering; null disables «لاحقاً» (e.g.
-  /// while a command runs).
+  /// while a command runs). Also disabled while [accepting].
   final VoidCallback? onLater;
 
-  /// The command that is running, if any.
-  final AppOfferCardAction? busyAction;
+  /// Whether this offer's accept command is running: Accept shows a
+  /// spinner and ignores taps (duplicate-tap protection).
+  final bool accepting;
 
   /// Optional localized explanation above the actions; null shows nothing.
   final String? notice;
@@ -70,10 +71,6 @@ class NewOrderOfferSheet extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final busy = busyAction != null;
-    final declineActive = busy
-        ? busyAction == AppOfferCardAction.decline
-        : onDecline != null;
     final unavailable = l10n.offerValueUnavailable;
     final scheduled = offer.kind == OrderOfferKind.scheduled;
     final pickup = offer.pickupLabel?.trim().isNotEmpty ?? false
@@ -179,52 +176,22 @@ class NewOrderOfferSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppButton(
-                  label: l10n.offerAcceptFull,
-                  icon: const Icon(Icons.check_circle_outline),
-                  expand: true,
-                  // Affirmative primary action: the theme's filled red (D-A69),
-
-                  // with its pressed and disabled states.
-                  isLoading: busyAction == AppOfferCardAction.accept,
-                  onPressed: busy
-                      ? _ignore(busyAction, AppOfferCardAction.accept)
-                      : onAccept,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppButton(
-                  label: l10n.offerDeclineFull,
-                  icon: const Icon(Icons.close),
-                  expand: true,
-
-                  // Neutral outline with an explicit «رفض» label and close
-
-                  // icon, distinct from the red Accept (D-A69). Disabled falls
-
-                  // back to the theme's disabled colors.
-                  backgroundColor: colors.surface,
-                  foregroundColor: AppColor.textPrimary,
-                  border: declineActive
-                      ? const BorderSide(color: AppColor.inputOutline)
-                      : null,
-                  isLoading: busyAction == AppOfferCardAction.decline,
-                  onPressed: busy
-                      ? _ignore(busyAction, AppOfferCardAction.decline)
-                      : onDecline,
-                ),
-              ),
-            ],
+          // The only answer: the theme's filled red primary (D-A69), full
+          // width, with its pressed, disabled and loading states. While
+          // accepting it keeps a no-op callback, so AppButton shows its
+          // spinner (not the disabled look) and ignores further taps.
+          AppButton(
+            label: l10n.offerAcceptFull,
+            icon: const Icon(Icons.check_circle_outline),
+            expand: true,
+            isLoading: accepting,
+            onPressed: accepting ? () {} : onAccept,
           ),
           const SizedBox(height: 4),
+          // Dismissal, not a command: closes the sheet only.
           AppTextButton(
             label: l10n.offerLater,
-            onPressed: busy ? null : onLater,
+            onPressed: accepting ? null : onLater,
           ),
         ],
       ),
@@ -260,13 +227,6 @@ class NewOrderOfferSheet extends StatelessWidget {
   /// actions stop being pinned: about twice the pinned action area, so the
   /// details always keep a usable scrolling part.
   static const double _pinnedActionsMinHeight = 300;
-
-  /// While busy: the running action keeps a no-op callback (AppButton
-  /// shows its spinner and ignores taps); the other one is disabled.
-  static VoidCallback? _ignore(
-    AppOfferCardAction? running,
-    AppOfferCardAction self,
-  ) => running == self ? () {} : null;
 }
 
 /// «حالي» / «مؤجل»: an outlined dark-neutral badge with an icon and its

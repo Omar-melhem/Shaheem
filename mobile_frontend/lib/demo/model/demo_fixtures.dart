@@ -100,6 +100,8 @@ class DemoOfferSeed {
     required this.scheduledInMinutes,
     this.pickup,
     this.customerPhone,
+    this.customerName,
+    this.deliveryNotes,
   });
 
   /// For the template these are the `{sequence}` patterns.
@@ -120,6 +122,10 @@ class DemoOfferSeed {
 
   /// Fictional customer phone; absent on purpose for some orders (D-A81).
   final String? customerPhone;
+
+  /// Fictional customer name and delivery notes; optional (D-A83).
+  final String? customerName;
+  final String? deliveryNotes;
 
   static DemoOfferSeed _parse(_Reader r, {bool template = false}) {
     final fee = r.fils('delivery_fee_fils');
@@ -151,6 +157,8 @@ class DemoOfferSeed {
       scheduledInMinutes: r.opt<int>('scheduled_in_minutes'),
       pickup: r.point(),
       customerPhone: r.opt<String>('demo_customer_phone'),
+      customerName: r.opt<String>('demo_customer_name'),
+      deliveryNotes: r.opt<String>('demo_delivery_notes'),
     );
     if (!seed.id.startsWith('demo-') || !seed.orderId.startsWith('demo-')) {
       throw DemoFixtureException(r.file, 'ids must start with "demo-"');
@@ -172,6 +180,8 @@ class DemoOrderSeed {
     required this.commissionFils,
     this.pickup,
     this.customerPhone,
+    this.customerName,
+    this.deliveryNotes,
   });
 
   final String id;
@@ -181,6 +191,8 @@ class DemoOrderSeed {
   final int commissionFils;
   final GeoPoint? pickup;
   final String? customerPhone;
+  final String? customerName;
+  final String? deliveryNotes;
 }
 
 /// One fictional completed delivery (history and lifetime statistics).
@@ -191,6 +203,9 @@ class DemoCompletedSeed {
     required this.deliveryArea,
     required this.deliveryFeeFils,
     required this.minutesAgo,
+    this.customerName,
+    this.customerPhone,
+    this.deliveryNotes,
   });
 
   final String orderId;
@@ -198,6 +213,11 @@ class DemoCompletedSeed {
   final String deliveryArea;
   final int deliveryFeeFils;
   final int minutesAgo;
+
+  /// Optional fictional details of the past order (D-A83).
+  final String? customerName;
+  final String? customerPhone;
+  final String? deliveryNotes;
 }
 
 /// One fictional declined offer.
@@ -243,6 +263,9 @@ class DemoFixtures {
     required this.captainId,
     required this.captainName,
     required this.captainRole,
+    this.captainPhone,
+    required this.ratingAverage,
+    required this.ratingsCount,
     required this.initiallyAvailable,
     required this.pendingOfferIds,
     required this.offers,
@@ -250,7 +273,6 @@ class DemoFixtures {
     required this.assignedScenario,
     required this.declined,
     required this.completed,
-    required this.pickupPin,
     required this.futureCount,
     required this.walletBalanceFils,
     required this.debits,
@@ -264,6 +286,14 @@ class DemoFixtures {
   final String captainId;
   final String captainName;
   final String captainRole;
+
+  /// Fictional phone shown on Profile; optional.
+  final String? captainPhone;
+
+  /// The fictional rating the demo "server" reports, on the 5-star scale
+  /// (validated by the real use case, never by the demo).
+  final double? ratingAverage;
+  final int ratingsCount;
   final bool initiallyAvailable;
   final List<String> pendingOfferIds;
   final List<DemoOfferSeed> offers;
@@ -274,10 +304,6 @@ class DemoFixtures {
   /// Completed deliveries in the fixtures: the demo "server"'s history and
   /// lifetime delivered count (D-A76).
   final List<DemoCompletedSeed> completed;
-
-  /// The fictional pickup PIN every demo order accepts (checked only by
-  /// the in-memory demo server; production never compares a PIN).
-  final String pickupPin;
 
   int get completedCount => completed.length;
 
@@ -372,10 +398,6 @@ class DemoFixtures {
       );
     }
     final assigned = current.obj('scenarios').obj('assigned');
-    final pin = assigned.req<String>('pickup_pin');
-    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-      throw const DemoFixtureException('current_order', 'pin: 4 digits');
-    }
 
     final balance = wallet.obj('summary').req<int>('balance_fils');
     if (home.req<int>('wallet_balance_fils') != balance) {
@@ -402,6 +424,7 @@ class DemoFixtures {
     );
 
     final person = captain.obj('captain');
+    final rating = captain.obj('rating');
     return DemoFixtures(
       username: auth.req<String>('demo_username'),
       password: auth.req<String>('demo_password'),
@@ -409,6 +432,9 @@ class DemoFixtures {
       captainId: person.req<String>('id'),
       captainName: person.req<String>('display_name'),
       captainRole: person.req<String>('role'),
+      captainPhone: person.opt<String>('phone'),
+      ratingAverage: rating.opt<num>('average')?.toDouble(),
+      ratingsCount: rating.req<int>('ratings_count'),
       initiallyAvailable: captain.obj('availability').req<bool>('is_available'),
       pendingOfferIds: pending,
       offers: offers,
@@ -421,8 +447,9 @@ class DemoFixtures {
         commissionFils: assigned.fils('commission_fils'),
         pickup: assigned.point(),
         customerPhone: assigned.opt<String>('customer_phone'),
+        customerName: assigned.opt<String>('customer_name'),
+        deliveryNotes: assigned.opt<String>('delivery_notes'),
       ),
-      pickupPin: pin,
       declined: [
         for (final d in history.list('declined_offers'))
           DemoDeclinedSeed(
@@ -442,6 +469,9 @@ class DemoFixtures {
             deliveryArea: c.req<String>('delivery_area'),
             deliveryFeeFils: c.fils('delivery_fee_fils'),
             minutesAgo: c.fils('occurred_minutes_ago'),
+            customerName: c.opt<String>('demo_customer_name'),
+            customerPhone: c.opt<String>('demo_customer_phone'),
+            deliveryNotes: c.opt<String>('demo_delivery_notes'),
           ),
       ],
       futureCount: history.list('future_commitments').length,

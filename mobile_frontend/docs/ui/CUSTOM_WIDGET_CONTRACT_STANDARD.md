@@ -1,5 +1,15 @@
 # SHAHM Flutter — Custom Widget Standard
 
+**Focused owner approval (2026-11-24, D-A82/D-A83):** removal of Home
+wallet inputs/component when exclusive, removal of the offer card's
+secondary rejection input/control, and migration of their callers/tests
+are authorized for this revision. The separate offer sheet's rejection
+flow remains. A shared delivery-details section has actual active/history
+consumers; keep it presentation-only. This does not authorize unrelated
+widget redesigns, dependencies or mass migrations. Examples below using
+the old card `onDecline` signature are pre-migration examples; update them
+to the actual new signature with the implementation.
+
 **Status:** the **only** custom-widget policy for `mobile_frontend` (created
 Task 08, 2026-11-14; rewritten Task 32, 2026-11-15). Improve this file;
 don't add a second one.
@@ -85,8 +95,8 @@ Material widget already solves it.
 - Callbacks: `required VoidCallback? onPressed` makes every caller choose
   enabled (`() {…}`) or disabled (`null`); plain optional `VoidCallback?`
   is right when "disabled by default" is meaningful. Choose per component;
-  there is no global rule. Existing approved names (`onAccept`,
-  `onDecline`) stay; otherwise prefer Flutter names (`onPressed`,
+  there is no global rule. Existing approved names stay unless superseded by a focused owner
+  change (D-A82 removes Home card `onDecline`, not the sheet command); otherwise prefer Flutter names (`onPressed`,
   `onChanged`, `onTap`).
 - Optional arguments have a useful default or a documented meaning for
   `null`. One argument must not silently cancel another: document the

@@ -17,11 +17,12 @@ import 'package:mobile_frontend/domain/entities/order_workflow.dart';
 /// key for a new attempt. Implementations map failures to
 /// `OrderWorkflowException` subtypes.
 abstract interface class OrderWorkflowRepository {
-  /// Submits the pickup [proof] for [target]. Returns the authoritative
-  /// order after a confirmed pickup (status `picked_up`).
+  /// Confirms that the captain picked up [target] from the merchant. No
+  /// verification code is sent: the server validates the session,
+  /// assignment and stage. Returns the authoritative order after a
+  /// confirmed pickup (status `picked_up`).
   Future<ActiveOrder> confirmPickup(
-    OrderCommandTarget target,
-    PickupProof proof, {
+    OrderCommandTarget target, {
     required String operationKey,
   });
 

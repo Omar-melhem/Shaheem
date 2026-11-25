@@ -47,6 +47,7 @@ import 'package:mobile_frontend/view/screens/order_history_screen/cubit/declined
 import 'package:mobile_frontend/view/screens/order_history_screen/widget/declined_offer_tile.dart';
 import 'package:mobile_frontend/view/screens/wallet_screen/view/wallet_screen.dart';
 import 'package:mobile_frontend/view/widget/buttons/app_button.dart';
+import 'package:mobile_frontend/view/widget/buttons/app_text_button.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_nav_destination.dart';
 import 'package:mobile_frontend/view/widget/navigation/main_navigation_bar.dart';
 import 'package:mobile_frontend/view/widget/order/app_order_offer_card.dart';
@@ -247,9 +248,8 @@ void main() {
       WidgetTester tester,
       CaptainOrderOffer o, {
       VoidCallback? onAccept,
-      VoidCallback? onDecline,
       VoidCallback? onLater,
-      AppOfferCardAction? busy,
+      bool busy = false,
       String? notice,
     }) async {
       // A fresh app each time, so no earlier sheet stays open.
@@ -266,9 +266,8 @@ void main() {
                 builder: (_) => NewOrderOfferSheet(
                   offer: o,
                   onAccept: onAccept,
-                  onDecline: onDecline,
                   onLater: onLater,
-                  busyAction: busy,
+                  accepting: busy,
                   notice: notice,
                 ),
               ),
@@ -279,7 +278,7 @@ void main() {
       );
       await tester.tap(find.text('open'));
       // A running spinner never settles.
-      if (busy == null) {
+      if (!busy) {
         await tester.pumpAndSettle();
       } else {
         await tester.pump(const Duration(seconds: 1));
@@ -314,7 +313,7 @@ void main() {
 
     testWidgets('instant: type, merchant, pickup, delivery AREA and the full '
         'fee as the only amount, with an icon per section', (tester) async {
-      await pumpSheet(tester, offer('a'), onAccept: () {}, onDecline: () {});
+      await pumpSheet(tester, offer('a'), onAccept: () {});
       expect(find.text(l10n.newOfferSheetTitle), findsOneWidget);
       expect(find.text(l10n.offerKindInstant), findsOneWidget);
       expect(find.text(l10n.offerKindScheduled), findsNothing);
@@ -341,10 +340,11 @@ void main() {
         Icons.flag_outlined,
         Icons.local_shipping_outlined,
         Icons.check_circle_outline,
-        Icons.close,
       ]) {
         expect(find.byIcon(icon), findsOneWidget, reason: '$icon');
       }
+      // No decline action, so no close icon.
+      expect(find.byIcon(Icons.close), findsNothing);
       // One faint divider, not a heavy line.
       final divider = tester.widget<Divider>(find.byType(Divider));
       expect(divider.thickness, lessThan(1));
@@ -407,79 +407,75 @@ void main() {
     });
 
     testWidgets(
-      'accept is the red primary with a check icon; decline is outlined '
-      'error with a close icon; callbacks and null disable',
+      'one full-width red Accept with a check icon and Later; no decline; '
+      'callbacks and null disable',
       (tester) async {
-        var accepts = 0, declines = 0, laters = 0;
+        var accepts = 0, laters = 0;
         await pumpSheet(
           tester,
           offer('a'),
           onAccept: () => accepts++,
-          onDecline: () => declines++,
           onLater: () => laters++,
         );
         final scheme = AppTheme.light.colorScheme;
         AppButton button(String label) =>
             tester.widget<AppButton>(find.widgetWithText(AppButton, label));
         final accept = button(l10n.offerAcceptFull);
-        final decline = button(l10n.offerDeclineFull);
-        // D-A69: default red Accept; neutral outlined Decline.
+        // D-A69 colors: the default red Accept.
         expect(accept.backgroundColor, isNull);
         expect(scheme.primary, AppColor.primary);
         expect((accept.icon! as Icon).icon, Icons.check_circle_outline);
-        expect(decline.foregroundColor, AppColor.textPrimary);
-        expect(decline.border, const BorderSide(color: AppColor.inputOutline));
-        expect((decline.icon! as Icon).icon, Icons.close);
+        // The only command in the sheet: no decline button, label or icon.
+        expect(find.byType(AppButton), findsOneWidget);
+        expect(find.text('رفض الطلب'), findsNothing);
+        expect(find.byIcon(Icons.close), findsNothing);
+        // Full width: as wide as the sheet's padded action area.
+        final sheetWidth = tester
+            .getSize(find.byType(NewOrderOfferSheet))
+            .width;
+        expect(
+          tester
+              .getSize(find.widgetWithText(AppButton, l10n.offerAcceptFull))
+              .width,
+          sheetWidth - 40,
+        );
         await tester.tap(find.text(l10n.offerAcceptFull));
-        await tester.tap(find.text(l10n.offerDeclineFull));
         await tester.tap(find.text(l10n.offerLater));
-        expect((accepts, declines, laters), (1, 1, 1));
-        // Touch targets.
-        for (final label in [l10n.offerAcceptFull, l10n.offerDeclineFull]) {
-          expect(
-            tester.getSize(find.widgetWithText(AppButton, label)).height,
-            greaterThanOrEqualTo(48),
-          );
-        }
+        expect((accepts, laters), (1, 1));
+        expect(
+          tester
+              .getSize(find.widgetWithText(AppButton, l10n.offerAcceptFull))
+              .height,
+          greaterThanOrEqualTo(48),
+        );
 
         await pumpSheet(tester, offer('a'));
         expect(button(l10n.offerAcceptFull).onPressed, isNull);
-        expect(button(l10n.offerDeclineFull).onPressed, isNull);
-        expect(button(l10n.offerDeclineFull).border, isNull);
       },
     );
 
-    testWidgets('busy accept: spinner, decline and later off; one tap only', (
+    testWidgets('busy accept: spinner, Later off; further taps ignored', (
       tester,
     ) async {
-      var declines = 0;
+      var accepts = 0, laters = 0;
       await pumpSheet(
         tester,
         offer('a'),
-        onAccept: () {},
-        onDecline: () => declines++,
-        onLater: () {},
-        busy: AppOfferCardAction.accept,
+        onAccept: () => accepts++,
+        onLater: () => laters++,
+        busy: true,
         notice: l10n.offerUnconfirmed,
       );
-      expect(
-        tester
-            .widget<AppButton>(
-              find.widgetWithText(AppButton, l10n.offerAcceptFull),
-            )
-            .isLoading,
-        isTrue,
+      final accept = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, l10n.offerAcceptFull),
       );
-      expect(
-        tester
-            .widget<AppButton>(
-              find.widgetWithText(AppButton, l10n.offerDeclineFull),
-            )
-            .onPressed,
-        isNull,
+      expect(accept.isLoading, isTrue);
+      await tester.tap(
+        find.widgetWithText(AppButton, l10n.offerAcceptFull),
+        warnIfMissed: false,
       );
-      await tester.tap(find.text(l10n.offerDeclineFull), warnIfMissed: false);
-      expect(declines, 0);
+      await tester.tap(find.text(l10n.offerLater), warnIfMissed: false);
+      expect((accepts, laters), (0, 0));
       expect(find.text(l10n.offerUnconfirmed), findsOneWidget);
     });
 
@@ -488,7 +484,7 @@ void main() {
         for (final height in [640.0, 360.0]) {
           testWidgets(
             '${width.toInt()}×${height.toInt()} at text scale $scale: no '
-            'overflow, nothing truncated, both answers visible',
+            'overflow, nothing truncated, Accept and Later visible',
             (tester) async {
               setScreenSize(tester, width, height);
               tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -510,7 +506,6 @@ void main() {
                   ),
                 ),
                 onAccept: () {},
-                onDecline: () {},
                 onLater: () {},
               );
               expect(tester.takeException(), isNull);
@@ -529,11 +524,13 @@ void main() {
               // Pinned (visible at once) when there is room at this text
               // size; otherwise reachable by scrolling, never clipped.
               final pinned = height >= 300 * scale;
-              for (final label in [
-                l10n.offerAcceptFull,
-                l10n.offerDeclineFull,
-              ]) {
-                final button = find.widgetWithText(AppButton, label);
+              for (final label in [l10n.offerAcceptFull, l10n.offerLater]) {
+                final button = find.ancestor(
+                  of: find.text(label),
+                  matching: find.byWidgetPredicate(
+                    (w) => w is AppButton || w is AppTextButton,
+                  ),
+                );
                 if (pinned) {
                   expect(find.text(label).hitTestable(), findsOneWidget);
                 } else {
@@ -562,7 +559,6 @@ void main() {
             NewOrderOfferSheet(
               offer: offer('a'),
               onAccept: null,
-              onDecline: null,
               onLater: null,
             ),
           ),
@@ -1053,12 +1049,18 @@ void main() {
       });
     }
 
-    testWidgets('decline confirmed: sheet closes, the captain stays put, no '
-        'history row is invented', (tester) async {
+    testWidgets('the sheet has no decline; a decline through the kept domain '
+        'command closes it, the captain stays put, no history row is '
+        'invented', (tester) async {
       await launch(tester);
       await tapTab(tester, MainNavDestination.wallet);
       await arrive(tester, offer('n1'));
-      await tester.tap(find.text(l10n.offerDeclineFull));
+      expect(
+        find.descendant(of: sheet, matching: find.byType(AppButton)),
+        findsOneWidget,
+      );
+      expect(find.text('رفض الطلب'), findsNothing);
+      await cubit(tester).decline('n1');
       await tester.pumpAndSettle();
       expect(offers.declined, ['n1']);
       expect(offers.accepted, isEmpty);
@@ -1070,8 +1072,9 @@ void main() {
       expect(find.byType(DeclinedOfferTile), findsNothing);
     });
 
-    // Task 38: a server-confirmed decline from the sheet opened over the
-    // visible Order History tab re-reads the history at once; nothing else
+    // Task 38: a server-confirmed decline (now only through the kept
+    // domain command; the sheet has no decline button) while the Order
+    // History tab is visible re-reads the history at once; nothing else
     // does.
     testWidgets('decline confirmed while Order History is visible: one '
         're-read, the new record first, no navigation or tab switch', (
@@ -1098,7 +1101,7 @@ void main() {
       // history is not read; then it is closed without an answer.
       offers.commandError = const OrderOfferNetworkUnavailableException();
       await arrive(tester, offer('n1'));
-      await tester.tap(find.text(l10n.offerDeclineFull));
+      await cubit(tester).decline('n1');
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
       expect(find.text(l10n.offerUnconfirmed), findsOneWidget);
@@ -1118,7 +1121,7 @@ void main() {
           declinedAt: DateTime.utc(2026, 11, 15, 9),
         ),
       ];
-      await tester.tap(find.text(l10n.offerDeclineFull));
+      await cubit(tester).decline('n2');
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
       expect(history.calls, callsBefore + 1);
@@ -1167,7 +1170,9 @@ void main() {
     });
 
     testWidgets('scheduled offer: shown with its type; accept off with the '
-        'Admin-confirmation reason; decline still possible', (tester) async {
+        'Admin-confirmation reason; no decline; Later closes it', (
+      tester,
+    ) async {
       await launch(tester);
       await arrive(
         tester,
@@ -1182,10 +1187,14 @@ void main() {
       AppButton button(String label) =>
           tester.widget<AppButton>(find.widgetWithText(AppButton, label));
       expect(button(l10n.offerAcceptFull).onPressed, isNull);
-      expect(button(l10n.offerDeclineFull).onPressed, isNotNull);
+      expect(find.text('رفض الطلب'), findsNothing);
       await tester.tap(find.text(l10n.offerAcceptFull), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(offers.accepted, isEmpty);
+      await tester.tap(find.text(l10n.offerLater));
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+      expect(offers.declined, isEmpty);
     });
 
     testWidgets('missing commission snapshot: accept off with the reason', (
@@ -1216,7 +1225,7 @@ void main() {
       expect(
         tester
             .widget<AppButton>(
-              find.widgetWithText(AppButton, l10n.offerDeclineFull),
+              find.widgetWithText(AppButton, l10n.offerAcceptFull),
             )
             .onPressed,
         isNull,

@@ -8,7 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:mobile_frontend/util/images.dart';
 import 'package:mobile_frontend/view/screens/home_screen/widget/home_app_bar.dart';
+import 'package:mobile_frontend/view/screens/home_screen/widget/home_greeting.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/domain/use_cases/get_active_order.dart';
 import 'package:mobile_frontend/domain/use_cases/get_captain_location.dart';
@@ -24,14 +26,12 @@ import 'package:mobile_frontend/domain/repositories/captain_availability_reposit
 import 'package:mobile_frontend/domain/use_cases/captain_availability.dart';
 import 'package:mobile_frontend/domain/use_cases/order_offers.dart';
 import 'package:mobile_frontend/domain/use_cases/sign_out.dart';
-import 'package:mobile_frontend/helper/money/jod_format.dart';
 import 'package:mobile_frontend/main.dart';
 import 'package:mobile_frontend/util/fonts.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/home_availability_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/cubit/pending_offers_cubit.dart';
 import 'package:mobile_frontend/view/screens/home_screen/view/home_screen.dart';
-import 'package:mobile_frontend/view/screens/home_screen/widget/wallet_balance_chip.dart';
 import 'package:mobile_frontend/view/widget/toggle/app_availability_toggle.dart';
 
 import 'availability_fakes.dart';
@@ -57,7 +57,6 @@ void main() {
   Future<void> pumpHome(
     WidgetTester tester, {
     AppUser? user = const AppUser(id: 'c1', displayName: 'أحمد'),
-    int? walletBalanceFils,
     CaptainAvailabilityRepository? repository,
     AvailabilityPermissionGateway? permissions,
     double reservedTop = 0,
@@ -103,13 +102,11 @@ void main() {
           // [reservedTop] stands in for something mounted above the app
           // (e.g. the debug demo strip), which shrinks the page.
           child: reservedTop == 0
-              ? HomeScreen(walletBalanceFils: walletBalanceFils)
+              ? const HomeScreen()
               : Column(
                   children: [
                     SizedBox(height: reservedTop),
-                    Expanded(
-                      child: HomeScreen(walletBalanceFils: walletBalanceFils),
-                    ),
+                    const Expanded(child: HomeScreen()),
                   ],
                 ),
         ),
@@ -122,34 +119,28 @@ void main() {
   Finder appBarText(String text) =>
       find.descendant(of: find.byType(HomeAppBar), matching: find.text(text));
 
+  // D-A82: the owner's emblem replaces the wallet shortcut.
   group('app bar', () {
-    testWidgets('unknown balance: «—» and an unavailable label, never 0.000', (
-      tester,
-    ) async {
+    final logo = find.byKey(HomeAppBar.logoKey);
+
+    testWidgets('the Home emblem (AppImages.homeLogo, contained, announced '
+        'once); no wallet shortcut, balance or Profile action', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpHome(tester);
-      expect(appBarText(l10n.walletBalanceUnknownValue), findsOneWidget);
-      expect(find.textContaining('0.000'), findsNothing);
+      final image = tester.widget<Image>(logo);
+      expect((image.image as AssetImage).assetName, AppImages.homeLogo);
+      expect(image.fit, BoxFit.contain);
+      expect(find.bySemanticsLabel(l10n.homeLogoSemantics), findsOneWidget);
+      expect(appBarText(l10n.walletBalanceUnknownValue), findsNothing);
+      // The emblem is not tappable (no wallet action behind it).
       expect(
-        find.bySemanticsLabel(l10n.walletBalanceUnavailableSemantics),
-        findsOneWidget,
+        find.ancestor(of: logo, matching: find.byType(InkWell)),
+        findsNothing,
       );
-      semantics.dispose();
-    });
-
-    testWidgets('the balance is a named button (opens Wallet, Task 34); '
-        'no Profile action on Home (D-A71)', (tester) async {
-      final semantics = tester.ensureSemantics();
-      await pumpHome(tester, walletBalanceFils: 1500);
-      final chip = tester
-          .getSemantics(
-            find.bySemanticsLabel(l10n.walletBalanceSemantics('1.500')),
-          )
-          .getSemanticsData();
-      expect(chip.hasAction(SemanticsAction.tap), isTrue);
-      expect(chip.hint, l10n.walletOpenHint);
-      expect(chip.flagsCollection.isButton, isTrue);
-      // Profile is the «حسابي» tab: no AppBar action, icon or tooltip.
+      expect(
+        find.ancestor(of: logo, matching: find.byType(GestureDetector)),
+        findsNothing,
+      );
       expect(
         find.descendant(
           of: find.byType(HomeAppBar),
@@ -158,88 +149,72 @@ void main() {
         findsNothing,
       );
       expect(find.byIcon(PhosphorIconsRegular.userCircle), findsNothing);
-      expect(
-        tester.getSize(find.byType(WalletBalanceChip)).height,
-        greaterThanOrEqualTo(48),
-      );
+      // The Login logo constant is unchanged and different.
+      expect(AppImages.logo, isNot(AppImages.homeLogo));
       semantics.dispose();
     });
 
-    for (final fils in [0, 1500, -1000, -12345678, 987654321000]) {
-      testWidgets('$fils fils: exact JOD text, LTR-isolated, spoken', (
-        tester,
-      ) async {
-        final semantics = tester.ensureSemantics();
-        await pumpHome(tester, walletBalanceFils: fils);
-        final amount = formatJodFils(fils);
-        expect(
-          appBarText('${ltrIsolate(amount)} ${l10n.walletCurrencySymbol}'),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel(l10n.walletBalanceSemantics(amount)),
-          findsOneWidget,
-        );
-        semantics.dispose();
-      });
-    }
-
     for (final width in [320.0, 375.0, 450.0]) {
       for (final scale in [1.0, 2.0, 3.0]) {
-        testWidgets('$width px × $scale: balance whole, inside the bar', (
-          tester,
-        ) async {
+        testWidgets('$width px × $scale: emblem whole and unstretched, '
+            'greeting and switch inside the bar', (tester) async {
           final semantics = tester.ensureSemantics();
           setScreenSize(tester, width, 800);
           tester.platformDispatcher.textScaleFactorTestValue = scale;
           addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-          const fils = -12345678;
-          await pumpHome(tester, walletBalanceFils: fils);
+          await pumpHome(tester);
           expect(tester.takeException(), isNull);
-          final text =
-              '${ltrIsolate(formatJodFils(fils))} '
-              '${l10n.walletCurrencySymbol}';
-          final paragraph = tester.renderObject<RenderParagraph>(
-            appBarText(text),
-          );
-          expect(paragraph.didExceedMaxLines, isFalse);
           final bar = tester.getRect(find.byType(HomeAppBar));
-          final chip = tester.getRect(appBarText(text));
-          expect(bar.contains(chip.topLeft), isTrue);
-          expect(bar.contains(chip.bottomRight), isTrue);
-          // Greeting and the availability switch stay inside the bar too:
-          // it grows instead of hiding them (D-A71).
+          final emblem = tester.getRect(logo);
+          expect(emblem.height, HomeAppBar.logoHeight);
+          expect(bar.contains(emblem.topLeft), isTrue);
+          expect(bar.contains(emblem.bottomRight), isTrue);
           final greeting = tester.getRect(
             appBarText(l10n.homeGreeting('أحمد')),
           );
           expect(bar.contains(greeting.topLeft), isTrue);
           expect(bar.contains(greeting.bottomRight), isTrue);
-          // At the largest sizes the bar scrolls inside instead of
-          // overflowing: bring the switch into view, then check it.
           await tester.ensureVisible(find.byType(AppAvailabilityToggle));
           await tester.pump();
           final toggle = tester.getRect(find.byType(AppAvailabilityToggle));
           expect(bar.contains(toggle.topLeft), isTrue);
           expect(bar.contains(toggle.bottomRight), isTrue);
-          // The «الرئيسية» title is kept for screen readers.
           expect(find.bySemanticsLabel(l10n.homeTitle), findsOneWidget);
           semantics.dispose();
         });
       }
     }
 
-    testWidgets('RTL: greeting at the start (right), balance at the end', (
+    testWidgets('RTL: greeting at the start (right), emblem at the end', (
       tester,
     ) async {
       setScreenSize(tester, 375, 800);
-      await pumpHome(tester, walletBalanceFils: 1500);
+      await pumpHome(tester);
       final title = tester.getRect(appBarText(l10n.homeGreeting('أحمد'))).right;
-      final chip = tester
-          .getCenter(
-            appBarText('${ltrIsolate('1.500')} ${l10n.walletCurrencySymbol}'),
-          )
-          .dx;
-      expect(title, greaterThan(chip));
+      expect(title, greaterThan(tester.getCenter(logo).dx));
+    });
+  });
+
+  group('first-name greeting (D-A82)', () {
+    for (final (input, expected) in [
+      ('أحمد محمد العلي', 'أحمد'),
+      ('  أحمد   محمد  ', 'أحمد'),
+      ('\tأحمد\nمحمد', 'أحمد'),
+      ('أحمد', 'أحمد'),
+    ]) {
+      testWidgets('"$input" greets "$expected"', (tester) async {
+        await pumpHome(
+          tester,
+          user: AppUser(id: 'c1', displayName: input),
+        );
+        expect(find.text(l10n.homeGreeting(expected)), findsOneWidget);
+      });
+    }
+
+    test('helper: blank or missing has no first name', () {
+      expect(HomeGreeting.firstName(null), isNull);
+      expect(HomeGreeting.firstName(''), isNull);
+      expect(HomeGreeting.firstName(' \t\n '), isNull);
     });
   });
 
@@ -249,7 +224,7 @@ void main() {
     setScreenSize(tester, 402, 874);
     tester.platformDispatcher.textScaleFactorTestValue = 3.1;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await pumpHome(tester, walletBalanceFils: 4000, reservedTop: 340);
+    await pumpHome(tester, reservedTop: 340);
     expect(tester.takeException(), isNull);
     final bar = tester.getRect(find.byType(HomeAppBar));
     // At most 60 % of the page that remains under the reserved area.
@@ -300,7 +275,9 @@ void main() {
       setScreenSize(tester, 320, 800);
       tester.platformDispatcher.textScaleFactorTestValue = 3;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      const name = 'عبد الرحمن محمد عبد الله الخطيب';
+      // Only the first token is greeted (D-A82); a very long one still
+      // wraps instead of overflowing.
+      const name = 'عبدالرحمنمحمدعبداللهالخطيبالعتيبي الثاني';
       await pumpHome(
         tester,
         user: const AppUser(id: 'c1', displayName: name),
@@ -308,7 +285,9 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester
-            .renderObject<RenderParagraph>(find.text(l10n.homeGreeting(name)))
+            .renderObject<RenderParagraph>(
+              find.text(l10n.homeGreeting(HomeGreeting.firstName(name)!)),
+            )
             .didExceedMaxLines,
         isFalse,
       );
@@ -464,7 +443,6 @@ void main() {
           final repo = FakeAvailabilityRepository();
           await pumpHome(
             tester,
-            walletBalanceFils: -12345678,
             repository: repo,
             permissions: FakePermissionGateway(prerequisites()),
           );
@@ -488,9 +466,8 @@ void main() {
   });
 
   group('in the real app (default placeholders)', () {
-    testWidgets('signed-in captain: name, «—» balance, not-configured card', (
-      tester,
-    ) async {
+    testWidgets('signed-in captain: first name, emblem, no balance, '
+        'not-configured card', (tester) async {
       await tester.pumpWidget(
         MainApp(
           connectivityService: FakeInternetConnectionService(),
@@ -500,10 +477,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(
-        find.text(l10n.homeGreeting(testUser.displayName!)),
+        find.text(
+          l10n.homeGreeting(HomeGreeting.firstName(testUser.displayName)!),
+        ),
         findsOneWidget,
       );
-      expect(appBarText(l10n.walletBalanceUnknownValue), findsOneWidget);
+      expect(find.byKey(HomeAppBar.logoKey), findsOneWidget);
+      expect(appBarText(l10n.walletBalanceUnknownValue), findsNothing);
       expect(find.text(l10n.availabilityNotConfigured), findsOneWidget);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
       // Nothing to tap that could prompt: the toggle is disabled.

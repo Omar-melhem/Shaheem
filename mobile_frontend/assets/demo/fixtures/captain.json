@@ -7,8 +7,12 @@
     "display_name": "أحمد الشهم",
     "username": "demo_captain",
     "city": "عمّان",
-    "phone": null,
+    "phone": "0700000100",
     "profile_complete": true
+  },
+  "rating": {
+    "average": 4.3,
+    "ratings_count": 27
   },
   "availability": {
     "is_available": true,

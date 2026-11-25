@@ -78,7 +78,6 @@ void main() {
     test('each Home section lives in its own file', () {
       const sections = {
         'home_app_bar.dart': 'HomeAppBar',
-        'wallet_balance_chip.dart': 'WalletBalanceChip',
         'home_greeting.dart': 'HomeGreeting',
         'home_availability_bar.dart': 'HomeAvailabilityBar',
         'home_active_order_card.dart': 'HomeActiveOrderCard',

@@ -1,6 +1,7 @@
 # gen_l10n configuration (Flutter's official localization workflow).
-# Arabic is the template and the only active language for now; add a new
-# app_<locale>.arb next to app_ar.arb to support another language later.
+# Arabic is the template and the default language; English (app_en.arb) is
+# the captain's alternative, chosen in Settings. Only ar and en are supported.
+# Every key in app_ar.arb needs its English message in app_en.arb.
 # Generated files go to lib/helper/translation/generated/ — never edit them.
 arb-dir: lib/helper/translation
 template-arb-file: app_ar.arb

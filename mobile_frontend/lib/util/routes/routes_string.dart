@@ -13,6 +13,14 @@ class RoutesString {
   static const String wallet = '/wallet';
   static const String profile = '/profile';
 
+  /// Sub-route of My Orders for one completed order (D-A83), relative to
+  /// [orderHistory]; protected like its branch.
+  static const String completedOrderDetailsPath = 'completed/:orderId';
+
+  /// The location of the completed-order page for [orderId] (encoded).
+  static String completedOrderDetails(String orderId) =>
+      '$orderHistory/completed/${Uri.encodeComponent(orderId)}';
+
   // Protected pages above the shell (not tabs).
 
   /// The captain's active order and pickup map (D-A73), Back → Home.

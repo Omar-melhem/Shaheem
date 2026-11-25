@@ -9,7 +9,10 @@
       "merchant_name": "مطعم التلة",
       "delivery_area": "الدوار الرابع",
       "delivery_fee_fils": 2500,
-      "occurred_minutes_ago": 1500
+      "occurred_minutes_ago": 1500,
+      "demo_customer_name": "ريم (اسم تجريبي)",
+      "demo_customer_phone": "0700000201",
+      "demo_delivery_notes": "تسليم للحارس — بيانات تجريبية"
     },
     {
       "id": "demo-order-done-2",
@@ -51,5 +54,5 @@
       "notice": "Preview only; use existing future-commitment UI if present."
     }
   ],
-  "completed_note": "Lifetime delivered count (D-A76) = every row here, including demo-order-done-3 (14 days ago, outside the 7-day debit window). Earnings are not derived (formula pending, D-P36)."
+  "completed_note": "Lifetime delivered count (D-A76) = every row here, including demo-order-done-3 (14 days ago, outside the 7-day debit window). Earnings are not derived (formula pending, D-P36). demo-order-done-1 carries fictional optional details for its detail page; the others have none (D-A83)."
 }

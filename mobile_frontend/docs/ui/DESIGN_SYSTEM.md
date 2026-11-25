@@ -1,5 +1,7 @@
 # SHAHM Flutter — Design System
 
+**2026-11-24 target amendment (D-A82/D-A83):** §6/§10 now describe the approved Home emblem/first-name/accept-only revision and the new shared delivery-details presentation. Implemented in Flutter 2026-11-24 (widget tests; no device check yet); older dated verification is historical.
+
 **Current target: red/white/neutral theme (D-A69, client revision 2026-11-20).** Check `PROJECT_STATUS.md` §0 before claiming a component has been migrated in Flutter.
 
 Colors, typography, fonts, RTL, localization, responsive breakpoints and
@@ -72,7 +74,7 @@ IBM Plex Sans Arabic. No dark theme, no runtime switching (no Cubit).
 **Reference image (`reference_home_client.jpeg`):** layout guidance only —
 greeting at the start of the AppBar with the availability switch/status
 below it, readable white cards, four destinations. Not adopted: its maroon,
-logo, patterned header, red selected tab, sample names/amounts, «الربح»
+its reference-image logo artwork, patterned header, red selected tab, sample names/amounts, «الربح»
 (the full fee is labelled «أجرة التوصيل») and «تجاهل» (dismiss ≠ decline).
 
 ## 3. Typography
@@ -172,7 +174,8 @@ widgets. Do not share proprietary font files or promise runtime font changes.
 
 | Constant | Path | Notes |
 |---|---|---|
-| `AppImages.logo` | `assets/images/png/shahm_logo.png` | Official SHAHM logo with real transparency (copied from `web_frontend/public/brand/shahm-logo-transparent.png`). Don't alter the artwork |
+| `AppImages.logo` | `assets/images/png/shahm_main_logo.png` | Current owner-edited main logo used by existing consumers; preserve it and verify against source before changing |
+| `AppImages.homeLogo` | `assets/images/png/shahm_logo_2.png` | **Implemented 2026-11-24 (D-A82):** constant in `lib/util/images.dart`, used by `HomeAppBar` (height 44, `BoxFit.contain`). Asset exists; preserve full artwork and aspect ratio |
 
 **Registration:** `pubspec.yaml` registers `assets/images/png/`. Add
 format-specific folders (`svg/`, `webp/`…) only when needed.
@@ -300,21 +303,37 @@ Component API: `SHARED_UI_COMPONENTS_REFERENCE.md` §3.12. Routing:
   named `mainNavigationLabel`.
 - Hidden while the keyboard is open; visible only inside the main shell.
 
-### 10.1 Home AppBar (D-A71)
+### 10.1 Home AppBar (D-A82, superseding D-A71)
 
-White, no logo or pattern. Row 1: greeting (start-aligned, wraps) and the
-wallet balance chip (end). Row 2: availability label/status and the
-controlled switch (`success` when on), with notices/errors underneath. The
-AppBar height adapts to content (narrow width, text scale up to 3,
-error/rationale text) instead of truncating.
+White, no patterned header. Row 1: first-name greeting at logical start and
+the owner-provided Home emblem at logical end, replacing the removed wallet
+shortcut. Use `AppImages.homeLogo`, bounded size and `BoxFit.contain`;
+never crop/stretch the artwork or attach a wallet action. Preserve the
+existing main logo constant/consumers. Row 2 keeps availability/status,
+controlled switch and notices. AppBar height adapts to content, 320 px and
+text scale up to 3. Full session/Profile name is unchanged; a blank name
+keeps the localized generic greeting. Logo semantics come from localization.
 
-### 10.2 Offer card (Task 40)
+### 10.2 Home offer card (D-A82)
 
-White card, `divider` outline, restrained shadow; merchant, pickup and
-delivery **area** with location/store icons; full fee «أجرة التوصيل» with a
-money icon; «قبول» filled red with white text and a check icon; «رفض»
-neutral outlined with a close icon. Long names wrap; amounts are 3-decimal
-JOD.
+White card, divider outline, restrained shadow; merchant, pickup, delivery
+area and full delivery fee. One full-width filled-red Accept `AppButton`
+with its busy/disabled states; remove the secondary rejection column and
+its spacer, then rebalance vertical rhythm. Content-driven height, wrapping
+Arabic text and 3-decimal JOD remain. Separate new-offer-sheet actions are
+unchanged. This is a target until implementation; earlier two-button card
+screenshots/tests are not evidence of this revision.
+
+### 10.3 Delivery details, current and historical (D-A83)
+
+Use a cohesive stateless details presentation for both the active delivery
+leg and each own completed-order page. Localized heading/rows: optional
+customer name, optional phone, required area, optional delivery notes and
+full fee. Omit blank optional rows; unavailable required data gets honest
+localized copy. No customer map. Reuse existing theme, money formatting and
+selectable/LTR phone behavior; long notes wrap without a fixed card height.
+The historical page is read-only and preserves the appropriate merchant,
+order identity and completion time. Commands remain in the active feature.
 
 ## 11. Status, empty and placeholder states
 

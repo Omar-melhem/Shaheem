@@ -53,6 +53,7 @@ import 'package:mobile_frontend/util/routes/routes_string.dart';
 import 'package:mobile_frontend/util/routes/stream_refresh_listenable.dart';
 import 'package:mobile_frontend/view/app_state/connectivity/app_connectivity_cubit.dart';
 import 'package:mobile_frontend/view/app_state/connectivity/global_connectivity_banner.dart';
+import 'package:mobile_frontend/view/app_state/locale/app_locale_cubit.dart';
 import 'package:mobile_frontend/view/app_state/session/app_session_cubit.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/cubit/current_order_cubit.dart';
 import 'package:mobile_frontend/view/screens/current_order_screen/widget/pickup_map.dart';
@@ -198,6 +199,12 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   // App-wide state (one instance each for the app's lifetime).
   late final AppConnectivityCubit _connectivityCubit;
+
+  /// The display language (Arabic by default; in memory only). A change
+  /// only rebuilds this widget's MaterialApp.router with the new locale:
+  /// the router, the session and every Cubit stay the same instances.
+  final AppLocaleCubit _localeCubit = AppLocaleCubit();
+  late final StreamSubscription<AppLanguage> _localeSubscription;
   late final AppSessionCubit _sessionCubit;
 
   // Startup orchestration; idle once startup resolves.
@@ -238,6 +245,9 @@ class _MainAppState extends State<MainApp> {
     // destination is chosen (the redirect waits for it). Sign-out: drop
     // the previous captain's order and any lookup still running.
     _sessionSubscription = _sessionCubit.stream.listen(_onSessionChanged);
+    _localeSubscription = _localeCubit.stream.listen((_) {
+      if (mounted) setState(() {});
+    });
     _routerRefresh = StreamRefreshListenable([
       _splashCubit.stream,
       _sessionCubit.stream,
@@ -341,6 +351,7 @@ class _MainAppState extends State<MainApp> {
   @override
   void dispose() {
     _sessionSubscription.cancel();
+    _localeSubscription.cancel();
     _lifecycleListener.dispose();
     _router.dispose();
     _routerRefresh.dispose();
@@ -348,6 +359,7 @@ class _MainAppState extends State<MainApp> {
     _currentOrderCubit.close();
     _sessionCubit.close();
     _connectivityCubit.close();
+    _localeCubit.close();
     super.dispose();
   }
 
@@ -359,16 +371,18 @@ class _MainAppState extends State<MainApp> {
         BlocProvider.value(value: _sessionCubit),
         BlocProvider.value(value: _splashCubit),
         BlocProvider.value(value: _currentOrderCubit),
+        BlocProvider.value(value: _localeCubit),
       ],
       child: MaterialApp.router(
         onGenerateTitle: (context) => AppLocalizations.of(context).appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         routerConfig: _router,
-        // Arabic-first localization (gen_l10n). Arabic is the only active
-        // locale; the Arabic locale also makes the whole app RTL, so no
-        // manual Directionality is needed. Add a locale by adding its ARB.
-        locale: const Locale('ar'),
+        // Arabic-first localization (gen_l10n) with English as the
+        // captain's alternative (Settings, AppLocaleCubit). The locale also
+        // sets the direction (Arabic RTL, English LTR), so no manual
+        // Directionality is needed.
+        locale: _localeCubit.state.locale,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         // Mounted once around every route:

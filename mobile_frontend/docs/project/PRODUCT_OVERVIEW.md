@@ -1,5 +1,7 @@
 # SHAHM — Product Overview (for the Flutter app)
 
+**Latest focused revision (2026-11-24, D-A82/D-A83):** Home uses its new emblem and first-name greeting with no wallet shortcut; Home offer cards are accept-only. Current delivery and each own completed-order detail page show the approved customer/delivery fields. These are approved targets; source implementation remains pending in `PROJECT_STATUS.md` §0.3.
+
 The product context and business rules the Flutter app must respect. Each
 rule names its **source** and **status**. Nothing here is implemented in
 Flutter unless `PROJECT_STATUS.md` says so.
@@ -88,9 +90,12 @@ Exact delivery state values:
   contract to avoid accidentally blocking instant orders days in advance.
 - Only the captain currently responsible can mark an order delivered. There
   is no customer OTP, photo or signature for delivery.
-- Customer is not a registered SHAHM user and has **no** app, account, name,
-  GPS point, precise address or customer-facing route. The merchant enters the
-  destination **area** (required) and, optionally, a customer phone.
+- Customer is not a registered SHAHM user and has **no** app, account,
+  GPS point, precise street address or customer-facing route. The merchant
+  supplies the destination **area** (required), optional customer **name**,
+  optional phone and optional **delivery notes** (D-A83). The full delivery
+  fee is authoritative order data, not derived by Flutter. Delivery notes
+  and merchant pickup instructions are different fields.
 
 ### 3.2 Captain eligibility (owner-approved)
 
@@ -288,11 +293,18 @@ Admin can explicitly close a WhatsApp request.
   Home, «طلباتي» My Orders (existing Order History feature), «المحفظة»
   Wallet, «حسابي» My Account (Profile). Black/gray tab states (D-A69).
 - No Notifications destination, feed, badge or unread count (D-A72).
-- **Home AppBar** (D-A71): captain greeting and the controlled availability
-  switch/status, plus the wallet balance chip (same balance source as
-  Wallet). No Profile button, logo or patterned header. The body starts with
-  the pending-offer cards (full delivery fee, distinct Accept/Decline;
-  dismissing a sheet is not a decline).
+- **Home AppBar** (D-A82, superseding D-A71's chip/no-logo layout):
+  first-name greeting, the owner-provided Home emblem referenced through
+  `AppImages.homeLogo`, and the controlled availability switch/status.
+  Remove the wallet shortcut completely; Wallet remains its bottom tab.
+  Keep the full name in the session/Profile. With the current display-name
+  model use the first non-empty whitespace-delimited token for Home only;
+  blank/unknown name keeps the generic localized greeting.
+- **Home pending-offer cards (D-A82):** merchant/pickup/area/full fee and one
+  full-width Accept action. Remove the secondary Decline/Cancel control and
+  its card-only wiring, not the merchant order itself. The separate
+  new-offer sheet retains its explicit Decline command and history flow;
+  dismissing/ignoring an offer is never a decline.
 - **Current Order** (D-A73) is a protected standalone page (`/current-order`)
   outside the tabs, with Back to Home. It opens after a confirmed instant
   acceptance for the matching `orderId`, and recovery re-reads the server's
@@ -324,15 +336,37 @@ Admin can explicitly close a WhatsApp request.
   native Google Maps navigation action is available on pickup leg.
 - **Screen sequence (D-A81):** pickup leg (merchant, map, Open in Google
   Maps, «تم الاستلام» → PIN form) → after confirmed pickup the delivery view
-  **without a map** (destination area; customer phone only if supplied) with
+  **without a map** (Order details: optional name/phone/delivery notes,
+  required destination area and full fee, D-A83) with
   «بدء التوصيل» → after confirmed start «تم تسليم الطلب» → after confirmed
   completion the history and wallet are re-read and «طلباتي» opens. The stage
   shown always comes from the server; the app never advances it on a tap, a
   timeout, opening Maps, GPS proximity or elapsed time.
 
+#### 3.9.1 Delivery and completed-order details (D-A83, 2026-11-24)
+
+Both delivery stages (`picked_up`, `on_the_way`) show a localized Order
+details section: customer name (optional), phone (optional), destination
+area (required), delivery notes (optional), and full delivery fee (required,
+integer fils). Null/blank optional values omit their rows. Missing required
+area/fee in an incomplete or legacy response shows an explicit unavailable
+state; never invent values, use zero for unknown money or promote absence
+to a new workflow block. Existing server stage rules remain authoritative.
+
+Each completed-delivery item opens its own protected read-only details
+page, retaining the same supplied fields from the historical order record,
+its merchant, order identity and server completion time. Existing records
+may lack newly optional data. Prefer the complete record already loaded
+for that session; any required detail read is on demand, never per list row
+or via polling. History is not reconstructed from the current active order
+or current editable customer/merchant data. Server authorization follows the
+captain's own delivery record, and retention/redaction remains to specify.
+No customer data is added to public offers, push or diagnostic payloads.
+
 ### 3.10 Deliberately excluded (Product Owner decisions, web)
 
-- No customer-name field.
+- No customer account or customer-facing app. The former no-name-field
+  exclusion is superseded by D-A83: an optional order-level name is allowed.
 - No goods value on new orders.
 - No merchant contact person.
 - No captain vehicle data.
