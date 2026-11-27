@@ -198,7 +198,7 @@ describe('shared credentials: captain password like merchant, global unique user
     expect(dialog.textContent).not.toContain('6 أحرف');
     await userEvent.type(within(dialog).getByLabelText(/الاسم الكامل/), 'كابتن جديد');
     await userEvent.type(within(dialog).getByPlaceholderText('07XXXXXXXX'), '0795556677');
-    await userEvent.type(within(dialog).getByLabelText(/اسم المستخدم لتسجيل الدخول/), 'newcap');
+    await userEvent.type(within(dialog).getByLabelText(/^اسم المستخدم/), 'newcap');
     const password = within(dialog).getByLabelText(/^كلمة المرور/, { selector: 'input' });
     expect(password).toHaveAttribute('type', 'password');
     await userEvent.type(password, 'a');
@@ -213,7 +213,7 @@ describe('shared credentials: captain password like merchant, global unique user
     const dialog = screen.getByRole('dialog');
     await userEvent.type(within(dialog).getByLabelText(/الاسم الكامل/), 'كابتن');
     await userEvent.type(within(dialog).getByPlaceholderText('07XXXXXXXX'), '0795556677');
-    const username = within(dialog).getByLabelText(/اسم المستخدم لتسجيل الدخول/);
+    const username = within(dialog).getByLabelText(/^اسم المستخدم/);
     await userEvent.type(username, 'Merchant1');
     await userEvent.type(within(dialog).getByLabelText(/^كلمة المرور/, { selector: 'input' }), 'x');
     await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الكابتن' }));
@@ -222,5 +222,42 @@ describe('shared credentials: captain password like merchant, global unique user
     expect(username).toHaveValue('Merchant1');
     expect(username).toHaveFocus();
     expect(dialog.textContent).not.toContain('مطعم السنابل'); // never names the owner
+  });
+});
+
+describe('Create Merchant / Captain dialogs (owner 2026-11-27)', () => {
+  it('the category select offers exactly the four categories, in order', async () => {
+    const { MerchantFormDialog } = await import('@/features/admin/merchants/MerchantFormDialog');
+    inRouter(<MerchantFormDialog merchant="new" onClose={() => {}} />);
+    const select = within(screen.getByRole('dialog')).getByLabelText(/فئة النشاط التجاري/) as HTMLSelectElement;
+    const options = [...select.options].filter((o) => !o.disabled).map((o) => o.textContent);
+    expect(options).toEqual(['مطاعم', 'محل حلويات', 'شركات أون لاين', 'صفحات أون لاين']);
+  });
+
+  it('sections and a short username label; the username rule is a hint under the field', async () => {
+    const { MerchantFormDialog } = await import('@/features/admin/merchants/MerchantFormDialog');
+    inRouter(<MerchantFormDialog merchant="new" onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['معلومات النشاط التجاري', 'موقع المتجر / الاستلام', 'بيانات الدخول (تجريبية)']);
+    const username = within(dialog).getByLabelText(/^اسم المستخدم/);
+    expect(document.getElementById(username.getAttribute('aria-describedby')!)!.textContent).toContain('لتسجيل الدخول');
+  });
+
+  it('an empty submit shows inline errors and focuses the first invalid field', async () => {
+    const { CaptainFormDialog } = await import('@/features/admin/captains/CaptainFormDialog');
+    inRouter(<CaptainFormDialog captain="new" onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إنشاء الكابتن' }));
+    expect(within(dialog).getByText('الاسم الكامل مطلوب')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/الاسم الكامل/)).toHaveFocus();
+  });
+
+  it('editing a legacy-category merchant explains it and requires one of the four', async () => {
+    const { MerchantFormDialog } = await import('@/features/admin/merchants/MerchantFormDialog');
+    const hail = S().merchants.find((m) => m.id === 'm-hail')!;
+    inRouter(<MerchantFormDialog merchant={hail} onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText(/مقهى \(فئة سابقة\)/)).toBeInTheDocument();
+    expect((within(dialog).getByLabelText(/فئة النشاط التجاري/) as HTMLSelectElement).value).toBe('');
   });
 });

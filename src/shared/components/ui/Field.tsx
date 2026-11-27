@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { useInFormRow } from './FormLayout';
 
 /**
  * Label + control + error/hint. With `htmlFor`, the message gets id `${htmlFor}-msg` for aria-describedby.
@@ -28,6 +29,7 @@ export function Field({
   className?: string;
 }) {
   const autoId = useId();
+  const inRow = useInFormRow();
   const linkable = !htmlFor && isLinkableControl(children);
   const controlId = htmlFor ?? (linkable ? autoId : undefined);
   const control = linkable
@@ -37,8 +39,8 @@ export function Field({
       })
     : children;
   return (
-    <div className={cn('space-y-1.5', className)}>
-      <label htmlFor={controlId} className="flex items-center gap-2 text-sm font-bold text-ink">
+    <div className={cn(inRow ? 'grid min-w-0 content-start gap-y-1.5 md:row-span-3 md:grid-rows-subgrid' : 'space-y-1.5', className)}>
+      <label htmlFor={controlId} className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-ink', inRow && 'self-end')}>
         {label}
         {required && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-bold text-primary">مطلوب</span>}
         {optional && <span className="rounded-full bg-cream px-2 py-0.5 text-[11px] font-medium text-ink-soft">اختياري</span>}

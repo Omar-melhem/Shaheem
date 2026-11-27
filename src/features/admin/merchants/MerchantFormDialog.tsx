@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, type MerchantInput } from '@/app/state';
 import { isUnchangedLegacyLocation, pickupLocationError } from '@/application/merchantLocation';
-import type { LatLng, Merchant } from '@/domain/types';
+import { isLegacyMerchantCategory, type LatLng, type Merchant } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { AccountCredentialsFields, credentialFieldErrors, credentialFieldOf } from '../AccountCredentialsFields';
-import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
+import { LEGACY_CATEGORY_NOTE, categoryLabel } from '@/features/merchants/categories';
+import { Button, Dialog, Field, FormRow, FormSection, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 import { BusinessCategorySelect } from '@/features/merchants/BusinessCategorySelect';
 import { MerchantLocationFields } from './MerchantLocationFields';
@@ -21,7 +22,12 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [credentialAttempt, setCredentialAttempt] = useState(0);
+  const [invalidAttempt, setInvalidAttempt] = useState(0);
+  const formRef = useRef<HTMLDivElement>(null);
+  // After a failed submit, focus the first invalid field (inline errors explain each one).
+  useEffect(() => {
+    if (invalidAttempt) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid="true"]')?.focus();
+  }, [invalidAttempt]);
   const navigate = useNavigate();
   const existing = merchant && merchant !== 'new' ? merchant : undefined;
 
@@ -51,7 +57,7 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
     if (creds.username) e.username = creds.username;
     if (creds.password) e.password = creds.password;
     setErrors(e);
-    if (Object.keys(e).length) return setCredentialAttempt((n) => n + 1);
+    if (Object.keys(e).length) return setInvalidAttempt((n) => n + 1);
     if (submitting) return;
     setSubmitting(true);
     const input: MerchantInput = { ...form, pickup: form.pickup as LatLng };
@@ -61,7 +67,7 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
     const field = !result.ok ? credentialFieldOf(result.code) : null;
     if (!result.ok && field) {
       setErrors((er) => ({ ...er, [field]: result.error }));
-      return setCredentialAttempt((n) => n + 1);
+      return setInvalidAttempt((n) => n + 1);
     }
     if (!reportResult(result, existing ? 'تم حفظ بيانات التاجر' : 'تم إنشاء التاجر — حدّد الآن مناطق التوصيل والأسعار')) return;
     onClose();
@@ -75,24 +81,36 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
       onClose={onClose}
       size="lg"
       title={existing ? 'تعديل بيانات التاجر' : 'إضافة تاجر'}
-      description={existing ? undefined : 'في النسخة الإنتاجية تُرسل بيانات الدخول أو دعوة للتاجر — غير مفعّل في هذا النموذج.'}
+      description={existing ? undefined : 'بيانات الدخول في هذا النموذج تجريبية.'}
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit} loading={submitting}>{existing ? 'حفظ' : 'إنشاء التاجر'}</Button>
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={onClose}>إلغاء</Button>
+          <Button className="flex-1 sm:flex-none" onClick={submit} loading={submitting}>{existing ? 'حفظ' : 'إنشاء التاجر'}</Button>
         </>
       }
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="اسم النشاط التجاري" required error={errors.businessName}>
-          <Input value={form.businessName} onChange={(e) => set('businessName', e.target.value)} aria-invalid={!!errors.businessName} />
-        </Field>
-        <Field label="فئة النشاط التجاري" required error={errors.category} htmlFor="merchant-category">
-          <BusinessCategorySelect id="merchant-category" value={form.category} onChange={(c) => set('category', c)} aria-invalid={!!errors.category} />
-        </Field>
-        <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
-          <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
-        </Field>
+      <div ref={formRef} className="space-y-5">
+        <FormSection title="معلومات النشاط التجاري">
+          <FormRow>
+            <Field label="اسم النشاط التجاري" required error={errors.businessName}>
+              <Input value={form.businessName} onChange={(e) => set('businessName', e.target.value)} aria-invalid={!!errors.businessName} />
+            </Field>
+            <Field
+              label="فئة النشاط التجاري"
+              required
+              error={errors.category}
+              hint={form.category && isLegacyMerchantCategory(form.category) ? `الفئة الحالية «${categoryLabel(form.category)}». ${LEGACY_CATEGORY_NOTE}` : undefined}
+              htmlFor="merchant-category"
+            >
+              <BusinessCategorySelect id="merchant-category" value={form.category} onChange={(c) => set('category', c)} aria-invalid={!!errors.category} />
+            </Field>
+          </FormRow>
+          <FormRow>
+            <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
+              <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
+            </Field>
+          </FormRow>
+        </FormSection>
         <MerchantLocationFields
           value={{ cityId: form.cityId, areaId: form.areaId, pickup: form.pickup }}
           existing={existing}
@@ -104,7 +122,6 @@ export function MerchantFormDialog({ merchant, onClose }: { merchant: Merchant |
           username={form.username}
           password={form.password}
           errors={{ username: errors.username, password: errors.password }}
-          focusAttempt={credentialAttempt}
           onChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((er) => ({ ...er, ...(patch.username !== undefined ? { username: '' } : { password: '' }) })); }}
         />
       </div>

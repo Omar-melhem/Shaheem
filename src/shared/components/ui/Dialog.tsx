@@ -51,7 +51,7 @@ export function Dialog({
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-cream-dark px-5 py-3">{footer}</div>}
+        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-cream-dark px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">{footer}</div>}
       </div>
     </div>,
     document.body,

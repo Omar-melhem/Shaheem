@@ -49,7 +49,7 @@ describe('updateMerchant / setMerchantStatus', () => {
     const legacy = state().merchants.find((x) => x.id === 'm-yasmine')!;
     expect(legacy.areaId).toBeNull();
     expect(failureOf(state().updateMerchant(legacy.id, legacy))).toBe('اختر فئة النشاط التجاري');
-    valueOf(state().updateMerchant(legacy.id, { ...legacy, category: 'other' as const, phone: '0790000299' }));
+    valueOf(state().updateMerchant(legacy.id, { ...legacy, category: 'online_page' as const, phone: '0790000299' }));
     expect(state().merchants.find((x) => x.id === 'm-yasmine')).toMatchObject({ areaId: null, phone: '0790000299' });
   });
 
@@ -251,5 +251,29 @@ describe('one global username namespace (owner 2026-11-25)', () => {
     const merchants = state().merchants.map((m, i) => (i === 0 ? { ...m, username: 'Captain1' } : m));
     expect(duplicateUsernames({ merchants, captains: state().captains })).toEqual(['captain1']);
     expect(duplicateUsernames(state())).toEqual([]);
+  });
+});
+
+describe('merchant business categories: exactly four (owner 2026-11-27)', () => {
+  it('only مطاعم / محل حلويات / شركات أون لاين / صفحات أون لاين can be saved', async () => {
+    const { MERCHANT_CATEGORIES } = await import('@/domain/types');
+    expect(MERCHANT_CATEGORIES).toEqual(['restaurant', 'sweets_shop', 'online_company', 'online_page']);
+    const { state } = newStore();
+    for (const category of MERCHANT_CATEGORIES) {
+      valueOf(state().createMerchant(merchantInput({ category, username: `u_${category}`, phone: '0791112233' }) as never));
+    }
+    for (const old of ['cafe', 'pharmacy', 'grocery', 'other']) {
+      expect(failureOf(state().createMerchant(merchantInput({ category: old, username: `x_${old}` }) as never))).toBe('اختر فئة النشاط التجاري');
+    }
+  });
+
+  it('a stored legacy category is kept as is until Admin picks one of the four on the next save', () => {
+    const { state } = newStore();
+    const hail = state().merchants.find((m) => m.id === 'm-hail')!;
+    expect(hail.category).toBe('cafe'); // fixture record from the earlier list — untouched
+    expect(failureOf(state().updateMerchant(hail.id, hail as never))).toBe('اختر فئة النشاط التجاري');
+    expect(state().merchants.find((m) => m.id === 'm-hail')!.category).toBe('cafe');
+    valueOf(state().updateMerchant(hail.id, { ...hail, category: 'restaurant' } as never));
+    expect(state().merchants.find((m) => m.id === 'm-hail')!.category).toBe('restaurant');
   });
 });

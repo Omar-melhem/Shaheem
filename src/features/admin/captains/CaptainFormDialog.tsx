@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppStore, type CaptainInput } from '@/app/state';
 import type { Captain } from '@/domain/types';
 import { PHONE_ERROR, isValidPhone } from '@/domain/phone';
 import { AccountCredentialsFields, credentialFieldErrors, credentialFieldOf } from '../AccountCredentialsFields';
-import { Button, Dialog, Field, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
+import { Button, Dialog, Field, FormRow, FormSection, Input, PhoneField, PHONE_HINT } from '@/shared/components/ui';
 import { reportResult } from '@/shared/components/toast';
 
 const EMPTY: CaptainInput = { fullName: '', phone: '', username: '', password: '' };
@@ -14,7 +14,12 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
   const updateCaptain = useAppStore((s) => s.updateCaptain);
   const [form, setForm] = useState<CaptainInput>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [credentialAttempt, setCredentialAttempt] = useState(0);
+  const [invalidAttempt, setInvalidAttempt] = useState(0);
+  const formRef = useRef<HTMLDivElement>(null);
+  // After a failed submit, focus the first invalid field (inline errors explain each one).
+  useEffect(() => {
+    if (invalidAttempt) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [invalidAttempt]);
   const [submitting, setSubmitting] = useState(false);
   const set = (k: keyof CaptainInput, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -32,7 +37,7 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
     if (creds.username) e.username = creds.username;
     if (creds.password) e.password = creds.password;
     setErrors(e);
-    if (Object.keys(e).length) return setCredentialAttempt((n) => n + 1);
+    if (Object.keys(e).length) return setInvalidAttempt((n) => n + 1);
     if (submitting) return;
     setSubmitting(true);
     const result = captain === 'new' ? createCaptain(form) : updateCaptain((captain as Captain).id, form);
@@ -40,7 +45,7 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
     const field = !result.ok ? credentialFieldOf(result.code) : null;
     if (!result.ok && field) {
       setErrors((er) => ({ ...er, [field]: result.error }));
-      return setCredentialAttempt((n) => n + 1);
+      return setInvalidAttempt((n) => n + 1);
     }
     if (reportResult(result, captain === 'new' ? 'تم إنشاء حساب الكابتن (تجريبي) — يبدأ بحالة غير متاح ورصيد صفر' : 'تم حفظ بيانات الكابتن')) onClose();
   };
@@ -50,27 +55,30 @@ export function CaptainFormDialog({ captain, onClose }: { captain: Captain | 'ne
       open={!!captain}
       onClose={onClose}
       title={captain === 'new' ? 'إضافة كابتن' : 'تعديل بيانات الكابتن'}
-      description={captain === 'new' ? 'التسجيل الذاتي غير متاح؛ الإدارة تنشئ حسابات الكباتن. طريقة الدخول للتطبيق قرار مفتوح.' : undefined}
+      description={captain === 'new' ? 'يبدأ الكابتن بحالة «غير متاح» ورصيد صفر.' : undefined}
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit} loading={submitting}>{captain === 'new' ? 'إنشاء الكابتن' : 'حفظ'}</Button>
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={onClose}>إلغاء</Button>
+          <Button className="flex-1 sm:flex-none" onClick={submit} loading={submitting}>{captain === 'new' ? 'إنشاء الكابتن' : 'حفظ'}</Button>
         </>
       }
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="الاسم الكامل" required error={errors.fullName}>
-          <Input value={form.fullName} onChange={(e) => set('fullName', e.target.value)} aria-invalid={!!errors.fullName} />
-        </Field>
-        <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
-          <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
-        </Field>
+      <div ref={formRef} className="space-y-5">
+        <FormSection title="بيانات الكابتن">
+          <FormRow>
+            <Field label="الاسم الكامل" required error={errors.fullName}>
+              <Input value={form.fullName} onChange={(e) => set('fullName', e.target.value)} aria-invalid={!!errors.fullName} />
+            </Field>
+            <Field label="رقم الهاتف" required error={errors.phone} hint={PHONE_HINT}>
+              <PhoneField value={form.phone} onChange={(v) => set('phone', v)} aria-invalid={!!errors.phone} />
+            </Field>
+          </FormRow>
+        </FormSection>
         <AccountCredentialsFields
           idPrefix="captain"
           username={form.username}
           password={form.password}
           errors={{ username: errors.username, password: errors.password }}
-          focusAttempt={credentialAttempt}
           onChange={(patch) => { setForm((f) => ({ ...f, ...patch })); setErrors((er) => ({ ...er, ...(patch.username !== undefined ? { username: '' } : { password: '' }) })); }}
         />
       </div>

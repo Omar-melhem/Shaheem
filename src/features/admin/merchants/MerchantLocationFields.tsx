@@ -5,7 +5,7 @@ import { pickupLocationError, isUnchangedLegacyLocation } from '@/application/me
 import type { LatLng, Merchant } from '@/domain/types';
 import { cityName } from '@/domain/cities';
 import { polygonCentroid } from '@/domain/geo';
-import { Field, OpenDecision } from '@/shared/components/ui';
+import { Field, FormRow, FormSection } from '@/shared/components/ui';
 import { LocationSearchField } from '@/features/merchant/location/LocationSearchField';
 import { LocationPicker } from '../LocationPicker';
 import { AreaSelect } from '../service-areas/AreaSelect';
@@ -35,14 +35,13 @@ export function MerchantLocationFields({ value, existing, error, onChange }: { v
       : null;
 
   return (
-    <div className="space-y-4 rounded-xl border border-cream-deep p-4 md:col-span-2">
-      <p className="text-sm font-bold text-ink">موقع الاستلام</p>
+    <FormSection title="موقع المتجر / الاستلام">
       {legacy && (
         <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> سجل قديم بعنوان نصي: «{existing.address}». يبقى كما هو إلى أن تختار المدينة والمنطقة.
         </p>
       )}
-      <div className="grid gap-4 md:grid-cols-2">
+      <FormRow>
         <Field label="المدينة" required={!legacy} htmlFor="merchant-city">
           <CitySelect
             id="merchant-city"
@@ -64,9 +63,14 @@ export function MerchantLocationFields({ value, existing, error, onChange }: { v
             }}
           />
         </Field>
-      </div>
-      <Field label="موقع المتجر / موقع الاستلام" required={!legacy} error={error || liveError || undefined}>
-        <div className="space-y-2">
+      </FormRow>
+      <Field
+        label="موقع المتجر على الخريطة"
+        required={!legacy}
+        error={error || liveError || undefined}
+        hint="اضغط على مكان المتجر في الخريطة أو ابحث عنه. يمكن التسجيل في أي موقع؛ مناطق التوصيل تُفعَّل من «أسعار التجار»."
+      >
+        <div className="space-y-2" data-invalid={!!(error || liveError)} tabIndex={error || liveError ? -1 : undefined}>
           <LocationSearchField
             label="ابحث باسم المتجر أو المنطقة أو العنوان"
             placeholder="ابحث باسم المتجر أو المنطقة أو العنوان"
@@ -74,17 +78,15 @@ export function MerchantLocationFields({ value, existing, error, onChange }: { v
             onSelect={(p) => { setPlaceName([p.name, p.context].filter(Boolean).join('، ')); onChange({ pickup: p.position }); }}
           />
           <LocationPicker value={value.pickup} focus={focus} boundary={area?.polygon} onChange={(p) => { setPlaceName(null); onChange({ pickup: p }); }} />
+          {value.pickup && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-cream px-3 py-2 text-sm" aria-live="polite">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span>الموقع المحدد: <b>{placeName ?? (area ? `${area.name}، ${cityName(value.cityId)}` : 'نقطة على الخريطة')}</b></span>
+              <span dir="ltr" className="text-xs text-ink-muted">{value.pickup.lat.toFixed(5)}, {value.pickup.lng.toFixed(5)}</span>
+            </p>
+          )}
         </div>
       </Field>
-      {value.pickup && (
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-cream px-3 py-2 text-sm" aria-live="polite">
-          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <span>الموقع المحدد: <b>{placeName ?? (area ? `${area.name}، ${cityName(value.cityId)}` : 'نقطة على الخريطة')}</b></span>
-          <span dir="ltr" className="text-xs text-ink-muted">{value.pickup.lat.toFixed(5)}, {value.pickup.lng.toFixed(5)}</span>
-        </p>
-      )}
-      <p className="text-xs text-ink-muted">يمكن تسجيل المتجر في أي موقع. تسجيله لا يعني تفعيل مناطق توصيل له؛ المناطق والأسعار تُدار من «أسعار التجار».</p>
-      <OpenDecision id="CR-1.3 §14">قائمة المدن مقترحة (المدينة الرئيسية لكل محافظة) بانتظار اعتماد مصدر رسمي للمدن والمناطق.</OpenDecision>
-    </div>
+    </FormSection>
   );
 }

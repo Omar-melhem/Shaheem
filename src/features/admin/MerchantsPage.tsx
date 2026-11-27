@@ -14,7 +14,7 @@ import { merchantIcon } from '@/shared/components/map/markers';
 import { reportResult } from '@/shared/components/toast';
 import { formatDate, formatDateTime } from '@/shared/lib/format';
 import { MerchantCategoryBadge } from '@/features/merchants/MerchantCategoryBadge';
-import { CATEGORY_LABEL, UNCATEGORIZED_LABEL } from '@/features/merchants/categories';
+import { CATEGORY_LABEL, needsCategoryReview } from '@/features/merchants/categories';
 import { MerchantFormDialog } from './merchants/MerchantFormDialog';
 import { DuplicateUsernamesNotice } from './DuplicateUsernamesNotice';
 
@@ -34,7 +34,8 @@ export function MerchantsPage() {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Merchant | 'new' | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [category, setCategory] = useState<MerchantCategory | 'none' | ''>('');
+  // A category, «review» (uncategorised or a legacy category), or all.
+  const [category, setCategory] = useState<MerchantCategory | 'review' | ''>('');
   const [toggling, setToggling] = useState<Merchant | null>(null);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export function MerchantsPage() {
   }, [params, setParams]);
 
   const filtered = merchants
-    .filter((m) => !category || (category === 'none' ? !m.category : m.category === category))
+    .filter((m) => !category || (category === 'review' ? needsCategoryReview(m.category) : m.category === category))
     .filter((m) => !q.trim() || [m.businessName, m.phone, m.address].some((v) => v.includes(q.trim())));
 
   return (
@@ -59,10 +60,10 @@ export function MerchantsPage() {
       <Card className="mb-4 flex flex-wrap gap-3 p-4">
         <SearchField label="بحث في التجار" className="min-w-0 w-full sm:w-auto sm:min-w-[200px] max-w-md flex-1" placeholder="ابحث بالاسم أو الهاتف أو العنوان" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="w-full sm:w-56">
-          <Select aria-label="تصفية حسب فئة النشاط" value={category} onChange={(e) => setCategory(e.target.value as MerchantCategory | 'none' | '')}>
+          <Select aria-label="تصفية حسب فئة النشاط" value={category} onChange={(e) => setCategory(e.target.value as MerchantCategory | 'review' | '')}>
           <option value="">كل الفئات</option>
           {MERCHANT_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-          <option value="none">{UNCATEGORIZED_LABEL}</option>
+          <option value="review">يحتاج تصنيف</option>
           </Select>
         </div>
       </Card>

@@ -13,13 +13,25 @@ export type Money = number;
 export type AccountStatus = 'active' | 'inactive';
 
 /**
- * Business category (merchant type) — a classification only; it never affects
- * pricing, dispatch or eligibility (FE-CR FR-MER-006). Proposed taxonomy pending
- * Product Owner approval (OPEN-FE-07). Codes are stable; 'retail' predates this list.
+ * Business category (merchant type) — a classification only; it never affects pricing, dispatch or
+ * eligibility. The four selectable categories, in this order (owner, 2026-11-27): مطاعم، محل حلويات،
+ * شركات أون لاين، صفحات أون لاين. Codes are stable machine identifiers; labels live in the UI.
  */
-export const MERCHANT_CATEGORIES = ['restaurant', 'cafe', 'retail', 'grocery', 'pharmacy', 'bakery', 'other'] as const;
+export const MERCHANT_CATEGORIES = ['restaurant', 'sweets_shop', 'online_company', 'online_page'] as const;
 export type MerchantCategory = (typeof MERCHANT_CATEGORIES)[number];
+/** True only for one of the four selectable categories — required to create or save a Merchant. */
 export const isMerchantCategory = (v: unknown): v is MerchantCategory => MERCHANT_CATEGORIES.includes(v as MerchantCategory);
+
+/**
+ * Categories from the earlier proposed list. Records that still carry one keep it unchanged (never
+ * remapped automatically); they are shown as «فئة سابقة» and Admin must pick one of the four the next
+ * time the Merchant is saved. Never selectable.
+ */
+export const LEGACY_MERCHANT_CATEGORIES = ['cafe', 'retail', 'grocery', 'pharmacy', 'bakery', 'other'] as const;
+export type LegacyMerchantCategory = (typeof LEGACY_MERCHANT_CATEGORIES)[number];
+export const isLegacyMerchantCategory = (v: unknown): v is LegacyMerchantCategory => LEGACY_MERCHANT_CATEGORIES.includes(v as LegacyMerchantCategory);
+/** What a stored Merchant may hold: a current category, a legacy one, or null (never classified). */
+export type StoredMerchantCategory = MerchantCategory | LegacyMerchantCategory | null;
 
 /**
  * Demo login credentials set by Admin. Stored in plain text for the prototype
@@ -33,8 +45,8 @@ export interface DemoCredentials {
 export interface Merchant extends DemoCredentials {
   id: ID;
   businessName: string;
-  /** null = legacy record not yet categorised by Admin (shown as "غير مصنّف"). */
-  category: MerchantCategory | null;
+  /** null = never categorised («غير مصنّف»); a legacy code = needs reclassification («فئة سابقة»). */
+  category: StoredMerchantCategory;
   phone: string;
   /** Display label. Legacy Merchants have only this (cityId/areaId null) until Admin sets City → Area. */
   address: string;

@@ -20,7 +20,7 @@ function MoveTo({ point }: { point: LatLng | null | undefined }) {
 export function LocationPicker({ value, onChange, focus, boundary }: { value: LatLng | null; onChange: (p: LatLng) => void; focus?: LatLng | null; boundary?: LatLng[] }) {
   return (
     <div className="space-y-1">
-      <BaseMap className="h-64" center={value ?? undefined} zoom={value ? 15 : 12} label="تحديد موقع المتجر على الخريطة">
+      <BaseMap className="h-52 sm:h-64" center={value ?? undefined} zoom={value ? 15 : 12} label="تحديد موقع المتجر على الخريطة">
         <InvalidateSize />
         <MapClickHandler onClick={onChange} />
         <MoveTo point={focus} />
@@ -32,7 +32,6 @@ export function LocationPicker({ value, onChange, focus, boundary }: { value: La
           <Marker position={[value.lat, value.lng]} icon={merchantIcon()} interactive={false} keyboard={false} title="موقع الاستلام المحدد" />
         )}
       </BaseMap>
-      {!value && <p className="text-xs text-ink-muted">اضغط على مكان المتجر في الخريطة، أو ابحث عنه بالاسم أو العنوان.</p>}
     </div>
   );
 }

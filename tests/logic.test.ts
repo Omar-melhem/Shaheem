@@ -33,7 +33,7 @@ check(S().merchants.find((m) => m.id === 'm-yasmine')!.category === null, 'legac
 const y = S().merchants.find((m) => m.id === 'm-yasmine')!;
 const { id: _i, createdAt: _c, status: _s, ...yIn } = y;
 check(!S().updateMerchant(y.id, yIn).ok, 'editing uncategorised merchant requires a category');
-check(S().updateMerchant(y.id, { ...yIn, category: 'bakery' }).ok && S().merchants.find((m) => m.id === y.id)!.category === 'bakery', 'Admin sets category on edit');
+check(S().updateMerchant(y.id, { ...yIn, category: 'sweets_shop' }).ok && S().merchants.find((m) => m.id === y.id)!.category === 'sweets_shop', 'Admin sets category on edit');
 
 section('Zone pricing setup (Spec §13)');
 const created = S().createMerchant({ businessName: 'مطعم الجبيهة', category: 'restaurant', phone: '0790000999', cityId: 'amman', areaId: 'a-jubaiha', pickup: { lat: 32.02, lng: 35.87 }, username: 'jubeiha', password: 'secret1' });
@@ -154,7 +154,7 @@ check(isValidOptionalPhone('') && !isValidOptionalPhone('123'), 'optional phone:
 check(!S().createOrder(mid, { customerPhone: '079111111', areaId: 'a-khalda', location: at('a-khalda') }).ok, '9-digit customer phone rejected');
 const spaced = S().createOrder(mid, { customerPhone: '079 111 1111', areaId: 'a-khalda', location: at('a-khalda') });
 check(spaced.ok && orderById(spaced.value.id).customerPhone === '0791111111', 'customer phone stored normalised');
-check(!S().createMerchant({ ...base, category: 'cafe', phone: '079000088', username: 'shortphone' }).ok, 'merchant 9-digit phone rejected');
+check(!S().createMerchant({ ...base, category: 'sweets_shop', phone: '079000088', username: 'shortphone' }).ok, 'merchant 9-digit phone rejected');
 check(!S().createCaptain({ fullName: 'ك', phone: '07900001234', username: 'longphone', password: 'secret1' }).ok, 'captain 11-digit phone rejected');
 check(S().setMerchantAreaPrice(mid, 'a-tla', 1750).ok, 'prices are not phone-validated');
 
@@ -171,7 +171,7 @@ check(!S().createRoute({ governorateId: 'amman', originAreaId: '', destinationAr
 check(JSON.stringify(S().prices) === pricesBefore, 'routes do not change Merchant prices');
 
 section('Merchant City → Area → pin (CR v1.3 §3)');
-const loc = { ...base, category: 'cafe' as const, phone: '0790000777' };
+const loc = { ...base, category: 'online_company' as const, phone: '0790000777' };
 check(!S().createMerchant({ ...loc, cityId: null, username: 'nocity' }).ok, 'City required for a new merchant');
 check(!S().createMerchant({ ...loc, areaId: null, username: 'noarea' }).ok, 'Area required for a new merchant');
 check(!S().createMerchant({ ...loc, cityId: 'irbid', username: 'wrongcity' }).ok, 'Area from another City rejected');
@@ -318,7 +318,7 @@ check(imported.ok && imported.value.created === 2 && imported.value.skipped === 
 check(!S().importAreas({ governorateId: 'amman', cityId: 'irbid', lines: 'x' }).ok, 'import needs a city of the governorate');
 
 section('Merchant coverage (CR v1.4 §2)');
-const covTarget = S().createMerchant({ ...base, category: 'cafe', phone: '0790000555', username: 'covtarget' });
+const covTarget = S().createMerchant({ ...base, category: 'online_page', phone: '0790000555', username: 'covtarget' });
 const cid = covTarget.ok ? covTarget.value : '';
 const activeIds = S().areas.filter((a) => isDestinationActive(a, S().areas)).map((a) => a.id);
 check(S().setMerchantCoverage(cid, activeIds, true).ok && S().coverage.filter((c) => c.merchantId === cid).length === activeIds.length, 'select all covers every active destination');
